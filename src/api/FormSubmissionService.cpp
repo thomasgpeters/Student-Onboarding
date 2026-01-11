@@ -1,5 +1,6 @@
 #include "FormSubmissionService.h"
 #include <thread>
+#include <iostream>
 
 namespace StudentIntake {
 namespace Api {
@@ -105,10 +106,20 @@ SubmissionResult FormSubmissionService::parseSubmissionResponse(const ApiRespons
 // Student API endpoints
 SubmissionResult FormSubmissionService::registerStudent(const Models::Student& student,
                                                          const std::string& password) {
+    std::cout << "[FormSubmissionService] registerStudent called" << std::endl;
+
     nlohmann::json payload = student.toJson();
     payload["password"] = password;
 
+    std::cout << "[FormSubmissionService] Payload: " << payload.dump() << std::endl;
+    std::cout.flush();
+
     ApiResponse response = apiClient_->post("/Student", payload);
+
+    std::cout << "[FormSubmissionService] API response received - status: " << response.statusCode
+              << ", success: " << response.success << std::endl;
+    std::cout.flush();
+
     return parseSubmissionResponse(response);
 }
 

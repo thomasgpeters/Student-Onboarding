@@ -2,6 +2,7 @@
 #include <regex>
 #include <thread>
 #include <functional>
+#include <iostream>
 
 namespace StudentIntake {
 namespace Auth {
@@ -61,10 +62,14 @@ AuthResult AuthManager::login(const std::string& email, const std::string& passw
 
 AuthResult AuthManager::registerStudent(const std::string& email, const std::string& password,
                                          const std::string& firstName, const std::string& lastName) {
+    std::cout << "[AuthManager] registerStudent called for: " << email << std::endl;
+    std::cout.flush();
+
     AuthResult result;
 
     // Validate inputs
     if (!isValidEmail(email)) {
+        std::cout << "[AuthManager] Invalid email format" << std::endl;
         result.success = false;
         result.message = "Invalid email format";
         result.errors.push_back("Please enter a valid email address");
@@ -72,6 +77,7 @@ AuthResult AuthManager::registerStudent(const std::string& email, const std::str
     }
 
     if (!isValidPassword(password)) {
+        std::cout << "[AuthManager] Password does not meet requirements" << std::endl;
         result.success = false;
         result.message = "Password does not meet requirements";
         result.errors = getPasswordRequirements();
@@ -92,14 +98,25 @@ AuthResult AuthManager::registerStudent(const std::string& email, const std::str
         return result;
     }
 
+    std::cout << "[AuthManager] Validation passed, creating student object" << std::endl;
+    std::cout.flush();
+
     // Create student object
     Models::Student student;
     student.setEmail(email);
     student.setFirstName(firstName);
     student.setLastName(lastName);
 
+    std::cout << "[AuthManager] Calling apiService_->registerStudent" << std::endl;
+    std::cout.flush();
+
     // Call API
     Api::SubmissionResult apiResult = apiService_->registerStudent(student, password);
+
+    std::cout << "[AuthManager] API result - success: " << apiResult.success
+              << ", message: " << apiResult.message << std::endl;
+    std::cout.flush();
+
     result = parseApiResult(apiResult);
 
     if (result.success) {

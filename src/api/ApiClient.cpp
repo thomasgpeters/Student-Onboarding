@@ -3,6 +3,7 @@
 #include <thread>
 #include <sstream>
 #include <fstream>
+#include <iostream>
 
 namespace StudentIntake {
 namespace Api {
@@ -85,14 +86,23 @@ ApiResponse ApiClient::performRequest(const std::string& method,
     response.statusCode = 0;
     response.success = false;
 
+    std::string fullUrl = buildFullUrl(endpoint);
+
+    // Log request details
+    std::cout << "[ApiClient] " << method << " " << fullUrl << std::endl;
+    if (!body.empty()) {
+        std::cout << "[ApiClient] Request body: " << body << std::endl;
+    }
+    std::cout.flush();
+
     CURL* curl = curl_easy_init();
     if (!curl) {
         response.errorMessage = "Failed to initialize CURL";
+        std::cerr << "[ApiClient] ERROR: Failed to initialize CURL" << std::endl;
         return response;
     }
 
     std::string responseBody;
-    std::string fullUrl = buildFullUrl(endpoint);
 
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
@@ -136,6 +146,7 @@ ApiResponse ApiClient::performRequest(const std::string& method,
     }
 
     // Perform request
+    std::cout << "[ApiClient] Sending request..." << std::endl;
     CURLcode res = curl_easy_perform(curl);
 
     if (res == CURLE_OK) {
@@ -143,9 +154,19 @@ ApiResponse ApiClient::performRequest(const std::string& method,
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
         response.statusCode = static_cast<int>(httpCode);
         response.body = responseBody;
-        response.success = true;
+        response.success = (httpCode >= 200 && httpCode < 300);
+
+        std::cout << "[ApiClient] Response status: " << httpCode << std::endl;
+        std::cout << "[ApiClient] Response body: " << responseBody << std::endl;
+        std::cout.flush();
+        if (!response.success) {
+            std::cerr << "[ApiClient] Request failed with status " << httpCode << std::endl;
+            std::cerr.flush();
+        }
     } else {
         response.errorMessage = curl_easy_strerror(res);
+        std::cerr << "[ApiClient] CURL error: " << response.errorMessage << std::endl;
+        std::cerr.flush();
     }
 
     // Cleanup
