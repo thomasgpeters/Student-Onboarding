@@ -25,7 +25,8 @@ StudentIntakeApp::StudentIntakeApp(const Wt::WEnvironment& env)
     setTitle(config_.applicationTitle);
 
     // Use our custom CSS which includes all necessary styling (no theme)
-    useStyleSheet("resources/styles.css");
+    // Path is relative to docroot - use "styles.css" when docroot is "resources"
+    useStyleSheet("styles.css");
 
     initialize();
 }
