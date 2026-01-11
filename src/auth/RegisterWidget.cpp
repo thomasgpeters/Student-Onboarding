@@ -2,6 +2,7 @@
 #include <Wt/WBreak.h>
 #include <Wt/WAnchor.h>
 #include <Wt/WLabel.h>
+#include <iostream>
 
 namespace StudentIntake {
 namespace Auth {
@@ -193,6 +194,9 @@ void RegisterWidget::validateForm() {
 }
 
 void RegisterWidget::handleRegister() {
+    std::cout << "[RegisterWidget] handleRegister called" << std::endl;
+    std::cout.flush();
+
     clearError();
 
     std::string firstName = firstNameInput_->text().toUTF8();
@@ -200,6 +204,9 @@ void RegisterWidget::handleRegister() {
     std::string email = emailInput_->text().toUTF8();
     std::string password = passwordInput_->text().toUTF8();
     std::string confirmPassword = confirmPasswordInput_->text().toUTF8();
+
+    std::cout << "[RegisterWidget] Registration attempt for: " << email << std::endl;
+    std::cout.flush();
 
     // Validate inputs
     if (firstName.empty()) {
@@ -237,12 +244,22 @@ void RegisterWidget::handleRegister() {
         return;
     }
 
+    std::cout << "[RegisterWidget] Validation passed, calling authManager" << std::endl;
+    std::cout.flush();
+
     // Disable register button during registration
     registerButton_->setEnabled(false);
     registerButton_->setText("Creating account...");
 
     if (authManager_) {
+        std::cout << "[RegisterWidget] AuthManager is set, calling registerStudent" << std::endl;
+        std::cout.flush();
+
         AuthResult result = authManager_->registerStudent(email, password, firstName, lastName);
+
+        std::cout << "[RegisterWidget] Registration result - success: " << result.success
+                  << ", message: " << result.message << std::endl;
+        std::cout.flush();
 
         if (result.success) {
             // Update session
@@ -261,6 +278,8 @@ void RegisterWidget::handleRegister() {
             }
         }
     } else {
+        std::cerr << "[RegisterWidget] ERROR: authManager_ is null!" << std::endl;
+        std::cerr.flush();
         showError("Registration service unavailable");
     }
 
