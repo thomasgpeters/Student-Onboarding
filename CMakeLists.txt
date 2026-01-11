@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
+
+# Set policy version minimum for fetched dependencies with older CMake requirements
+if(POLICY CMP0077)
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
 project(StudentIntakeForms VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -13,10 +19,15 @@ find_package(nlohmann_json 3.9 QUIET)
 # If nlohmann_json not found via find_package, try pkg-config or fetch
 if(NOT nlohmann_json_FOUND)
     include(FetchContent)
+    # Use v3.11.3 which has updated CMake compatibility
     FetchContent_Declare(json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG v3.11.2
+        GIT_TAG v3.11.3
+        SYSTEM
     )
+    # Disable tests for nlohmann_json to speed up build
+    set(JSON_BuildTests OFF CACHE INTERNAL "")
+    set(JSON_Install OFF CACHE INTERNAL "")
     FetchContent_MakeAvailable(json)
 endif()
 
