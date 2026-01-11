@@ -1,0 +1,176 @@
+{
+  "departments": [
+    {
+      "id": "computer_science",
+      "name": "Computer Science",
+      "code": "CS",
+      "dean": "Dr. Jane Smith",
+      "contactEmail": "cs@university.edu",
+      "curriculumIds": ["cs_bs", "cs_ms", "cert_da"]
+    },
+    {
+      "id": "business",
+      "name": "Business Administration",
+      "code": "BUS",
+      "dean": "Dr. John Brown",
+      "contactEmail": "business@university.edu",
+      "curriculumIds": ["bus_bba", "bus_mba", "cert_pm"]
+    },
+    {
+      "id": "engineering",
+      "name": "Engineering",
+      "code": "ENG",
+      "dean": "Dr. Robert Johnson",
+      "contactEmail": "engineering@university.edu",
+      "curriculumIds": ["eng_bsee", "eng_bsme"]
+    },
+    {
+      "id": "nursing",
+      "name": "Nursing",
+      "code": "NUR",
+      "dean": "Dr. Sarah Williams",
+      "contactEmail": "nursing@university.edu",
+      "curriculumIds": ["nur_bsn"]
+    },
+    {
+      "id": "arts_sciences",
+      "name": "Arts and Sciences",
+      "code": "A&S",
+      "dean": "Dr. Michael Davis",
+      "contactEmail": "artsci@university.edu",
+      "curriculumIds": ["art_ba"]
+    }
+  ],
+  "curriculums": [
+    {
+      "id": "cs_bs",
+      "name": "Bachelor of Science in Computer Science",
+      "description": "Comprehensive program covering software development, algorithms, and systems.",
+      "department": "computer_science",
+      "degreeType": "bachelor",
+      "creditHours": 120,
+      "durationSemesters": 8,
+      "requiredForms": ["personal_info", "emergency_contact", "academic_history", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false
+    },
+    {
+      "id": "cs_ms",
+      "name": "Master of Science in Computer Science",
+      "description": "Advanced study in computer science with research opportunities.",
+      "department": "computer_science",
+      "degreeType": "master",
+      "creditHours": 36,
+      "durationSemesters": 4,
+      "requiredForms": ["personal_info", "emergency_contact", "academic_history", "documents", "consent"],
+      "prerequisites": ["cs_bs"],
+      "isActive": true,
+      "isOnline": true
+    },
+    {
+      "id": "bus_bba",
+      "name": "Bachelor of Business Administration",
+      "description": "Broad business education with specialization options.",
+      "department": "business",
+      "degreeType": "bachelor",
+      "creditHours": 120,
+      "durationSemesters": 8,
+      "requiredForms": ["personal_info", "emergency_contact", "academic_history", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false
+    },
+    {
+      "id": "bus_mba",
+      "name": "Master of Business Administration",
+      "description": "Professional graduate degree in business management.",
+      "department": "business",
+      "degreeType": "master",
+      "creditHours": 48,
+      "durationSemesters": 4,
+      "requiredForms": ["personal_info", "emergency_contact", "academic_history", "documents", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": true
+    },
+    {
+      "id": "eng_bsee",
+      "name": "Bachelor of Science in Electrical Engineering",
+      "description": "Study of electrical systems, electronics, and communications.",
+      "department": "engineering",
+      "degreeType": "bachelor",
+      "creditHours": 128,
+      "durationSemesters": 8,
+      "requiredForms": ["personal_info", "emergency_contact", "medical_info", "academic_history", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false
+    },
+    {
+      "id": "eng_bsme",
+      "name": "Bachelor of Science in Mechanical Engineering",
+      "description": "Design and analysis of mechanical systems.",
+      "department": "engineering",
+      "degreeType": "bachelor",
+      "creditHours": 128,
+      "durationSemesters": 8,
+      "requiredForms": ["personal_info", "emergency_contact", "medical_info", "academic_history", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false
+    },
+    {
+      "id": "nur_bsn",
+      "name": "Bachelor of Science in Nursing",
+      "description": "Professional nursing education for healthcare careers.",
+      "department": "nursing",
+      "degreeType": "bachelor",
+      "creditHours": 120,
+      "durationSemesters": 8,
+      "requiredForms": ["personal_info", "emergency_contact", "medical_info", "academic_history", "documents", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false
+    },
+    {
+      "id": "art_ba",
+      "name": "Bachelor of Arts in Psychology",
+      "description": "Study of human behavior and mental processes.",
+      "department": "arts_sciences",
+      "degreeType": "bachelor",
+      "creditHours": 120,
+      "durationSemesters": 8,
+      "requiredForms": ["personal_info", "emergency_contact", "academic_history", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false
+    },
+    {
+      "id": "cert_da",
+      "name": "Certificate in Data Analytics",
+      "description": "Professional certificate in data analysis and visualization.",
+      "department": "computer_science",
+      "degreeType": "certificate",
+      "creditHours": 18,
+      "durationSemesters": 2,
+      "requiredForms": ["personal_info", "emergency_contact", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": true
+    },
+    {
+      "id": "cert_pm",
+      "name": "Certificate in Project Management",
+      "description": "Professional certificate in project management methodologies.",
+      "department": "business",
+      "degreeType": "certificate",
+      "creditHours": 15,
+      "durationSemesters": 2,
+      "requiredForms": ["personal_info", "emergency_contact", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": true
+    }
+  ]
+}
