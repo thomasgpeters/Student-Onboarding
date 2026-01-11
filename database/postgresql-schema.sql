@@ -163,7 +163,7 @@ CREATE TABLE EmergencyContact (
     StudentId INTEGER NOT NULL,
     FirstName VARCHAR(100) NOT NULL,
     LastName VARCHAR(100) NOT NULL,
-    Relationship VARCHAR(50),
+    ContactRelationship VARCHAR(50),
     Phone VARCHAR(30) NOT NULL,
     AlternatePhone VARCHAR(30),
     Email VARCHAR(200),
