@@ -1,7 +1,7 @@
 #include "StudentIntakeApp.h"
-#include <Wt/WBootstrap5Theme.h>
 #include <Wt/WText.h>
 #include <Wt/WBreak.h>
+#include <Wt/WCssTheme.h>
 #include <fstream>
 
 namespace StudentIntake {
@@ -25,11 +25,11 @@ StudentIntakeApp::StudentIntakeApp(const Wt::WEnvironment& env)
 
     setTitle(config_.applicationTitle);
 
-    // Use Bootstrap 5 theme
-    auto theme = std::make_shared<Wt::WBootstrap5Theme>();
+    // Use custom CSS theme (no external Bootstrap dependency)
+    auto theme = std::make_shared<Wt::WCssTheme>("polished");
     setTheme(theme);
 
-    // Add custom CSS
+    // Add our custom CSS which includes all necessary styling
     useStyleSheet("resources/styles.css");
 
     initialize();
