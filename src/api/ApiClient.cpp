@@ -93,6 +93,10 @@ ApiResponse ApiClient::performRequest(const std::string& method,
     if (!body.empty()) {
         std::cout << "[ApiClient] Request body: " << body << std::endl;
     }
+    std::cout << "[ApiClient] Headers:" << std::endl;
+    for (const auto& pair : defaultHeaders_) {
+        std::cout << "[ApiClient]   " << pair.first << ": " << pair.second << std::endl;
+    }
     std::cout.flush();
 
     CURL* curl = curl_easy_init();
