@@ -1,7 +1,6 @@
 #include "StudentIntakeApp.h"
 #include <Wt/WText.h>
 #include <Wt/WBreak.h>
-#include <Wt/WCssTheme.h>
 #include <fstream>
 
 namespace StudentIntake {
@@ -25,11 +24,7 @@ StudentIntakeApp::StudentIntakeApp(const Wt::WEnvironment& env)
 
     setTitle(config_.applicationTitle);
 
-    // Use custom CSS theme (no external Bootstrap dependency)
-    auto theme = std::make_shared<Wt::WCssTheme>("polished");
-    setTheme(theme);
-
-    // Add our custom CSS which includes all necessary styling
+    // Use our custom CSS which includes all necessary styling (no theme)
     useStyleSheet("resources/styles.css");
 
     initialize();
@@ -101,6 +96,10 @@ void StudentIntakeApp::loadFormConfiguration() {
 }
 
 void StudentIntakeApp::setupUI() {
+    // Clear any existing content from root
+    root()->clear();
+
+    // Add main container directly to root
     mainContainer_ = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
     mainContainer_->addStyleClass("main-container");
 
@@ -215,6 +214,9 @@ void StudentIntakeApp::setupUI() {
     dashboardButton->clicked().connect([this]() {
         setState(AppState::Dashboard);
     });
+
+    // Explicitly set the login widget as current (first child)
+    contentStack_->setCurrentIndex(0);
 }
 
 void StudentIntakeApp::setState(AppState state) {
