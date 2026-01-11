@@ -108,12 +108,21 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
                                                          const std::string& password) {
     std::cout << "[FormSubmissionService] registerStudent called" << std::endl;
 
-    nlohmann::json payload = student.toJson();
-    payload["password"] = password;
+    // ApiLogicServer uses JSON:API format (SAFRS)
+    nlohmann::json attributes = student.toJson();
+    attributes["password"] = password;
+
+    // Wrap in JSON:API format
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "Student"},
+        {"attributes", attributes}
+    };
 
     std::cout << "[FormSubmissionService] Payload: " << payload.dump() << std::endl;
     std::cout.flush();
 
+    // ApiLogicServer uses lowercase endpoints
     ApiResponse response = apiClient_->post("/Student", payload);
 
     std::cout << "[FormSubmissionService] API response received - status: " << response.statusCode
