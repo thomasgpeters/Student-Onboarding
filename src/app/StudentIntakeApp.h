@@ -3,7 +3,6 @@
 
 #include <Wt/WApplication.h>
 #include <Wt/WContainerWidget.h>
-#include <Wt/WStackedWidget.h>
 #include <memory>
 
 #include "AppConfig.h"
@@ -54,6 +53,7 @@ private:
     void loadFormConfiguration();
 
     // State handlers
+    void hideAllViews();
     void showLogin();
     void showRegister();
     void showCurriculumSelection();
@@ -86,7 +86,7 @@ private:
     // UI Components
     Wt::WContainerWidget* mainContainer_;
     Widgets::NavigationWidget* navigationWidget_;
-    Wt::WStackedWidget* contentStack_;
+    Wt::WContainerWidget* contentContainer_;  // Changed from WStackedWidget
 
     // Views
     Auth::LoginWidget* loginWidget_;

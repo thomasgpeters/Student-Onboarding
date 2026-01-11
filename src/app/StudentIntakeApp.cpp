@@ -12,7 +12,7 @@ StudentIntakeApp::StudentIntakeApp(const Wt::WEnvironment& env)
     , currentState_(AppState::Login)
     , mainContainer_(nullptr)
     , navigationWidget_(nullptr)
-    , contentStack_(nullptr)
+    , contentContainer_(nullptr)
     , loginWidget_(nullptr)
     , registerWidget_(nullptr)
     , curriculumSelector_(nullptr)
@@ -114,17 +114,12 @@ void StudentIntakeApp::setupUI() {
         }
     });
 
-    // Content area
-    auto contentContainer = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    contentContainer->addStyleClass("content-container");
+    // Content area - using simple container with manual show/hide
+    contentContainer_ = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    contentContainer_->addStyleClass("content-container");
 
-    contentStack_ = contentContainer->addWidget(std::make_unique<Wt::WStackedWidget>());
-    contentStack_->addStyleClass("content-stack");
-    contentStack_->setOverflow(Wt::Overflow::Visible);
-
-    // Login view
-    loginWidget_ = contentStack_->addWidget(std::make_unique<Auth::LoginWidget>());
-    loginWidget_->setOverflow(Wt::Overflow::Visible);
+    // Login view - add directly to content container
+    loginWidget_ = contentContainer_->addWidget(std::make_unique<Auth::LoginWidget>());
     loginWidget_->setAuthManager(authManager_);
     loginWidget_->setSession(session_);
     loginWidget_->loginSuccess().connect(this, &StudentIntakeApp::handleLoginSuccess);
@@ -133,7 +128,7 @@ void StudentIntakeApp::setupUI() {
     });
 
     // Register view
-    registerWidget_ = contentStack_->addWidget(std::make_unique<Auth::RegisterWidget>());
+    registerWidget_ = contentContainer_->addWidget(std::make_unique<Auth::RegisterWidget>());
     registerWidget_->setAuthManager(authManager_);
     registerWidget_->setSession(session_);
     registerWidget_->registrationSuccess().connect(this, &StudentIntakeApp::handleRegistrationSuccess);
@@ -142,7 +137,7 @@ void StudentIntakeApp::setupUI() {
     });
 
     // Curriculum selection view
-    curriculumSelector_ = contentStack_->addWidget(std::make_unique<Curriculum::CurriculumSelector>());
+    curriculumSelector_ = contentContainer_->addWidget(std::make_unique<Curriculum::CurriculumSelector>());
     curriculumSelector_->setCurriculumManager(curriculumManager_);
     curriculumSelector_->setSession(session_);
     curriculumSelector_->curriculumSelected().connect(this, &StudentIntakeApp::handleCurriculumSelected);
@@ -151,7 +146,7 @@ void StudentIntakeApp::setupUI() {
     });
 
     // Dashboard view
-    dashboardWidget_ = contentStack_->addWidget(std::make_unique<Widgets::DashboardWidget>());
+    dashboardWidget_ = contentContainer_->addWidget(std::make_unique<Widgets::DashboardWidget>());
     dashboardWidget_->setSession(session_);
     dashboardWidget_->continueClicked().connect([this]() {
         if (!session_->hasCurriculumSelected()) {
@@ -162,7 +157,7 @@ void StudentIntakeApp::setupUI() {
     });
 
     // Forms view (with progress sidebar)
-    formsView_ = contentStack_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    formsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     formsView_->addStyleClass("forms-view");
 
     auto formsLayout = formsView_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -196,7 +191,7 @@ void StudentIntakeApp::setupUI() {
     formContainer_->allFormsCompleted().connect(this, &StudentIntakeApp::handleAllFormsCompleted);
 
     // Completion view
-    completionView_ = contentStack_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    completionView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     completionView_->addStyleClass("completion-view");
 
     auto completionContent = completionView_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -218,8 +213,18 @@ void StudentIntakeApp::setupUI() {
         setState(AppState::Dashboard);
     });
 
-    // Explicitly set the login widget as current (first child)
-    contentStack_->setCurrentIndex(0);
+    // Hide all views initially except login
+    hideAllViews();
+    loginWidget_->show();
+}
+
+void StudentIntakeApp::hideAllViews() {
+    loginWidget_->hide();
+    registerWidget_->hide();
+    curriculumSelector_->hide();
+    dashboardWidget_->hide();
+    formsView_->hide();
+    completionView_->hide();
 }
 
 void StudentIntakeApp::setState(AppState state) {
@@ -248,28 +253,31 @@ void StudentIntakeApp::setState(AppState state) {
 }
 
 void StudentIntakeApp::showLogin() {
-    contentStack_->setCurrentWidget(loginWidget_);
-    loginWidget_->show();  // Explicitly show the widget
+    hideAllViews();
+    loginWidget_->show();
     loginWidget_->reset();
     loginWidget_->focus();
     navigationWidget_->refresh();
 }
 
 void StudentIntakeApp::showRegister() {
-    contentStack_->setCurrentWidget(registerWidget_);
+    hideAllViews();
+    registerWidget_->show();
     registerWidget_->reset();
     registerWidget_->focus();
     navigationWidget_->refresh();
 }
 
 void StudentIntakeApp::showCurriculumSelection() {
-    contentStack_->setCurrentWidget(curriculumSelector_);
+    hideAllViews();
+    curriculumSelector_->show();
     curriculumSelector_->refresh();
     navigationWidget_->refresh();
 }
 
 void StudentIntakeApp::showDashboard() {
-    contentStack_->setCurrentWidget(dashboardWidget_);
+    hideAllViews();
+    dashboardWidget_->show();
     dashboardWidget_->refresh();
     navigationWidget_->refresh();
 }
@@ -293,13 +301,15 @@ void StudentIntakeApp::showForms() {
     // Show first incomplete form
     formContainer_->showFirstIncompleteForm();
 
-    contentStack_->setCurrentWidget(formsView_);
+    hideAllViews();
+    formsView_->show();
     progressWidget_->refresh();
     navigationWidget_->refresh();
 }
 
 void StudentIntakeApp::showCompletion() {
-    contentStack_->setCurrentWidget(completionView_);
+    hideAllViews();
+    completionView_->show();
     navigationWidget_->refresh();
 
     // Submit finalization to API
