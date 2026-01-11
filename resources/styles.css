@@ -13,24 +13,6 @@ html, body {
     padding: 0;
 }
 
-/* Wt widget visibility - ensure stacked widget children are hidden when not active */
-.Wt-stack > * {
-    display: none !important;
-}
-
-.Wt-stack > .Wt-item-visible {
-    display: block !important;
-}
-
-/* Alternative: ensure content stack children are properly hidden */
-.content-stack > * {
-    display: none;
-}
-
-.content-stack > *:first-child {
-    display: block;
-}
-
 :root {
     --primary-color: #2563eb;
     --primary-dark: #1d4ed8;
