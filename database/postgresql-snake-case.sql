@@ -154,7 +154,7 @@ CREATE TABLE emergency_contact (
     student_id INTEGER NOT NULL REFERENCES student(id),
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    relationship VARCHAR(50),
+    contact_relationship VARCHAR(50),
     phone VARCHAR(30) NOT NULL,
     alternate_phone VARCHAR(30),
     email VARCHAR(200),
