@@ -120,9 +120,11 @@ void StudentIntakeApp::setupUI() {
 
     contentStack_ = contentContainer->addWidget(std::make_unique<Wt::WStackedWidget>());
     contentStack_->addStyleClass("content-stack");
+    contentStack_->setOverflow(Wt::Overflow::Visible);
 
     // Login view
     loginWidget_ = contentStack_->addWidget(std::make_unique<Auth::LoginWidget>());
+    loginWidget_->setOverflow(Wt::Overflow::Visible);
     loginWidget_->setAuthManager(authManager_);
     loginWidget_->setSession(session_);
     loginWidget_->loginSuccess().connect(this, &StudentIntakeApp::handleLoginSuccess);
@@ -247,6 +249,7 @@ void StudentIntakeApp::setState(AppState state) {
 
 void StudentIntakeApp::showLogin() {
     contentStack_->setCurrentWidget(loginWidget_);
+    loginWidget_->show();  // Explicitly show the widget
     loginWidget_->reset();
     loginWidget_->focus();
     navigationWidget_->refresh();

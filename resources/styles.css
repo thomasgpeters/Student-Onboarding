@@ -50,6 +50,13 @@ body {
     width: 100%;
 }
 
+/* Ensure content stack displays properly */
+.content-stack {
+    display: block;
+    width: 100%;
+    min-height: 200px;
+}
+
 /* Navigation */
 .navbar {
     display: flex;
