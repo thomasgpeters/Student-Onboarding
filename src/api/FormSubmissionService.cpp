@@ -48,11 +48,31 @@ SubmissionResult FormSubmissionService::parseSubmissionResponse(const ApiRespons
 
     if (response.isSuccess()) {
         result.responseData = response.getJson();
+
+        // Handle 'id' field - could be int or string
         if (result.responseData.contains("id")) {
-            result.submissionId = result.responseData["id"].get<std::string>();
+            if (result.responseData["id"].is_string()) {
+                result.submissionId = result.responseData["id"].get<std::string>();
+            } else if (result.responseData["id"].is_number()) {
+                result.submissionId = std::to_string(result.responseData["id"].get<int>());
+            }
         }
+        // Also check nested 'data' object (ApiLogicServer format)
+        if (result.responseData.contains("data") && result.responseData["data"].is_object()) {
+            auto& data = result.responseData["data"];
+            if (data.contains("id")) {
+                if (data["id"].is_string()) {
+                    result.submissionId = data["id"].get<std::string>();
+                } else if (data["id"].is_number()) {
+                    result.submissionId = std::to_string(data["id"].get<int>());
+                }
+            }
+        }
+
         if (result.responseData.contains("message")) {
-            result.message = result.responseData["message"].get<std::string>();
+            if (result.responseData["message"].is_string()) {
+                result.message = result.responseData["message"].get<std::string>();
+            }
         } else {
             result.message = "Form submitted successfully";
         }
@@ -60,9 +80,19 @@ SubmissionResult FormSubmissionService::parseSubmissionResponse(const ApiRespons
         result.message = response.errorMessage;
         auto json = response.getJson();
         if (json.contains("errors")) {
-            result.errors = json["errors"].get<std::vector<std::string>>();
+            if (json["errors"].is_array()) {
+                for (const auto& err : json["errors"]) {
+                    if (err.is_string()) {
+                        result.errors.push_back(err.get<std::string>());
+                    } else if (err.is_object() && err.contains("message")) {
+                        result.errors.push_back(err["message"].get<std::string>());
+                    }
+                }
+            }
         } else if (json.contains("message")) {
-            result.errors.push_back(json["message"].get<std::string>());
+            if (json["message"].is_string()) {
+                result.errors.push_back(json["message"].get<std::string>());
+            }
         } else {
             result.errors.push_back("Submission failed with status: " +
                                     std::to_string(response.statusCode));
