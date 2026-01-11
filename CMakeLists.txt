@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
+# Suppress deprecation warnings from system/third-party headers
+add_compile_options(-Wno-deprecated-declarations)
+
 # Set policy version minimum for fetched dependencies with older CMake requirements
 if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
