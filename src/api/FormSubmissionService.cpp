@@ -383,7 +383,67 @@ SubmissionResult FormSubmissionService::submitMedicalInfo(const std::string& stu
 
 SubmissionResult FormSubmissionService::submitAcademicHistory(const std::string& studentId,
                                                                const Models::FormData& data) {
-    nlohmann::json payload = prepareFormPayload(studentId, data, "AcademicHistory");
+    // Transform form data to match AcademicHistory table schema (snake_case)
+    nlohmann::json attributes;
+
+    // student_id as integer
+    try {
+        attributes["student_id"] = std::stoi(studentId);
+    } catch (const std::exception&) {
+        attributes["student_id"] = studentId;
+    }
+
+    // Debug: log what fields are available
+    std::cout << "[FormSubmissionService] submitAcademicHistory - studentId: " << studentId << std::endl;
+    std::cout.flush();
+
+    // Map form fields to database columns
+    // If has previous college, use college data; otherwise use high school data
+    bool hasPreviousCollege = data.hasField("hasPreviousCollege") && data.getField("hasPreviousCollege").boolValue;
+
+    if (hasPreviousCollege) {
+        attributes["institution_name"] = data.hasField("collegeName") ? data.getField("collegeName").stringValue : "";
+        attributes["institution_type"] = "College";
+        attributes["institution_city"] = data.hasField("collegeCity") ? data.getField("collegeCity").stringValue : "";
+        attributes["institution_state"] = data.hasField("collegeState") ? data.getField("collegeState").stringValue : "";
+        attributes["degree_earned"] = data.hasField("collegeDegree") ? data.getField("collegeDegree").stringValue : "";
+        attributes["major"] = data.hasField("collegeMajor") ? data.getField("collegeMajor").stringValue : "";
+        std::string gpaStr = data.hasField("collegeGpa") ? data.getField("collegeGpa").stringValue : "";
+        if (!gpaStr.empty()) {
+            try {
+                attributes["gpa"] = std::stod(gpaStr);
+            } catch (...) {
+                attributes["gpa"] = nullptr;
+            }
+        }
+        attributes["is_currently_attending"] = data.hasField("degreeCompleted") ? !data.getField("degreeCompleted").boolValue : false;
+    } else {
+        attributes["institution_name"] = data.hasField("highSchoolName") ? data.getField("highSchoolName").stringValue : "";
+        attributes["institution_type"] = "High School";
+        attributes["institution_city"] = data.hasField("highSchoolCity") ? data.getField("highSchoolCity").stringValue : "";
+        attributes["institution_state"] = data.hasField("highSchoolState") ? data.getField("highSchoolState").stringValue : "";
+        attributes["degree_earned"] = data.hasField("hasGed") && data.getField("hasGed").boolValue ? "GED" : "High School Diploma";
+        std::string gpaStr = data.hasField("highSchoolGpa") ? data.getField("highSchoolGpa").stringValue : "";
+        if (!gpaStr.empty()) {
+            try {
+                attributes["gpa"] = std::stod(gpaStr);
+            } catch (...) {
+                attributes["gpa"] = nullptr;
+            }
+        }
+        attributes["graduation_date"] = data.hasField("highSchoolGradDate") ? data.getField("highSchoolGradDate").stringValue : "";
+        attributes["is_currently_attending"] = false;
+    }
+
+    attributes["gpa_scale"] = 4.0;
+    attributes["transcript_received"] = false;
+
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "AcademicHistory"},
+        {"attributes", attributes}
+    };
+
     std::cout << "[FormSubmissionService] submitAcademicHistory payload: " << payload.dump() << std::endl;
     ApiResponse response = apiClient_->post("/AcademicHistory", payload);
     return parseSubmissionResponse(response);
@@ -420,6 +480,9 @@ SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
     // Route to specialized submission functions for forms that need custom handling
     if (formId == "emergency_contact") {
         return submitEmergencyContact(studentId, data);
+    }
+    if (formId == "academic_history") {
+        return submitAcademicHistory(studentId, data);
     }
 
     std::string endpoint = getEndpointForForm(formId);
