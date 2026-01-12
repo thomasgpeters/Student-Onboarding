@@ -17,22 +17,22 @@ FormSubmissionService::~FormSubmissionService() {
 }
 
 std::string FormSubmissionService::getEndpointForForm(const std::string& formId) const {
-    // Map form IDs to ApiLogicServer endpoints (lowercase table names)
+    // Map form IDs to ApiLogicServer endpoints (CamelCase class names)
     static const std::map<std::string, std::string> endpointMap = {
-        {"personal_info", "/student"},           // Personal info updates student record
-        {"emergency_contact", "/emergency_contact"},
-        {"medical_info", "/medical_info"},
-        {"academic_history", "/academic_history"},
-        {"financial_aid", "/financial_aid"},
-        {"documents", "/document"},
-        {"consent", "/consent"}
+        {"personal_info", "/Student"},           // Personal info updates student record
+        {"emergency_contact", "/EmergencyContact"},
+        {"medical_info", "/MedicalInfo"},
+        {"academic_history", "/AcademicHistory"},
+        {"financial_aid", "/FinancialAid"},
+        {"documents", "/Document"},
+        {"consent", "/Consent"}
     };
 
     auto it = endpointMap.find(formId);
     if (it != endpointMap.end()) {
         return it->second;
     }
-    return "/form_submission";  // Generic endpoint
+    return "/FormSubmission";  // Generic endpoint
 }
 
 nlohmann::json FormSubmissionService::prepareFormPayload(const std::string& studentId,
@@ -153,7 +153,8 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
 
     // ApiLogicServer uses JSON:API format (SAFRS)
     nlohmann::json attributes = student.toJson();
-    attributes["password"] = password;
+    // Database column is password_hash (ideally should be hashed server-side)
+    attributes["password_hash"] = password;
 
     // Wrap in JSON:API format
     nlohmann::json payload;
@@ -165,8 +166,9 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
     std::cout << "[FormSubmissionService] Payload: " << payload.dump() << std::endl;
     std::cout.flush();
 
-    // ApiLogicServer uses lowercase endpoints
-    ApiResponse response = apiClient_->post("/student", payload);
+    // ApiLogicServer/SAFRS uses CamelCase class names for endpoints
+    // Try with trailing slash as some SAFRS configs require it
+    ApiResponse response = apiClient_->post("/Student/", payload);
 
     std::cout << "[FormSubmissionService] API response received - status: " << response.statusCode
               << ", success: " << response.success << std::endl;
@@ -185,7 +187,7 @@ SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
         {"type", "Student"},
         {"attributes", {
             {"email", email},
-            {"password", password}
+            {"password_hash", password}
         }}
     };
 
@@ -201,7 +203,7 @@ SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
 }
 
 SubmissionResult FormSubmissionService::getStudentProfile(const std::string& studentId) {
-    ApiResponse response = apiClient_->get("/student/" + studentId);
+    ApiResponse response = apiClient_->get("/Student/" + studentId);
     return parseSubmissionResponse(response);
 }
 
@@ -214,7 +216,7 @@ SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Stude
         {"id", student.getId()},
         {"attributes", attributes}
     };
-    ApiResponse response = apiClient_->patch("/student/" + student.getId(), payload);
+    ApiResponse response = apiClient_->patch("/Student/" + student.getId(), payload);
     return parseSubmissionResponse(response);
 }
 
@@ -222,7 +224,7 @@ SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Stude
 std::vector<Models::Curriculum> FormSubmissionService::getCurriculums() {
     std::vector<Models::Curriculum> curriculums;
 
-    ApiResponse response = apiClient_->get("/curriculum");
+    ApiResponse response = apiClient_->get("/Curriculum");
     if (response.isSuccess()) {
         auto json = response.getJson();
         if (json.is_array()) {
@@ -240,7 +242,7 @@ std::vector<Models::Curriculum> FormSubmissionService::getCurriculums() {
 }
 
 Models::Curriculum FormSubmissionService::getCurriculum(const std::string& curriculumId) {
-    ApiResponse response = apiClient_->get("/curriculum/" + curriculumId);
+    ApiResponse response = apiClient_->get("/Curriculum/" + curriculumId);
     if (response.isSuccess()) {
         return Models::Curriculum::fromJson(response.getJson());
     }
@@ -251,7 +253,7 @@ Models::Curriculum FormSubmissionService::getCurriculum(const std::string& curri
 std::vector<Models::FormTypeInfo> FormSubmissionService::getFormTypes() {
     std::vector<Models::FormTypeInfo> formTypes;
 
-    ApiResponse response = apiClient_->get("/form_type");
+    ApiResponse response = apiClient_->get("/FormType");
     if (response.isSuccess()) {
         auto json = response.getJson();
         if (json.is_array()) {
@@ -269,7 +271,7 @@ std::vector<Models::FormTypeInfo> FormSubmissionService::getFormTypes() {
 }
 
 Models::FormTypeInfo FormSubmissionService::getFormType(const std::string& formTypeId) {
-    ApiResponse response = apiClient_->get("/form_type/" + formTypeId);
+    ApiResponse response = apiClient_->get("/FormType/" + formTypeId);
     if (response.isSuccess()) {
         return Models::FormTypeInfo::fromJson(response.getJson());
     }
@@ -284,7 +286,7 @@ SubmissionResult FormSubmissionService::submitPersonalInfo(const std::string& st
     // Add student ID to the data for JSON:API PATCH
     payload["data"]["id"] = studentId;
     std::cout << "[FormSubmissionService] submitPersonalInfo payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->patch("/student/" + studentId, payload);
+    ApiResponse response = apiClient_->patch("/Student/" + studentId, payload);
     return parseSubmissionResponse(response);
 }
 
@@ -292,7 +294,7 @@ SubmissionResult FormSubmissionService::submitEmergencyContact(const std::string
                                                                 const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "EmergencyContact");
     std::cout << "[FormSubmissionService] submitEmergencyContact payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/emergency_contact", payload);
+    ApiResponse response = apiClient_->post("/EmergencyContact/", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -300,7 +302,7 @@ SubmissionResult FormSubmissionService::submitMedicalInfo(const std::string& stu
                                                            const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "MedicalInfo");
     std::cout << "[FormSubmissionService] submitMedicalInfo payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/medical_info", payload);
+    ApiResponse response = apiClient_->post("/MedicalInfo/", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -308,7 +310,7 @@ SubmissionResult FormSubmissionService::submitAcademicHistory(const std::string&
                                                                const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "AcademicHistory");
     std::cout << "[FormSubmissionService] submitAcademicHistory payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/academic_history", payload);
+    ApiResponse response = apiClient_->post("/AcademicHistory/", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -316,7 +318,7 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
                                                             const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "FinancialAid");
     std::cout << "[FormSubmissionService] submitFinancialAid payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/financial_aid", payload);
+    ApiResponse response = apiClient_->post("/FinancialAid/", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -324,7 +326,7 @@ SubmissionResult FormSubmissionService::submitDocuments(const std::string& stude
                                                          const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "Document");
     std::cout << "[FormSubmissionService] submitDocuments payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/document", payload);
+    ApiResponse response = apiClient_->post("/Document/", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -332,7 +334,7 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
                                                        const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "Consent");
     std::cout << "[FormSubmissionService] submitConsent payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/consent", payload);
+    ApiResponse response = apiClient_->post("/Consent/", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -366,9 +368,9 @@ SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
     ApiResponse response;
     if (formId == "personal_info") {
         payload["data"]["id"] = studentId;
-        response = apiClient_->patch("/student/" + studentId, payload);
+        response = apiClient_->patch("/Student/" + studentId, payload);
     } else {
-        response = apiClient_->post(endpoint, payload);
+        response = apiClient_->post(endpoint + "/", payload);
     }
 
     return parseSubmissionResponse(response);
@@ -432,7 +434,7 @@ std::string FormSubmissionService::getFormStatus(const std::string& studentId,
 std::vector<std::string> FormSubmissionService::getCompletedFormIds(const std::string& studentId) {
     std::vector<std::string> completed;
 
-    ApiResponse response = apiClient_->get("/form_submission?student_id=" + studentId +
+    ApiResponse response = apiClient_->get("/FormSubmission?student_id=" + studentId +
                                            "&status=submitted");
     if (response.isSuccess()) {
         auto json = response.getJson();
@@ -490,7 +492,7 @@ SubmissionResult FormSubmissionService::finalizeIntake(const std::string& studen
         }}
     };
 
-    ApiResponse response = apiClient_->patch("/student/" + studentId, payload);
+    ApiResponse response = apiClient_->patch("/Student/" + studentId, payload);
     return parseSubmissionResponse(response);
 }
 
@@ -502,7 +504,7 @@ SubmissionResult FormSubmissionService::uploadDocument(const std::string& studen
     fields["student_id"] = studentId;
     fields["document_type"] = documentType;
 
-    ApiResponse response = apiClient_->uploadFile("/document/upload", "file", filePath, fields);
+    ApiResponse response = apiClient_->uploadFile("/Document/upload", "file", filePath, fields);
     return parseSubmissionResponse(response);
 }
 
