@@ -213,6 +213,17 @@ SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
                 result.success = true;
                 result.message = "Login successful";
                 result.responseData = studentData;
+
+                // Extract student ID
+                if (studentData.contains("id")) {
+                    if (studentData["id"].is_string()) {
+                        result.submissionId = studentData["id"].get<std::string>();
+                    } else if (studentData["id"].is_number()) {
+                        result.submissionId = std::to_string(studentData["id"].get<int>());
+                    }
+                }
+                std::cout << "[FormSubmissionService] Login successful, student ID: " << result.submissionId << std::endl;
+                std::cout.flush();
             } else {
                 result.success = false;
                 result.message = "Invalid password";
