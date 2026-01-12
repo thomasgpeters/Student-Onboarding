@@ -330,7 +330,48 @@ SubmissionResult FormSubmissionService::submitPersonalInfo(const std::string& st
 
 SubmissionResult FormSubmissionService::submitEmergencyContact(const std::string& studentId,
                                                                 const Models::FormData& data) {
-    nlohmann::json payload = prepareFormPayload(studentId, data, "EmergencyContact");
+    // Transform form data to match EmergencyContact table schema
+    nlohmann::json attributes;
+
+    // student_id as integer
+    try {
+        attributes["student_id"] = std::stoi(studentId);
+    } catch (const std::exception&) {
+        attributes["student_id"] = studentId;
+    }
+
+    // Get primary contact data (contact1_)
+    std::string fullName = data.hasField("contact1_name") ? data.getField("contact1_name").stringValue : "";
+
+    // Split name into first_name and last_name
+    std::string firstName, lastName;
+    size_t spacePos = fullName.find(' ');
+    if (spacePos != std::string::npos) {
+        firstName = fullName.substr(0, spacePos);
+        lastName = fullName.substr(spacePos + 1);
+    } else {
+        firstName = fullName;
+        lastName = "";
+    }
+
+    attributes["first_name"] = firstName;
+    attributes["last_name"] = lastName;
+    attributes["relationship"] = data.hasField("contact1_relationship") ? data.getField("contact1_relationship").stringValue : "";
+    attributes["phone"] = data.hasField("contact1_phone") ? data.getField("contact1_phone").stringValue : "";
+    attributes["alternate_phone"] = data.hasField("contact1_altPhone") ? data.getField("contact1_altPhone").stringValue : "";
+    attributes["email"] = data.hasField("contact1_email") ? data.getField("contact1_email").stringValue : "";
+    attributes["address_line1"] = data.hasField("contact1_address") ? data.getField("contact1_address").stringValue : "";
+    attributes["city"] = data.hasField("contact1_city") ? data.getField("contact1_city").stringValue : "";
+    attributes["state"] = data.hasField("contact1_state") ? data.getField("contact1_state").stringValue : "";
+    attributes["zip_code"] = data.hasField("contact1_zipCode") ? data.getField("contact1_zipCode").stringValue : "";
+    attributes["is_primary"] = true;
+
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "EmergencyContact"},
+        {"attributes", attributes}
+    };
+
     std::cout << "[FormSubmissionService] submitEmergencyContact payload: " << payload.dump() << std::endl;
     ApiResponse response = apiClient_->post("/EmergencyContact", payload);
     return parseSubmissionResponse(response);
