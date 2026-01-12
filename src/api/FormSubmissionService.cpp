@@ -153,7 +153,8 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
 
     // ApiLogicServer uses JSON:API format (SAFRS)
     nlohmann::json attributes = student.toJson();
-    attributes["password"] = password;
+    // Database column is password_hash (ideally should be hashed server-side)
+    attributes["password_hash"] = password;
 
     // Wrap in JSON:API format
     nlohmann::json payload;
@@ -185,7 +186,7 @@ SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
         {"type", "Student"},
         {"attributes", {
             {"email", email},
-            {"password", password}
+            {"password_hash", password}
         }}
     };
 
