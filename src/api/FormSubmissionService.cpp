@@ -153,7 +153,8 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
 
     // ApiLogicServer uses JSON:API format (SAFRS)
     nlohmann::json attributes = student.toJson();
-    attributes["password"] = password;
+    // Database column is password_hash (ideally should be hashed server-side)
+    attributes["password_hash"] = password;
 
     // Wrap in JSON:API format
     nlohmann::json payload;
@@ -391,7 +392,7 @@ SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
         payload["data"]["id"] = studentId;
         response = apiClient_->patch("/Student/" + studentId, payload);
     } else {
-        response = apiClient_->post(endpoint, payload);
+        response = apiClient_->post(endpoint + "/", payload);
     }
 
     return parseSubmissionResponse(response);
@@ -525,7 +526,7 @@ SubmissionResult FormSubmissionService::uploadDocument(const std::string& studen
     fields["student_id"] = studentId;
     fields["document_type"] = documentType;
 
-    ApiResponse response = apiClient_->uploadFile("/document/upload", "file", filePath, fields);
+    ApiResponse response = apiClient_->uploadFile("/Document/upload", "file", filePath, fields);
     return parseSubmissionResponse(response);
 }
 
