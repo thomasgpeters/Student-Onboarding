@@ -166,9 +166,8 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
     std::cout << "[FormSubmissionService] Payload: " << payload.dump() << std::endl;
     std::cout.flush();
 
-    // ApiLogicServer/SAFRS uses CamelCase class names for endpoints
-    // Try with trailing slash as some SAFRS configs require it
-    ApiResponse response = apiClient_->post("/Student/", payload);
+    // Use auth endpoint for registration
+    ApiResponse response = apiClient_->post("/auth/register", payload);
 
     std::cout << "[FormSubmissionService] API response received - status: " << response.statusCode
               << ", success: " << response.success << std::endl;
