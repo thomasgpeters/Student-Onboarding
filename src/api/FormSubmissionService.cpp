@@ -330,41 +330,28 @@ SubmissionResult FormSubmissionService::submitPersonalInfo(const std::string& st
 
 SubmissionResult FormSubmissionService::submitEmergencyContact(const std::string& studentId,
                                                                 const Models::FormData& data) {
-    // Transform form data to match EmergencyContact table schema
+    // Transform form data to match EmergencyContact API schema (camelCase for API)
     nlohmann::json attributes;
 
-    // student_id as integer
+    // StudentId as integer
     try {
-        attributes["student_id"] = std::stoi(studentId);
+        attributes["StudentId"] = std::stoi(studentId);
     } catch (const std::exception&) {
-        attributes["student_id"] = studentId;
+        attributes["StudentId"] = studentId;
     }
 
     // Get primary contact data (contact1_)
-    std::string fullName = data.hasField("contact1_name") ? data.getField("contact1_name").stringValue : "";
-
-    // Split name into first_name and last_name
-    std::string firstName, lastName;
-    size_t spacePos = fullName.find(' ');
-    if (spacePos != std::string::npos) {
-        firstName = fullName.substr(0, spacePos);
-        lastName = fullName.substr(spacePos + 1);
-    } else {
-        firstName = fullName;
-        lastName = "";
-    }
-
-    attributes["first_name"] = firstName;
-    attributes["last_name"] = lastName;
-    attributes["relationship"] = data.hasField("contact1_relationship") ? data.getField("contact1_relationship").stringValue : "";
-    attributes["phone"] = data.hasField("contact1_phone") ? data.getField("contact1_phone").stringValue : "";
-    attributes["alternate_phone"] = data.hasField("contact1_altPhone") ? data.getField("contact1_altPhone").stringValue : "";
-    attributes["email"] = data.hasField("contact1_email") ? data.getField("contact1_email").stringValue : "";
-    attributes["address_line1"] = data.hasField("contact1_address") ? data.getField("contact1_address").stringValue : "";
-    attributes["city"] = data.hasField("contact1_city") ? data.getField("contact1_city").stringValue : "";
-    attributes["state"] = data.hasField("contact1_state") ? data.getField("contact1_state").stringValue : "";
-    attributes["zip_code"] = data.hasField("contact1_zipCode") ? data.getField("contact1_zipCode").stringValue : "";
-    attributes["is_primary"] = true;
+    attributes["FirstName"] = data.hasField("contact1_FirstName") ? data.getField("contact1_FirstName").stringValue : "";
+    attributes["LastName"] = data.hasField("contact1_LastName") ? data.getField("contact1_LastName").stringValue : "";
+    attributes["Relationship"] = data.hasField("contact1_Relationship") ? data.getField("contact1_Relationship").stringValue : "";
+    attributes["Phone"] = data.hasField("contact1_Phone") ? data.getField("contact1_Phone").stringValue : "";
+    attributes["AlternatePhone"] = data.hasField("contact1_AlternatePhone") ? data.getField("contact1_AlternatePhone").stringValue : "";
+    attributes["Email"] = data.hasField("contact1_Email") ? data.getField("contact1_Email").stringValue : "";
+    attributes["AddressLine1"] = data.hasField("contact1_AddressLine1") ? data.getField("contact1_AddressLine1").stringValue : "";
+    attributes["City"] = data.hasField("contact1_City") ? data.getField("contact1_City").stringValue : "";
+    attributes["State"] = data.hasField("contact1_State") ? data.getField("contact1_State").stringValue : "";
+    attributes["ZipCode"] = data.hasField("contact1_ZipCode") ? data.getField("contact1_ZipCode").stringValue : "";
+    attributes["IsPrimary"] = true;
 
     nlohmann::json payload;
     payload["data"] = {
