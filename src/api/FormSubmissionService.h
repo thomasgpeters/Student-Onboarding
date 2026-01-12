@@ -101,7 +101,8 @@ private:
     // Helper methods
     std::string getEndpointForForm(const std::string& formId) const;
     SubmissionResult parseSubmissionResponse(const ApiResponse& response);
-    nlohmann::json prepareFormPayload(const std::string& studentId, const Models::FormData& data);
+    nlohmann::json prepareFormPayload(const std::string& studentId, const Models::FormData& data,
+                                       const std::string& resourceType);
 };
 
 } // namespace Api
