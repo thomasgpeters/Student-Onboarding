@@ -262,20 +262,39 @@ SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Stude
 std::vector<Models::Curriculum> FormSubmissionService::getCurriculums() {
     std::vector<Models::Curriculum> curriculums;
 
+    std::cout << "[FormSubmissionService] Fetching curriculums from /Curriculum" << std::endl;
     ApiResponse response = apiClient_->get("/Curriculum");
     if (response.isSuccess()) {
         auto json = response.getJson();
+        std::cout << "[FormSubmissionService] Curriculum response received" << std::endl;
+
         if (json.is_array()) {
+            std::cout << "[FormSubmissionService] Response is array with " << json.size() << " items" << std::endl;
             for (const auto& item : json) {
-                curriculums.push_back(Models::Curriculum::fromJson(item));
+                auto curriculum = Models::Curriculum::fromJson(item);
+                std::cout << "[FormSubmissionService] Parsed curriculum: id=" << curriculum.getId()
+                          << ", name=" << curriculum.getName()
+                          << ", credits=" << curriculum.getCreditHours() << std::endl;
+                curriculums.push_back(curriculum);
             }
         } else if (json.contains("data") && json["data"].is_array()) {
+            std::cout << "[FormSubmissionService] Response has 'data' array with " << json["data"].size() << " items" << std::endl;
             for (const auto& item : json["data"]) {
-                curriculums.push_back(Models::Curriculum::fromJson(item));
+                auto curriculum = Models::Curriculum::fromJson(item);
+                std::cout << "[FormSubmissionService] Parsed curriculum: id=" << curriculum.getId()
+                          << ", name=" << curriculum.getName()
+                          << ", credits=" << curriculum.getCreditHours() << std::endl;
+                curriculums.push_back(curriculum);
             }
+        } else {
+            std::cout << "[FormSubmissionService] Unexpected response format" << std::endl;
         }
+    } else {
+        std::cout << "[FormSubmissionService] Failed to fetch curriculums: " << response.errorMessage << std::endl;
     }
 
+    std::cout << "[FormSubmissionService] Returning " << curriculums.size() << " curriculums" << std::endl;
+    std::cout.flush();
     return curriculums;
 }
 
