@@ -29,9 +29,16 @@ AuthResult AuthManager::parseApiResult(const Api::SubmissionResult& result) {
     }
 
     if (result.success && result.responseData.contains("student")) {
+        // Response has explicit "student" field
         authResult.student = Models::Student::fromJson(result.responseData["student"]);
-    } else if (result.success && result.responseData.contains("data")) {
+    } else if (result.success && result.responseData.contains("data") && result.responseData["data"].is_object()) {
+        // JSON:API format with nested data object
         authResult.student = Models::Student::fromJson(result.responseData["data"]);
+    } else if (result.success && result.responseData.contains("id") && result.responseData.contains("attributes")) {
+        // responseData IS the student object directly (from login query)
+        authResult.student = Models::Student::fromJson(result.responseData);
+        std::cout << "[AuthManager] Parsed student directly from responseData, ID: "
+                  << authResult.student.getId() << std::endl;
     }
 
     return authResult;
@@ -57,7 +64,19 @@ AuthResult AuthManager::login(const std::string& email, const std::string& passw
 
     // Call API
     Api::SubmissionResult apiResult = apiService_->loginStudent(email, password);
-    return parseApiResult(apiResult);
+    AuthResult authResult = parseApiResult(apiResult);
+
+    // Fallback: If student ID is empty but submissionId has it, use that
+    if (authResult.success && authResult.student.getId().empty() && !apiResult.submissionId.empty()) {
+        authResult.student.setId(apiResult.submissionId);
+        std::cout << "[AuthManager] Login: Set student ID from submissionId: " << apiResult.submissionId << std::endl;
+    }
+
+    std::cout << "[AuthManager] Login result - success: " << authResult.success
+              << ", student ID: '" << authResult.student.getId() << "'" << std::endl;
+    std::cout.flush();
+
+    return authResult;
 }
 
 AuthResult AuthManager::registerStudent(const std::string& email, const std::string& password,
