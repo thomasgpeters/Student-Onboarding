@@ -341,17 +341,19 @@ SubmissionResult FormSubmissionService::submitEmergencyContact(const std::string
     }
 
     // Get primary contact data (contact1_)
+    // API field names match database columns: first_name, last_name, contact_relationship, etc.
     attributes["FirstName"] = data.hasField("contact1_FirstName") ? data.getField("contact1_FirstName").stringValue : "";
     attributes["LastName"] = data.hasField("contact1_LastName") ? data.getField("contact1_LastName").stringValue : "";
-    attributes["Relationship"] = data.hasField("contact1_Relationship") ? data.getField("contact1_Relationship").stringValue : "";
+    attributes["ContactRelationship"] = data.hasField("contact1_Relationship") ? data.getField("contact1_Relationship").stringValue : "";
     attributes["Phone"] = data.hasField("contact1_Phone") ? data.getField("contact1_Phone").stringValue : "";
     attributes["AlternatePhone"] = data.hasField("contact1_AlternatePhone") ? data.getField("contact1_AlternatePhone").stringValue : "";
     attributes["Email"] = data.hasField("contact1_Email") ? data.getField("contact1_Email").stringValue : "";
-    attributes["AddressLine1"] = data.hasField("contact1_AddressLine1") ? data.getField("contact1_AddressLine1").stringValue : "";
+    attributes["Street1"] = data.hasField("contact1_AddressLine1") ? data.getField("contact1_AddressLine1").stringValue : "";
     attributes["City"] = data.hasField("contact1_City") ? data.getField("contact1_City").stringValue : "";
     attributes["State"] = data.hasField("contact1_State") ? data.getField("contact1_State").stringValue : "";
-    attributes["ZipCode"] = data.hasField("contact1_ZipCode") ? data.getField("contact1_ZipCode").stringValue : "";
+    attributes["PostalCode"] = data.hasField("contact1_ZipCode") ? data.getField("contact1_ZipCode").stringValue : "";
     attributes["IsPrimary"] = true;
+    attributes["Priority"] = 1;
 
     nlohmann::json payload;
     payload["data"] = {
@@ -408,6 +410,11 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
 SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
                                                     const std::string& formId,
                                                     const Models::FormData& data) {
+    // Route to specialized submission functions for forms that need custom handling
+    if (formId == "emergency_contact") {
+        return submitEmergencyContact(studentId, data);
+    }
+
     std::string endpoint = getEndpointForForm(formId);
 
     // Map formId to resource type for JSON:API
@@ -436,7 +443,7 @@ SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
         payload["data"]["id"] = studentId;
         response = apiClient_->patch("/Student/" + studentId, payload);
     } else {
-        response = apiClient_->post(endpoint + "/", payload);
+        response = apiClient_->post(endpoint, payload);
     }
 
     return parseSubmissionResponse(response);
