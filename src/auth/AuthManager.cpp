@@ -115,13 +115,28 @@ AuthResult AuthManager::registerStudent(const std::string& email, const std::str
 
     std::cout << "[AuthManager] API result - success: " << apiResult.success
               << ", message: " << apiResult.message << std::endl;
+    if (apiResult.success) {
+        std::cout << "[AuthManager] Response data: " << apiResult.responseData.dump() << std::endl;
+    }
     std::cout.flush();
 
     result = parseApiResult(apiResult);
 
-    if (result.success) {
+    // If parseApiResult didn't extract student from response, use local student
+    // but try to get ID from response data
+    if (result.success && result.student.getId().empty()) {
         result.student = student;
+        // Try to extract ID from JSON:API response
+        if (apiResult.responseData.contains("data")) {
+            auto data = apiResult.responseData["data"];
+            if (data.contains("id")) {
+                result.student.setId(data["id"].get<std::string>());
+            }
+        }
     }
+
+    std::cout << "[AuthManager] Final student ID: " << result.student.getId() << std::endl;
+    std::cout.flush();
 
     return result;
 }

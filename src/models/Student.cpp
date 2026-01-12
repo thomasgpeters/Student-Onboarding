@@ -113,7 +113,7 @@ nlohmann::json Student::toJson() const {
 Student Student::fromJson(const nlohmann::json& json) {
     Student student;
 
-    // Handle 'id' - could be int or string
+    // Handle 'id' - could be int or string (at top level in JSON:API)
     if (json.contains("id")) {
         if (json["id"].is_string()) {
             student.id_ = json["id"].get<std::string>();
@@ -122,90 +122,106 @@ Student Student::fromJson(const nlohmann::json& json) {
         }
     }
 
+    // For JSON:API format, attributes are nested under "attributes"
+    // Otherwise, attributes are at the top level
+    const nlohmann::json& attrs = json.contains("attributes") ? json["attributes"] : json;
+
     // Handle email - ApiLogicServer uses snake_case
-    if (json.contains("email")) {
-        if (json["email"].is_string()) student.email_ = json["email"].get<std::string>();
+    if (attrs.contains("email")) {
+        if (attrs["email"].is_string()) student.email_ = attrs["email"].get<std::string>();
     }
 
     // Handle firstName/first_name
-    if (json.contains("firstName") && json["firstName"].is_string()) {
-        student.firstName_ = json["firstName"].get<std::string>();
-    } else if (json.contains("first_name") && json["first_name"].is_string()) {
-        student.firstName_ = json["first_name"].get<std::string>();
+    if (attrs.contains("firstName") && attrs["firstName"].is_string()) {
+        student.firstName_ = attrs["firstName"].get<std::string>();
+    } else if (attrs.contains("first_name") && attrs["first_name"].is_string()) {
+        student.firstName_ = attrs["first_name"].get<std::string>();
     }
 
     // Handle lastName/last_name
-    if (json.contains("lastName") && json["lastName"].is_string()) {
-        student.lastName_ = json["lastName"].get<std::string>();
-    } else if (json.contains("last_name") && json["last_name"].is_string()) {
-        student.lastName_ = json["last_name"].get<std::string>();
+    if (attrs.contains("lastName") && attrs["lastName"].is_string()) {
+        student.lastName_ = attrs["lastName"].get<std::string>();
+    } else if (attrs.contains("last_name") && attrs["last_name"].is_string()) {
+        student.lastName_ = attrs["last_name"].get<std::string>();
     }
 
     // Handle curriculumId/curriculum_id - could be int or string
-    if (json.contains("curriculumId")) {
-        if (json["curriculumId"].is_string()) {
-            student.curriculumId_ = json["curriculumId"].get<std::string>();
-        } else if (json["curriculumId"].is_number()) {
-            student.curriculumId_ = std::to_string(json["curriculumId"].get<int>());
+    if (attrs.contains("curriculumId")) {
+        if (attrs["curriculumId"].is_string()) {
+            student.curriculumId_ = attrs["curriculumId"].get<std::string>();
+        } else if (attrs["curriculumId"].is_number()) {
+            student.curriculumId_ = std::to_string(attrs["curriculumId"].get<int>());
         }
-    } else if (json.contains("curriculum_id")) {
-        if (json["curriculum_id"].is_string()) {
-            student.curriculumId_ = json["curriculum_id"].get<std::string>();
-        } else if (json["curriculum_id"].is_number()) {
-            student.curriculumId_ = std::to_string(json["curriculum_id"].get<int>());
+    } else if (attrs.contains("curriculum_id")) {
+        if (attrs["curriculum_id"].is_string()) {
+            student.curriculumId_ = attrs["curriculum_id"].get<std::string>();
+        } else if (attrs["curriculum_id"].is_number()) {
+            student.curriculumId_ = std::to_string(attrs["curriculum_id"].get<int>());
         }
     }
 
     // Handle studentType/student_type
-    if (json.contains("studentType") && json["studentType"].is_string()) {
-        student.studentType_ = json["studentType"].get<std::string>();
-    } else if (json.contains("student_type") && json["student_type"].is_string()) {
-        student.studentType_ = json["student_type"].get<std::string>();
+    if (attrs.contains("studentType") && attrs["studentType"].is_string()) {
+        student.studentType_ = attrs["studentType"].get<std::string>();
+    } else if (attrs.contains("student_type") && attrs["student_type"].is_string()) {
+        student.studentType_ = attrs["student_type"].get<std::string>();
     }
 
     // Handle boolean fields with snake_case alternatives
-    if (json.contains("isInternational") && json["isInternational"].is_boolean()) {
-        student.isInternational_ = json["isInternational"].get<bool>();
-    } else if (json.contains("is_international") && json["is_international"].is_boolean()) {
-        student.isInternational_ = json["is_international"].get<bool>();
+    if (attrs.contains("isInternational") && attrs["isInternational"].is_boolean()) {
+        student.isInternational_ = attrs["isInternational"].get<bool>();
+    } else if (attrs.contains("is_international") && attrs["is_international"].is_boolean()) {
+        student.isInternational_ = attrs["is_international"].get<bool>();
     }
 
-    if (json.contains("isTransferStudent") && json["isTransferStudent"].is_boolean()) {
-        student.isTransferStudent_ = json["isTransferStudent"].get<bool>();
-    } else if (json.contains("is_transfer_student") && json["is_transfer_student"].is_boolean()) {
-        student.isTransferStudent_ = json["is_transfer_student"].get<bool>();
+    if (attrs.contains("isTransferStudent") && attrs["isTransferStudent"].is_boolean()) {
+        student.isTransferStudent_ = attrs["isTransferStudent"].get<bool>();
+    } else if (attrs.contains("is_transfer_student") && attrs["is_transfer_student"].is_boolean()) {
+        student.isTransferStudent_ = attrs["is_transfer_student"].get<bool>();
     }
 
-    if (json.contains("isVeteran") && json["isVeteran"].is_boolean()) {
-        student.isVeteran_ = json["isVeteran"].get<bool>();
-    } else if (json.contains("is_veteran") && json["is_veteran"].is_boolean()) {
-        student.isVeteran_ = json["is_veteran"].get<bool>();
+    if (attrs.contains("isVeteran") && attrs["isVeteran"].is_boolean()) {
+        student.isVeteran_ = attrs["isVeteran"].get<bool>();
+    } else if (attrs.contains("is_veteran") && attrs["is_veteran"].is_boolean()) {
+        student.isVeteran_ = attrs["is_veteran"].get<bool>();
     }
 
-    if (json.contains("requiresFinancialAid") && json["requiresFinancialAid"].is_boolean()) {
-        student.requiresFinancialAid_ = json["requiresFinancialAid"].get<bool>();
-    } else if (json.contains("requires_financial_aid") && json["requires_financial_aid"].is_boolean()) {
-        student.requiresFinancialAid_ = json["requires_financial_aid"].get<bool>();
+    if (attrs.contains("requiresFinancialAid") && attrs["requiresFinancialAid"].is_boolean()) {
+        student.requiresFinancialAid_ = attrs["requiresFinancialAid"].get<bool>();
+    } else if (attrs.contains("requires_financial_aid") && attrs["requires_financial_aid"].is_boolean()) {
+        student.requiresFinancialAid_ = attrs["requires_financial_aid"].get<bool>();
     }
 
-    if (json.contains("completedForms") && json["completedForms"].is_array()) {
-        student.completedForms_ = json["completedForms"].get<std::vector<std::string>>();
+    if (attrs.contains("completedForms") && attrs["completedForms"].is_array()) {
+        student.completedForms_ = attrs["completedForms"].get<std::vector<std::string>>();
     }
 
     // Parse date strings
-    if (json.contains("enrollmentDate")) {
-        std::string dateStr = json["enrollmentDate"].get<std::string>();
+    if (attrs.contains("enrollmentDate") && attrs["enrollmentDate"].is_string()) {
+        std::string dateStr = attrs["enrollmentDate"].get<std::string>();
         std::tm tm = {};
         std::istringstream ss(dateStr);
-        ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+        ss >> std::get_time(&tm, "%Y-%m-%d");
+        student.enrollmentDate_ = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+    } else if (attrs.contains("enrollment_date") && attrs["enrollment_date"].is_string()) {
+        std::string dateStr = attrs["enrollment_date"].get<std::string>();
+        std::tm tm = {};
+        std::istringstream ss(dateStr);
+        ss >> std::get_time(&tm, "%Y-%m-%d");
         student.enrollmentDate_ = std::chrono::system_clock::from_time_t(std::mktime(&tm));
     }
 
-    if (json.contains("dateOfBirth")) {
-        std::string dateStr = json["dateOfBirth"].get<std::string>();
+    if (attrs.contains("dateOfBirth") && attrs["dateOfBirth"].is_string()) {
+        std::string dateStr = attrs["dateOfBirth"].get<std::string>();
         std::tm tm = {};
         std::istringstream ss(dateStr);
-        ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+        ss >> std::get_time(&tm, "%Y-%m-%d");
+        student.dateOfBirth_ = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+    } else if (attrs.contains("date_of_birth") && attrs["date_of_birth"].is_string()) {
+        std::string dateStr = attrs["date_of_birth"].get<std::string>();
+        std::tm tm = {};
+        std::istringstream ss(dateStr);
+        ss >> std::get_time(&tm, "%Y-%m-%d");
         student.dateOfBirth_ = std::chrono::system_clock::from_time_t(std::mktime(&tm));
     }
 
