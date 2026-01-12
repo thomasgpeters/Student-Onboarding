@@ -52,7 +52,7 @@ nlohmann::json FormSubmissionService::prepareFormPayload(const std::string& stud
     // Convert FormData fields to flat attributes for JSON:API
     auto fieldNames = data.getFieldNames();
     for (const auto& fieldName : fieldNames) {
-        auto value = data.getFieldValue(fieldName);
+        auto value = data.getField(fieldName);
         // Convert camelCase to snake_case for API
         std::string snakeName = fieldName;
         for (size_t i = 1; i < snakeName.size(); ++i) {
