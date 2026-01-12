@@ -2,6 +2,7 @@
 #include <Wt/WText.h>
 #include <Wt/WBreak.h>
 #include <fstream>
+#include <iostream>
 
 namespace StudentIntake {
 namespace App {
@@ -329,6 +330,11 @@ void StudentIntakeApp::handleLoginSuccess() {
 }
 
 void StudentIntakeApp::handleRegistrationSuccess() {
+    std::cout << "[StudentIntakeApp] handleRegistrationSuccess called" << std::endl;
+    std::cout << "[StudentIntakeApp] Session student ID: '" << session_->getStudent().getId() << "'" << std::endl;
+    std::cout << "[StudentIntakeApp] Session student email: '" << session_->getStudent().getEmail() << "'" << std::endl;
+    std::cout.flush();
+
     navigationWidget_->refresh();
     setState(AppState::CurriculumSelection);
 }
