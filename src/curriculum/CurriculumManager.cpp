@@ -21,6 +21,9 @@ bool CurriculumManager::loadCurriculums() {
     if (apiService_) {
         curriculums_ = apiService_->getCurriculums();
         if (!curriculums_.empty()) {
+            // Also load departments (from API or defaults)
+            // For now, load default departments since API may not have department endpoint
+            initializeDefaultDepartments();
             isLoaded_ = true;
             return true;
         }
