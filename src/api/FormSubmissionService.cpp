@@ -330,30 +330,37 @@ SubmissionResult FormSubmissionService::submitPersonalInfo(const std::string& st
 
 SubmissionResult FormSubmissionService::submitEmergencyContact(const std::string& studentId,
                                                                 const Models::FormData& data) {
-    // Transform form data to match EmergencyContact API schema (camelCase for API)
+    // Transform form data to match EmergencyContact API schema (snake_case for database)
     nlohmann::json attributes;
 
-    // StudentId as integer
+    // student_id as integer
     try {
-        attributes["StudentId"] = std::stoi(studentId);
+        attributes["student_id"] = std::stoi(studentId);
     } catch (const std::exception&) {
-        attributes["StudentId"] = studentId;
+        attributes["student_id"] = studentId;
     }
 
-    // Get primary contact data (contact1_)
-    // API field names match database columns: first_name, last_name, contact_relationship, etc.
-    attributes["FirstName"] = data.hasField("contact1_FirstName") ? data.getField("contact1_FirstName").stringValue : "";
-    attributes["LastName"] = data.hasField("contact1_LastName") ? data.getField("contact1_LastName").stringValue : "";
-    attributes["ContactRelationship"] = data.hasField("contact1_Relationship") ? data.getField("contact1_Relationship").stringValue : "";
-    attributes["Phone"] = data.hasField("contact1_Phone") ? data.getField("contact1_Phone").stringValue : "";
-    attributes["AlternatePhone"] = data.hasField("contact1_AlternatePhone") ? data.getField("contact1_AlternatePhone").stringValue : "";
-    attributes["Email"] = data.hasField("contact1_Email") ? data.getField("contact1_Email").stringValue : "";
-    attributes["Street1"] = data.hasField("contact1_AddressLine1") ? data.getField("contact1_AddressLine1").stringValue : "";
-    attributes["City"] = data.hasField("contact1_City") ? data.getField("contact1_City").stringValue : "";
-    attributes["State"] = data.hasField("contact1_State") ? data.getField("contact1_State").stringValue : "";
-    attributes["PostalCode"] = data.hasField("contact1_ZipCode") ? data.getField("contact1_ZipCode").stringValue : "";
-    attributes["IsPrimary"] = true;
-    attributes["Priority"] = 1;
+    // Debug: log what fields are available
+    std::cout << "[FormSubmissionService] submitEmergencyContact - studentId: " << studentId << std::endl;
+    std::cout << "[FormSubmissionService] Available fields:" << std::endl;
+    for (const auto& fieldName : data.getFieldNames()) {
+        std::cout << "  - " << fieldName << std::endl;
+    }
+    std::cout.flush();
+
+    // Get primary contact data (contact1_) - use snake_case for API
+    attributes["first_name"] = data.hasField("contact1_FirstName") ? data.getField("contact1_FirstName").stringValue : "";
+    attributes["last_name"] = data.hasField("contact1_LastName") ? data.getField("contact1_LastName").stringValue : "";
+    attributes["contact_relationship"] = data.hasField("contact1_Relationship") ? data.getField("contact1_Relationship").stringValue : "";
+    attributes["phone"] = data.hasField("contact1_Phone") ? data.getField("contact1_Phone").stringValue : "";
+    attributes["alternate_phone"] = data.hasField("contact1_AlternatePhone") ? data.getField("contact1_AlternatePhone").stringValue : "";
+    attributes["email"] = data.hasField("contact1_Email") ? data.getField("contact1_Email").stringValue : "";
+    attributes["street1"] = data.hasField("contact1_AddressLine1") ? data.getField("contact1_AddressLine1").stringValue : "";
+    attributes["city"] = data.hasField("contact1_City") ? data.getField("contact1_City").stringValue : "";
+    attributes["state"] = data.hasField("contact1_State") ? data.getField("contact1_State").stringValue : "";
+    attributes["postal_code"] = data.hasField("contact1_ZipCode") ? data.getField("contact1_ZipCode").stringValue : "";
+    attributes["is_primary"] = true;
+    attributes["priority"] = 1;
 
     nlohmann::json payload;
     payload["data"] = {
