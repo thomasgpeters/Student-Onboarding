@@ -28,7 +28,8 @@ protected:
 private:
     struct ContactFields {
         Wt::WContainerWidget* container;
-        Wt::WLineEdit* nameInput;
+        Wt::WLineEdit* firstNameInput;
+        Wt::WLineEdit* lastNameInput;
         Wt::WComboBox* relationshipSelect;
         Wt::WLineEdit* phoneInput;
         Wt::WLineEdit* altPhoneInput;

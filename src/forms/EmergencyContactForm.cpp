@@ -64,19 +64,26 @@ void EmergencyContactForm::addContactSection(int contactNumber) {
         });
     }
 
-    // Name and relationship row
+    // First Name, Last Name, and relationship row
     auto row1 = fields.container->addWidget(std::make_unique<Wt::WContainerWidget>());
     row1->addStyleClass("form-row");
 
-    auto nameGroup = row1->addWidget(std::make_unique<Wt::WContainerWidget>());
-    nameGroup->addStyleClass("form-group col-md-6");
-    nameGroup->addWidget(std::make_unique<Wt::WLabel>("Full Name *"));
-    fields.nameInput = nameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
-    fields.nameInput->setPlaceholderText("Full name");
-    fields.nameInput->addStyleClass("form-control");
+    auto firstNameGroup = row1->addWidget(std::make_unique<Wt::WContainerWidget>());
+    firstNameGroup->addStyleClass("form-group col-md-4");
+    firstNameGroup->addWidget(std::make_unique<Wt::WLabel>("First Name *"));
+    fields.firstNameInput = firstNameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    fields.firstNameInput->setPlaceholderText("First name");
+    fields.firstNameInput->addStyleClass("form-control");
+
+    auto lastNameGroup = row1->addWidget(std::make_unique<Wt::WContainerWidget>());
+    lastNameGroup->addStyleClass("form-group col-md-4");
+    lastNameGroup->addWidget(std::make_unique<Wt::WLabel>("Last Name *"));
+    fields.lastNameInput = lastNameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    fields.lastNameInput->setPlaceholderText("Last name");
+    fields.lastNameInput->addStyleClass("form-control");
 
     auto relationGroup = row1->addWidget(std::make_unique<Wt::WContainerWidget>());
-    relationGroup->addStyleClass("form-group col-md-6");
+    relationGroup->addStyleClass("form-group col-md-4");
     relationGroup->addWidget(std::make_unique<Wt::WLabel>("Relationship *"));
     fields.relationshipSelect = relationGroup->addWidget(std::make_unique<Wt::WComboBox>());
     fields.relationshipSelect->addStyleClass("form-control");
@@ -176,7 +183,8 @@ bool EmergencyContactForm::validate() {
 
     // Validate first contact (required)
     const auto& primary = contacts_[0];
-    validateRequired(primary.nameInput->text().toUTF8(), "Contact name");
+    validateRequired(primary.firstNameInput->text().toUTF8(), "Contact first name");
+    validateRequired(primary.lastNameInput->text().toUTF8(), "Contact last name");
 
     if (primary.relationshipSelect->currentIndex() == 0) {
         validationErrors_.push_back("Please select relationship for primary contact");
@@ -191,12 +199,17 @@ bool EmergencyContactForm::validate() {
     // Validate additional contacts (if any)
     for (size_t i = 1; i < contacts_.size(); ++i) {
         const auto& contact = contacts_[i];
-        std::string name = contact.nameInput->text().toUTF8();
+        std::string firstName = contact.firstNameInput->text().toUTF8();
+        std::string lastName = contact.lastNameInput->text().toUTF8();
 
-        // If any field is filled, require name and phone
-        if (!name.empty() || contact.phoneInput->text().toUTF8().length() > 0) {
-            if (name.empty()) {
-                validationErrors_.push_back("Contact " + std::to_string(i + 1) + " name is required");
+        // If any field is filled, require first name, last name, and phone
+        if (!firstName.empty() || !lastName.empty() || contact.phoneInput->text().toUTF8().length() > 0) {
+            if (firstName.empty()) {
+                validationErrors_.push_back("Contact " + std::to_string(i + 1) + " first name is required");
+                isValid_ = false;
+            }
+            if (lastName.empty()) {
+                validationErrors_.push_back("Contact " + std::to_string(i + 1) + " last name is required");
                 isValid_ = false;
             }
             std::string contactPhone = contact.phoneInput->text().toUTF8();
@@ -217,15 +230,16 @@ void EmergencyContactForm::collectFormData(Models::FormData& data) const {
         std::string prefix = "contact" + std::to_string(i + 1) + "_";
         const auto& contact = contacts_[i];
 
-        data.setField(prefix + "name", contact.nameInput->text().toUTF8());
-        data.setField(prefix + "relationship", contact.relationshipSelect->currentText().toUTF8());
-        data.setField(prefix + "phone", contact.phoneInput->text().toUTF8());
-        data.setField(prefix + "altPhone", contact.altPhoneInput->text().toUTF8());
-        data.setField(prefix + "email", contact.emailInput->text().toUTF8());
-        data.setField(prefix + "address", contact.addressInput->text().toUTF8());
-        data.setField(prefix + "city", contact.cityInput->text().toUTF8());
-        data.setField(prefix + "state", contact.stateSelect->currentText().toUTF8());
-        data.setField(prefix + "zipCode", contact.zipCodeInput->text().toUTF8());
+        data.setField(prefix + "FirstName", contact.firstNameInput->text().toUTF8());
+        data.setField(prefix + "LastName", contact.lastNameInput->text().toUTF8());
+        data.setField(prefix + "Relationship", contact.relationshipSelect->currentText().toUTF8());
+        data.setField(prefix + "Phone", contact.phoneInput->text().toUTF8());
+        data.setField(prefix + "AlternatePhone", contact.altPhoneInput->text().toUTF8());
+        data.setField(prefix + "Email", contact.emailInput->text().toUTF8());
+        data.setField(prefix + "AddressLine1", contact.addressInput->text().toUTF8());
+        data.setField(prefix + "City", contact.cityInput->text().toUTF8());
+        data.setField(prefix + "State", contact.stateSelect->currentText().toUTF8());
+        data.setField(prefix + "ZipCode", contact.zipCodeInput->text().toUTF8());
     }
 }
 
@@ -243,20 +257,22 @@ void EmergencyContactForm::populateFormFields(const Models::FormData& data) {
         std::string prefix = "contact" + std::to_string(i + 1) + "_";
         auto& contact = contacts_[i];
 
-        if (data.hasField(prefix + "name"))
-            contact.nameInput->setText(data.getField(prefix + "name").stringValue);
-        if (data.hasField(prefix + "phone"))
-            contact.phoneInput->setText(data.getField(prefix + "phone").stringValue);
-        if (data.hasField(prefix + "altPhone"))
-            contact.altPhoneInput->setText(data.getField(prefix + "altPhone").stringValue);
-        if (data.hasField(prefix + "email"))
-            contact.emailInput->setText(data.getField(prefix + "email").stringValue);
-        if (data.hasField(prefix + "address"))
-            contact.addressInput->setText(data.getField(prefix + "address").stringValue);
-        if (data.hasField(prefix + "city"))
-            contact.cityInput->setText(data.getField(prefix + "city").stringValue);
-        if (data.hasField(prefix + "zipCode"))
-            contact.zipCodeInput->setText(data.getField(prefix + "zipCode").stringValue);
+        if (data.hasField(prefix + "FirstName"))
+            contact.firstNameInput->setText(data.getField(prefix + "FirstName").stringValue);
+        if (data.hasField(prefix + "LastName"))
+            contact.lastNameInput->setText(data.getField(prefix + "LastName").stringValue);
+        if (data.hasField(prefix + "Phone"))
+            contact.phoneInput->setText(data.getField(prefix + "Phone").stringValue);
+        if (data.hasField(prefix + "AlternatePhone"))
+            contact.altPhoneInput->setText(data.getField(prefix + "AlternatePhone").stringValue);
+        if (data.hasField(prefix + "Email"))
+            contact.emailInput->setText(data.getField(prefix + "Email").stringValue);
+        if (data.hasField(prefix + "AddressLine1"))
+            contact.addressInput->setText(data.getField(prefix + "AddressLine1").stringValue);
+        if (data.hasField(prefix + "City"))
+            contact.cityInput->setText(data.getField(prefix + "City").stringValue);
+        if (data.hasField(prefix + "ZipCode"))
+            contact.zipCodeInput->setText(data.getField(prefix + "ZipCode").stringValue);
     }
 }
 
