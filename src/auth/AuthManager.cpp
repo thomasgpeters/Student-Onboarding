@@ -123,19 +123,32 @@ AuthResult AuthManager::registerStudent(const std::string& email, const std::str
     result = parseApiResult(apiResult);
 
     // If parseApiResult didn't extract student from response, use local student
-    // but try to get ID from response data
+    // but get ID from submissionId (already parsed) or response data
     if (result.success && result.student.getId().empty()) {
         result.student = student;
-        // Try to extract ID from JSON:API response
-        if (apiResult.responseData.contains("data")) {
+
+        // First try submissionId (already parsed in parseSubmissionResponse)
+        if (!apiResult.submissionId.empty()) {
+            result.student.setId(apiResult.submissionId);
+            std::cout << "[AuthManager] Got ID from submissionId: " << apiResult.submissionId << std::endl;
+        }
+        // Fallback: Try to extract ID from JSON:API response data
+        else if (apiResult.responseData.contains("data")) {
             auto data = apiResult.responseData["data"];
             if (data.contains("id")) {
-                result.student.setId(data["id"].get<std::string>());
+                std::string studentId;
+                if (data["id"].is_string()) {
+                    studentId = data["id"].get<std::string>();
+                } else if (data["id"].is_number()) {
+                    studentId = std::to_string(data["id"].get<int>());
+                }
+                result.student.setId(studentId);
+                std::cout << "[AuthManager] Got ID from data.id: " << studentId << std::endl;
             }
         }
     }
 
-    std::cout << "[AuthManager] Final student ID: " << result.student.getId() << std::endl;
+    std::cout << "[AuthManager] Final student ID: '" << result.student.getId() << "'" << std::endl;
     std::cout.flush();
 
     return result;
