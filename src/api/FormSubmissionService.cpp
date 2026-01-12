@@ -467,7 +467,34 @@ SubmissionResult FormSubmissionService::submitDocuments(const std::string& stude
 
 SubmissionResult FormSubmissionService::submitConsent(const std::string& studentId,
                                                        const Models::FormData& data) {
-    nlohmann::json payload = prepareFormPayload(studentId, data, "Consent");
+    // Transform form data to match Consent table schema (snake_case)
+    nlohmann::json attributes;
+
+    // student_id as integer
+    try {
+        attributes["student_id"] = std::stoi(studentId);
+    } catch (const std::exception&) {
+        attributes["student_id"] = studentId;
+    }
+
+    // Check if all required consents are accepted
+    bool termsAccepted = data.hasField("termsAccepted") && data.getField("termsAccepted").boolValue;
+    bool privacyAccepted = data.hasField("privacyAccepted") && data.getField("privacyAccepted").boolValue;
+    bool ferpaAcknowledged = data.hasField("ferpaAcknowledged") && data.getField("ferpaAcknowledged").boolValue;
+    bool accuracyCertified = data.hasField("accuracyCertified") && data.getField("accuracyCertified").boolValue;
+
+    attributes["consent_type"] = "student_intake";
+    attributes["consent_version"] = "1.0";
+    attributes["is_accepted"] = termsAccepted && privacyAccepted && ferpaAcknowledged && accuracyCertified;
+    attributes["electronic_signature"] = data.hasField("electronicSignature") ? data.getField("electronicSignature").stringValue : "";
+    attributes["signature_date"] = data.hasField("signatureDate") ? data.getField("signatureDate").stringValue : "";
+
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "Consent"},
+        {"attributes", attributes}
+    };
+
     std::cout << "[FormSubmissionService] submitConsent payload: " << payload.dump() << std::endl;
     ApiResponse response = apiClient_->post("/Consent", payload);
     return parseSubmissionResponse(response);
@@ -483,6 +510,9 @@ SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
     }
     if (formId == "academic_history") {
         return submitAcademicHistory(studentId, data);
+    }
+    if (formId == "consent") {
+        return submitConsent(studentId, data);
     }
 
     std::string endpoint = getEndpointForForm(formId);
