@@ -259,6 +259,7 @@ void RegisterWidget::handleRegister() {
 
         std::cout << "[RegisterWidget] Registration result - success: " << result.success
                   << ", message: " << result.message << std::endl;
+        std::cout << "[RegisterWidget] Result student ID: '" << result.student.getId() << "'" << std::endl;
         std::cout.flush();
 
         if (result.success) {
@@ -267,6 +268,9 @@ void RegisterWidget::handleRegister() {
                 session_->setLoggedIn(true);
                 session_->setAuthToken(result.token);
                 session_->setStudent(result.student);
+                std::cout << "[RegisterWidget] Session student ID after setStudent: '"
+                          << session_->getStudent().getId() << "'" << std::endl;
+                std::cout.flush();
             }
 
             registrationSuccess_.emit();

@@ -171,9 +171,14 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
 
     std::cout << "[FormSubmissionService] API response received - status: " << response.statusCode
               << ", success: " << response.success << std::endl;
+    std::cout << "[FormSubmissionService] Response body: " << response.body << std::endl;
     std::cout.flush();
 
-    return parseSubmissionResponse(response);
+    SubmissionResult result = parseSubmissionResponse(response);
+    std::cout << "[FormSubmissionService] Parsed submissionId: '" << result.submissionId << "'" << std::endl;
+    std::cout.flush();
+
+    return result;
 }
 
 SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
