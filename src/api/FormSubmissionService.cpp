@@ -40,7 +40,14 @@ nlohmann::json FormSubmissionService::prepareFormPayload(const std::string& stud
                                                           const std::string& resourceType) {
     // Extract field values from FormData
     nlohmann::json attributes;
-    attributes["student_id"] = std::stoi(studentId);
+
+    // student_id should be an integer for the database
+    try {
+        attributes["student_id"] = std::stoi(studentId);
+    } catch (const std::exception&) {
+        // If conversion fails, use as string (shouldn't happen with valid IDs)
+        attributes["student_id"] = studentId;
+    }
 
     // Convert FormData fields to flat attributes for JSON:API
     auto fieldNames = data.getFieldNames();
@@ -170,10 +177,19 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
 
 SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
                                                       const std::string& password) {
+    // Note: ApiLogicServer doesn't have built-in auth endpoints.
+    // This requires a custom /auth/login endpoint to be implemented.
+    // For now, we attempt to find the student by email and verify password.
     nlohmann::json payload;
-    payload["email"] = email;
-    payload["password"] = password;
+    payload["data"] = {
+        {"type", "Student"},
+        {"attributes", {
+            {"email", email},
+            {"password", password}
+        }}
+    };
 
+    // Try custom auth endpoint first, fall back to student lookup
     ApiResponse response = apiClient_->post("/auth/login", payload);
     SubmissionResult result = parseSubmissionResponse(response);
 
@@ -374,7 +390,7 @@ void FormSubmissionService::submitFormAsync(const std::string& studentId,
 Models::FormData FormSubmissionService::getFormData(const std::string& studentId,
                                                      const std::string& formId) {
     std::string endpoint = getEndpointForForm(formId);
-    ApiResponse response = apiClient_->get(endpoint + "?studentId=" + studentId);
+    ApiResponse response = apiClient_->get(endpoint + "?student_id=" + studentId);
 
     if (response.isSuccess()) {
         auto json = response.getJson();
