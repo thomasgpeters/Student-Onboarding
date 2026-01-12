@@ -165,8 +165,8 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
     std::cout << "[FormSubmissionService] Payload: " << payload.dump() << std::endl;
     std::cout.flush();
 
-    // ApiLogicServer uses lowercase endpoints
-    ApiResponse response = apiClient_->post("/student", payload);
+    // Use auth endpoint for registration
+    ApiResponse response = apiClient_->post("/auth/register", payload);
 
     std::cout << "[FormSubmissionService] API response received - status: " << response.statusCode
               << ", success: " << response.success << std::endl;
