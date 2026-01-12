@@ -17,7 +17,7 @@ FormSubmissionService::~FormSubmissionService() {
 }
 
 std::string FormSubmissionService::getEndpointForForm(const std::string& formId) const {
-    // Map form IDs to ApiLogicServer endpoints (CamelCase class names)
+    // Map form IDs to ApiLogicServer endpoints (capitalized resource names)
     static const std::map<std::string, std::string> endpointMap = {
         {"personal_info", "/Student"},           // Personal info updates student record
         {"emergency_contact", "/EmergencyContact"},
@@ -166,8 +166,8 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
     std::cout << "[FormSubmissionService] Payload: " << payload.dump() << std::endl;
     std::cout.flush();
 
-    // Use auth endpoint for registration
-    ApiResponse response = apiClient_->post("/auth/register", payload);
+    // ApiLogicServer uses capitalized resource names
+    ApiResponse response = apiClient_->post("/Student", payload);
 
     std::cout << "[FormSubmissionService] API response received - status: " << response.statusCode
               << ", success: " << response.success << std::endl;
@@ -178,24 +178,47 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
 
 SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
                                                       const std::string& password) {
-    // Note: ApiLogicServer doesn't have built-in auth endpoints.
-    // This requires a custom /auth/login endpoint to be implemented.
-    // For now, we attempt to find the student by email and verify password.
-    nlohmann::json payload;
-    payload["data"] = {
-        {"type", "Student"},
-        {"attributes", {
-            {"email", email},
-            {"password_hash", password}
-        }}
-    };
+    // ApiLogicServer without auth - query Student by email
+    // Use SAFRS filter syntax: filter[field]=value
+    std::string endpoint = "/Student?filter[email]=" + email;
 
-    // Try custom auth endpoint first, fall back to student lookup
-    ApiResponse response = apiClient_->post("/auth/login", payload);
-    SubmissionResult result = parseSubmissionResponse(response);
+    ApiResponse response = apiClient_->get(endpoint);
+    SubmissionResult result;
 
-    if (result.success && result.responseData.contains("token")) {
-        apiClient_->setAuthToken(result.responseData["token"].get<std::string>());
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json students;
+
+        // Handle JSON:API format
+        if (json.contains("data")) {
+            students = json["data"];
+        } else if (json.is_array()) {
+            students = json;
+        }
+
+        if (students.is_array() && !students.empty()) {
+            auto studentData = students[0];
+            auto attributes = studentData.contains("attributes")
+                ? studentData["attributes"]
+                : studentData;
+
+            // Check password (stored as password_hash in DB)
+            std::string storedPassword = attributes.value("password_hash", "");
+            if (storedPassword == password) {
+                result.success = true;
+                result.message = "Login successful";
+                result.responseData = studentData;
+            } else {
+                result.success = false;
+                result.message = "Invalid password";
+            }
+        } else {
+            result.success = false;
+            result.message = "Student not found";
+        }
+    } else {
+        result.success = false;
+        result.message = "Failed to connect to server";
     }
 
     return result;
@@ -293,7 +316,7 @@ SubmissionResult FormSubmissionService::submitEmergencyContact(const std::string
                                                                 const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "EmergencyContact");
     std::cout << "[FormSubmissionService] submitEmergencyContact payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/EmergencyContact/", payload);
+    ApiResponse response = apiClient_->post("/EmergencyContact", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -301,7 +324,7 @@ SubmissionResult FormSubmissionService::submitMedicalInfo(const std::string& stu
                                                            const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "MedicalInfo");
     std::cout << "[FormSubmissionService] submitMedicalInfo payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/MedicalInfo/", payload);
+    ApiResponse response = apiClient_->post("/MedicalInfo", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -309,7 +332,7 @@ SubmissionResult FormSubmissionService::submitAcademicHistory(const std::string&
                                                                const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "AcademicHistory");
     std::cout << "[FormSubmissionService] submitAcademicHistory payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/AcademicHistory/", payload);
+    ApiResponse response = apiClient_->post("/AcademicHistory", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -317,7 +340,7 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
                                                             const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "FinancialAid");
     std::cout << "[FormSubmissionService] submitFinancialAid payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/FinancialAid/", payload);
+    ApiResponse response = apiClient_->post("/FinancialAid", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -325,7 +348,7 @@ SubmissionResult FormSubmissionService::submitDocuments(const std::string& stude
                                                          const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "Document");
     std::cout << "[FormSubmissionService] submitDocuments payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/Document/", payload);
+    ApiResponse response = apiClient_->post("/Document", payload);
     return parseSubmissionResponse(response);
 }
 
@@ -333,7 +356,7 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
                                                        const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "Consent");
     std::cout << "[FormSubmissionService] submitConsent payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/Consent/", payload);
+    ApiResponse response = apiClient_->post("/Consent", payload);
     return parseSubmissionResponse(response);
 }
 
