@@ -33,9 +33,16 @@ private:
     void setupUI();
     void updateDisplay();
     void updateCompletedFormsDisplay();
+    void updateRecommendedFormsDisplay();
 
     std::shared_ptr<Session::StudentSession> session_;
 
+    // Layout containers
+    Wt::WContainerWidget* mainLayout_;
+    Wt::WContainerWidget* leftColumn_;
+    Wt::WContainerWidget* rightPanel_;
+
+    // Left column widgets
     Wt::WText* welcomeText_;
     Wt::WText* statusText_;
     Wt::WText* curriculumText_;
@@ -43,9 +50,12 @@ private:
     Wt::WText* progressText_;
     Wt::WPushButton* continueButton_;
     Wt::WContainerWidget* completionSection_;
+
+    // Right panel widgets (visible after completion)
     Wt::WContainerWidget* completedFormsSection_;
     Wt::WContainerWidget* completedFormsList_;
-    Wt::WContainerWidget* additionalFormsSection_;
+    Wt::WContainerWidget* recommendedFormsSection_;
+    Wt::WContainerWidget* recommendedFormsList_;
 
     Wt::Signal<> continueClicked_;
     Wt::Signal<> startOverClicked_;
