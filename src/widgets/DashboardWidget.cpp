@@ -7,6 +7,9 @@ namespace Widgets {
 
 DashboardWidget::DashboardWidget()
     : WContainerWidget()
+    , mainLayout_(nullptr)
+    , leftColumn_(nullptr)
+    , rightPanel_(nullptr)
     , welcomeText_(nullptr)
     , statusText_(nullptr)
     , curriculumText_(nullptr)
@@ -16,7 +19,8 @@ DashboardWidget::DashboardWidget()
     , completionSection_(nullptr)
     , completedFormsSection_(nullptr)
     , completedFormsList_(nullptr)
-    , additionalFormsSection_(nullptr) {
+    , recommendedFormsSection_(nullptr)
+    , recommendedFormsList_(nullptr) {
     setupUI();
 }
 
@@ -26,7 +30,7 @@ DashboardWidget::~DashboardWidget() {
 void DashboardWidget::setupUI() {
     addStyleClass("dashboard-widget");
 
-    // Welcome section
+    // Welcome section (full width, above the columns)
     auto welcomeSection = addWidget(std::make_unique<Wt::WContainerWidget>());
     welcomeSection->addStyleClass("welcome-section");
 
@@ -35,15 +39,23 @@ void DashboardWidget::setupUI() {
     statusText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>());
     statusText_->addStyleClass("status-text");
 
+    // Main layout container (two columns)
+    mainLayout_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    mainLayout_->addStyleClass("dashboard-layout");
+
+    // Left column - main content
+    leftColumn_ = mainLayout_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    leftColumn_->addStyleClass("dashboard-main");
+
     // Curriculum info
-    auto curriculumSection = addWidget(std::make_unique<Wt::WContainerWidget>());
+    auto curriculumSection = leftColumn_->addWidget(std::make_unique<Wt::WContainerWidget>());
     curriculumSection->addStyleClass("curriculum-section card");
 
     curriculumText_ = curriculumSection->addWidget(std::make_unique<Wt::WText>());
     curriculumText_->addStyleClass("curriculum-info");
 
     // Progress section
-    progressSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    progressSection_ = leftColumn_->addWidget(std::make_unique<Wt::WContainerWidget>());
     progressSection_->addStyleClass("progress-section card");
 
     progressSection_->addWidget(std::make_unique<Wt::WText>("<h4>Application Progress</h4>"));
@@ -60,35 +72,8 @@ void DashboardWidget::setupUI() {
         continueClicked_.emit();
     });
 
-    // Completed forms section (shows when forms have been submitted)
-    completedFormsSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    completedFormsSection_->addStyleClass("completed-forms-section card");
-    completedFormsSection_->hide();
-
-    completedFormsSection_->addWidget(std::make_unique<Wt::WText>("<h4>Completed Forms</h4>"));
-    completedFormsList_ = completedFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    completedFormsList_->addStyleClass("completed-forms-list");
-
-    // Additional forms section (post-onboarding forms)
-    additionalFormsSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    additionalFormsSection_->addStyleClass("additional-forms-section card");
-    additionalFormsSection_->hide();
-
-    additionalFormsSection_->addWidget(std::make_unique<Wt::WText>(
-        "<h4>Additional Forms</h4>"
-        "<p>The following optional forms are available for your program:</p>"));
-
-    auto additionalFormsButtons = additionalFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    additionalFormsButtons->addStyleClass("button-container");
-
-    auto viewAdditionalBtn = additionalFormsButtons->addWidget(std::make_unique<Wt::WPushButton>("View Additional Forms"));
-    viewAdditionalBtn->addStyleClass("btn btn-outline-primary");
-    viewAdditionalBtn->clicked().connect([this]() {
-        additionalFormsClicked_.emit();
-    });
-
     // Completion section (initially hidden)
-    completionSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    completionSection_ = leftColumn_->addWidget(std::make_unique<Wt::WContainerWidget>());
     completionSection_->addStyleClass("completion-section card");
     completionSection_->hide();
 
@@ -99,17 +84,8 @@ void DashboardWidget::setupUI() {
         "Our admissions team will review your submission and contact you soon.</p>"
         "<p>You will receive a confirmation email with next steps.</p>"));
 
-    auto completionButtons = completionSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    completionButtons->addStyleClass("button-container");
-
-    auto reviewButton = completionButtons->addWidget(std::make_unique<Wt::WPushButton>("Review Submitted Forms"));
-    reviewButton->addStyleClass("btn btn-outline-primary");
-    reviewButton->clicked().connect([this]() {
-        continueClicked_.emit();
-    });
-
     // Help section
-    auto helpSection = addWidget(std::make_unique<Wt::WContainerWidget>());
+    auto helpSection = leftColumn_->addWidget(std::make_unique<Wt::WContainerWidget>());
     helpSection->addStyleClass("help-section card");
     helpSection->addWidget(std::make_unique<Wt::WText>(
         "<h4>Need Help?</h4>"
@@ -119,6 +95,27 @@ void DashboardWidget::setupUI() {
         "<li>Phone: (555) 123-4567</li>"
         "<li>Office Hours: Mon-Fri, 9 AM - 5 PM</li>"
         "</ul>"));
+
+    // Right panel - forms sidebar (visible after completion)
+    rightPanel_ = mainLayout_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    rightPanel_->addStyleClass("dashboard-sidebar");
+    rightPanel_->hide();
+
+    // Completed forms section
+    completedFormsSection_ = rightPanel_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    completedFormsSection_->addStyleClass("sidebar-section");
+
+    completedFormsSection_->addWidget(std::make_unique<Wt::WText>("<h4>Completed Forms</h4>"));
+    completedFormsList_ = completedFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    completedFormsList_->addStyleClass("sidebar-forms-list");
+
+    // Recommended/Additional forms section
+    recommendedFormsSection_ = rightPanel_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    recommendedFormsSection_->addStyleClass("sidebar-section");
+
+    recommendedFormsSection_->addWidget(std::make_unique<Wt::WText>("<h4>Recommended Forms</h4>"));
+    recommendedFormsList_ = recommendedFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    recommendedFormsList_->addStyleClass("sidebar-forms-list");
 }
 
 void DashboardWidget::refresh() {
@@ -171,26 +168,18 @@ void DashboardWidget::updateDisplay() {
         continueButton_->setText("Continue Application");
     }
 
-    // Update completed forms display
-    updateCompletedFormsDisplay();
-
     // Show/hide sections based on completion status
     if (session_->isIntakeComplete()) {
         completionSection_->show();
         progressSection_->hide();
-        // Show additional forms section if there are optional forms available
-        additionalFormsSection_->show();
+        // Show right panel with completed forms and recommendations
+        rightPanel_->show();
+        updateCompletedFormsDisplay();
+        updateRecommendedFormsDisplay();
     } else {
         completionSection_->hide();
         progressSection_->show();
-        additionalFormsSection_->hide();
-    }
-
-    // Always show completed forms if any exist
-    if (completed > 0) {
-        completedFormsSection_->show();
-    } else {
-        completedFormsSection_->hide();
+        rightPanel_->hide();
     }
 }
 
@@ -204,6 +193,8 @@ void DashboardWidget::updateCompletedFormsDisplay() {
     auto completedFormIds = session_->getStudent().getCompletedForms();
 
     if (completedFormIds.empty()) {
+        completedFormsList_->addWidget(std::make_unique<Wt::WText>(
+            "<p class='no-forms-text'>No forms completed yet.</p>"));
         return;
     }
 
@@ -218,18 +209,67 @@ void DashboardWidget::updateCompletedFormsDisplay() {
         }
 
         auto formItem = completedFormsList_->addWidget(std::make_unique<Wt::WContainerWidget>());
-        formItem->addStyleClass("completed-form-item");
+        formItem->addStyleClass("sidebar-form-item");
 
         // Add checkmark icon and form name
         auto formLabel = formItem->addWidget(std::make_unique<Wt::WText>(
-            "<span class='form-check-icon'>&#10003;</span> " + formName));
-        formLabel->addStyleClass("form-label");
+            "<span class='form-status-icon completed'>&#10003;</span>" + formName));
+        formLabel->addStyleClass("sidebar-form-label");
 
-        // Add view/edit button
-        auto viewBtn = formItem->addWidget(std::make_unique<Wt::WPushButton>("View"));
-        viewBtn->addStyleClass("btn btn-sm btn-outline-secondary");
+        // Add view button with eye icon
+        auto viewBtn = formItem->addWidget(std::make_unique<Wt::WPushButton>());
+        viewBtn->setText("<span class='eye-icon'>&#128065;</span>");
+        viewBtn->setTextFormat(Wt::TextFormat::XHTML);
+        viewBtn->addStyleClass("btn-icon");
+        viewBtn->setToolTip("View form");
         viewBtn->clicked().connect([this, formId]() {
             viewFormClicked_.emit(formId);
+        });
+    }
+}
+
+void DashboardWidget::updateRecommendedFormsDisplay() {
+    if (!session_ || !recommendedFormsList_) return;
+
+    recommendedFormsList_->clear();
+
+    // Get form type info from session manager
+    auto formTypeInfos = Session::SessionManager::getInstance().getFormTypeInfos();
+    auto completedFormIds = session_->getStudent().getCompletedForms();
+
+    // Find forms that are not required but available (optional forms)
+    std::vector<Models::FormTypeInfo> recommendedForms;
+    for (const auto& info : formTypeInfos) {
+        // Check if form is not already completed and is optional
+        bool isCompleted = std::find(completedFormIds.begin(), completedFormIds.end(), info.id) != completedFormIds.end();
+        if (!isCompleted && !info.isRequired) {
+            recommendedForms.push_back(info);
+        }
+    }
+
+    if (recommendedForms.empty()) {
+        recommendedFormsList_->addWidget(std::make_unique<Wt::WText>(
+            "<p class='no-forms-text'>No additional forms available.</p>"));
+        return;
+    }
+
+    for (const auto& info : recommendedForms) {
+        auto formItem = recommendedFormsList_->addWidget(std::make_unique<Wt::WContainerWidget>());
+        formItem->addStyleClass("sidebar-form-item");
+
+        // Add plus icon and form name
+        auto formLabel = formItem->addWidget(std::make_unique<Wt::WText>(
+            "<span class='form-status-icon optional'>+</span>" + info.name));
+        formLabel->addStyleClass("sidebar-form-label");
+
+        // Add arrow button to start form
+        auto startBtn = formItem->addWidget(std::make_unique<Wt::WPushButton>());
+        startBtn->setText("<span class='arrow-icon'>&#8594;</span>");
+        startBtn->setTextFormat(Wt::TextFormat::XHTML);
+        startBtn->addStyleClass("btn-icon");
+        startBtn->setToolTip("Start form");
+        startBtn->clicked().connect([this, id = info.id]() {
+            viewFormClicked_.emit(id);
         });
     }
 }
@@ -237,6 +277,9 @@ void DashboardWidget::updateCompletedFormsDisplay() {
 void DashboardWidget::showCompletionMessage() {
     completionSection_->show();
     progressSection_->hide();
+    rightPanel_->show();
+    updateCompletedFormsDisplay();
+    updateRecommendedFormsDisplay();
 }
 
 } // namespace Widgets
