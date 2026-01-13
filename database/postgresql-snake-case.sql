@@ -84,11 +84,6 @@ CREATE TABLE student (
     gender VARCHAR(20),
     phone_number VARCHAR(30),
     alternate_phone VARCHAR(30),
-    address_line1 VARCHAR(200),
-    address_line2 VARCHAR(200),
-    city VARCHAR(100),
-    state VARCHAR(100),
-    zip_code VARCHAR(20),
     ssn VARCHAR(20),
     citizenship_status VARCHAR(50),
     curriculum_id INTEGER REFERENCES curriculum(id),
@@ -106,6 +101,9 @@ CREATE TABLE student (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Note: Student addresses are stored in the student_address table
+-- with address_type: 'permanent', 'mailing', 'billing'
 
 CREATE TABLE student_address (
     id SERIAL PRIMARY KEY,

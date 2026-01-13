@@ -258,6 +258,105 @@ SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Stude
     return parseSubmissionResponse(response);
 }
 
+// StudentAddress API endpoints
+std::vector<Models::StudentAddress> FormSubmissionService::getStudentAddresses(const std::string& studentId) {
+    std::vector<Models::StudentAddress> addresses;
+
+    std::string endpoint = "/StudentAddress?filter[student_id]=" + studentId;
+    ApiResponse response = apiClient_->get(endpoint);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        for (const auto& item : items) {
+            addresses.push_back(Models::StudentAddress::fromJson(item));
+        }
+    }
+
+    return addresses;
+}
+
+Models::StudentAddress FormSubmissionService::getStudentAddress(const std::string& studentId,
+                                                                  const std::string& addressType) {
+    std::string endpoint = "/StudentAddress?filter[student_id]=" + studentId +
+                           "&filter[address_type]=" + addressType;
+    ApiResponse response = apiClient_->get(endpoint);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        if (!items.empty()) {
+            return Models::StudentAddress::fromJson(items[0]);
+        }
+    }
+
+    // Return empty address with the requested type
+    return Models::StudentAddress(studentId, addressType);
+}
+
+SubmissionResult FormSubmissionService::createStudentAddress(const Models::StudentAddress& address) {
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "StudentAddress"},
+        {"attributes", address.toJson()}
+    };
+
+    std::cout << "[FormSubmissionService] createStudentAddress payload: " << payload.dump() << std::endl;
+    ApiResponse response = apiClient_->post("/StudentAddress", payload);
+    return parseSubmissionResponse(response);
+}
+
+SubmissionResult FormSubmissionService::updateStudentAddress(const Models::StudentAddress& address) {
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "StudentAddress"},
+        {"id", address.getId()},
+        {"attributes", address.toJson()}
+    };
+
+    std::cout << "[FormSubmissionService] updateStudentAddress payload: " << payload.dump() << std::endl;
+    ApiResponse response = apiClient_->patch("/StudentAddress/" + address.getId(), payload);
+    return parseSubmissionResponse(response);
+}
+
+SubmissionResult FormSubmissionService::deleteStudentAddress(const std::string& addressId) {
+    ApiResponse response = apiClient_->del("/StudentAddress/" + addressId);
+    return parseSubmissionResponse(response);
+}
+
+SubmissionResult FormSubmissionService::saveStudentAddress(const Models::StudentAddress& address) {
+    // If address has an ID, update it; otherwise check if one exists for this student/type
+    if (!address.getId().empty()) {
+        return updateStudentAddress(address);
+    }
+
+    // Check if address already exists for this student and type
+    Models::StudentAddress existing = getStudentAddress(address.getStudentId(), address.getAddressType());
+    if (!existing.getId().empty()) {
+        // Update existing address
+        Models::StudentAddress updated = address;
+        updated.setId(existing.getId());
+        return updateStudentAddress(updated);
+    }
+
+    // Create new address
+    return createStudentAddress(address);
+}
+
 // Curriculum API endpoints
 std::vector<Models::Curriculum> FormSubmissionService::getCurriculums() {
     std::vector<Models::Curriculum> curriculums;

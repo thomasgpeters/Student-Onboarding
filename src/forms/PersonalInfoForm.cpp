@@ -35,7 +35,9 @@ PersonalInfoForm::PersonalInfoForm()
     , mailingCountrySelect_(nullptr)
     , ssnInput_(nullptr)
     , citizenshipSelect_(nullptr)
-    , internationalCheckbox_(nullptr) {
+    , internationalCheckbox_(nullptr)
+    , homeAddressId_("")
+    , mailingAddressId_("") {
 }
 
 PersonalInfoForm::~PersonalInfoForm() {
@@ -328,23 +330,6 @@ void PersonalInfoForm::createFormFields() {
         phoneInput_->setText(student.getPhoneNumber());
         altPhoneInput_->setText(student.getAlternatePhone());
 
-        // Address
-        addressLine1Input_->setText(student.getAddressLine1());
-        addressLine2Input_->setText(student.getAddressLine2());
-        cityInput_->setText(student.getCity());
-        zipCodeInput_->setText(student.getZipCode());
-
-        // State - find matching index
-        std::string state = student.getState();
-        if (!state.empty()) {
-            for (int i = 0; i < stateSelect_->count(); ++i) {
-                if (stateSelect_->itemText(i).toUTF8() == state) {
-                    stateSelect_->setCurrentIndex(i);
-                    break;
-                }
-            }
-        }
-
         // Citizenship Information
         ssnInput_->setText(student.getSsn());
 
@@ -361,6 +346,9 @@ void PersonalInfoForm::createFormFields() {
 
         // International checkbox
         internationalCheckbox_->setChecked(student.isInternational());
+
+        // Load addresses from StudentAddress table
+        loadAddressesFromApi();
     }
 }
 
@@ -516,7 +504,7 @@ void PersonalInfoForm::updateStudentFromForm() {
 
     Models::Student& student = session_->getStudent();
 
-    // Update all student fields from form inputs
+    // Update student fields from form inputs (excluding address - stored in StudentAddress table)
     student.setFirstName(firstNameInput_->text().toUTF8());
     student.setMiddleName(middleNameInput_->text().toUTF8());
     student.setLastName(lastNameInput_->text().toUTF8());
@@ -524,10 +512,6 @@ void PersonalInfoForm::updateStudentFromForm() {
     student.setEmail(emailInput_->text().toUTF8());
     student.setPhoneNumber(phoneInput_->text().toUTF8());
     student.setAlternatePhone(altPhoneInput_->text().toUTF8());
-    student.setAddressLine1(addressLine1Input_->text().toUTF8());
-    student.setAddressLine2(addressLine2Input_->text().toUTF8());
-    student.setCity(cityInput_->text().toUTF8());
-    student.setZipCode(zipCodeInput_->text().toUTF8());
     student.setSsn(ssnInput_->text().toUTF8());
     student.setPreferredPronouns(pronounsInput_->text().toUTF8());
     student.setInternational(internationalCheckbox_->isChecked());
@@ -535,11 +519,6 @@ void PersonalInfoForm::updateStudentFromForm() {
     // Handle gender (skip "Select...")
     if (genderSelect_->currentIndex() > 0) {
         student.setGender(genderSelect_->currentText().toUTF8());
-    }
-
-    // Handle state (skip "Select...")
-    if (stateSelect_->currentIndex() > 0) {
-        student.setState(stateSelect_->currentText().toUTF8());
     }
 
     // Handle citizenship status (skip "Select...")
@@ -574,6 +553,9 @@ void PersonalInfoForm::handleSubmit() {
         apiService_->updateStudentProfile(session_->getStudent());
     }
 
+    // Save addresses to StudentAddress table
+    saveAddressesToApi();
+
     // Now proceed with form submission (skip validation since we already did it)
     isSubmitting_ = true;
     nextButton_->setEnabled(false);
@@ -600,6 +582,170 @@ void PersonalInfoForm::handleSubmit() {
     } else {
         // No API service, just emit success
         onSubmitSuccess(Api::SubmissionResult{true, "", "Form data saved", {}, {}});
+    }
+}
+
+void PersonalInfoForm::loadAddressesFromApi() {
+    if (!apiService_ || !session_) return;
+
+    std::string studentId = session_->getStudent().getId();
+    if (studentId.empty()) return;
+
+    // Load all addresses for this student
+    auto addresses = apiService_->getStudentAddresses(studentId);
+
+    for (const auto& address : addresses) {
+        if (address.getAddressType() == "permanent") {
+            homeAddressId_ = address.getId();
+            populateAddressFields(address);
+        } else if (address.getAddressType() == "mailing") {
+            mailingAddressId_ = address.getId();
+            populateMailingAddressFields(address);
+            // If mailing address exists and is different, uncheck "same as home"
+            if (!address.isEmpty()) {
+                sameAsHomeCheckbox_->setChecked(false);
+                mailingAddressContainer_->show();
+            }
+        }
+    }
+}
+
+void PersonalInfoForm::saveAddressesToApi() {
+    if (!apiService_ || !session_) return;
+
+    std::string studentId = session_->getStudent().getId();
+    if (studentId.empty()) return;
+
+    // Save home/permanent address
+    Models::StudentAddress homeAddress = buildAddressFromForm("permanent");
+    homeAddress.setStudentId(studentId);
+    homeAddress.setPrimary(true);
+    if (!homeAddressId_.empty()) {
+        homeAddress.setId(homeAddressId_);
+    }
+
+    if (!homeAddress.isEmpty()) {
+        Api::SubmissionResult result = apiService_->saveStudentAddress(homeAddress);
+        if (result.success && homeAddressId_.empty()) {
+            homeAddressId_ = result.submissionId;
+        }
+    }
+
+    // Save mailing address if different from home
+    if (!sameAsHomeCheckbox_->isChecked()) {
+        Models::StudentAddress mailingAddress = buildMailingAddressFromForm();
+        mailingAddress.setStudentId(studentId);
+        mailingAddress.setPrimary(false);
+        if (!mailingAddressId_.empty()) {
+            mailingAddress.setId(mailingAddressId_);
+        }
+
+        if (!mailingAddress.isEmpty()) {
+            Api::SubmissionResult result = apiService_->saveStudentAddress(mailingAddress);
+            if (result.success && mailingAddressId_.empty()) {
+                mailingAddressId_ = result.submissionId;
+            }
+        }
+    }
+}
+
+Models::StudentAddress PersonalInfoForm::buildAddressFromForm(const std::string& addressType) const {
+    Models::StudentAddress address;
+    address.setAddressType(addressType);
+    address.setStreet1(addressLine1Input_->text().toUTF8());
+    address.setStreet2(addressLine2Input_->text().toUTF8());
+    address.setCity(cityInput_->text().toUTF8());
+    address.setPostalCode(zipCodeInput_->text().toUTF8());
+
+    // Get state if selected
+    if (stateSelect_->currentIndex() > 0) {
+        address.setState(stateSelect_->currentText().toUTF8());
+    }
+
+    // Get country if selected
+    if (countrySelect_->currentIndex() >= 0) {
+        address.setCountry(countrySelect_->currentText().toUTF8());
+    }
+
+    return address;
+}
+
+Models::StudentAddress PersonalInfoForm::buildMailingAddressFromForm() const {
+    Models::StudentAddress address;
+    address.setAddressType("mailing");
+    address.setStreet1(mailingAddressLine1Input_->text().toUTF8());
+    address.setStreet2(mailingAddressLine2Input_->text().toUTF8());
+    address.setCity(mailingCityInput_->text().toUTF8());
+    address.setPostalCode(mailingZipCodeInput_->text().toUTF8());
+
+    // Get state if selected
+    if (mailingStateSelect_->currentIndex() > 0) {
+        address.setState(mailingStateSelect_->currentText().toUTF8());
+    }
+
+    // Get country if selected
+    if (mailingCountrySelect_->currentIndex() >= 0) {
+        address.setCountry(mailingCountrySelect_->currentText().toUTF8());
+    }
+
+    return address;
+}
+
+void PersonalInfoForm::populateAddressFields(const Models::StudentAddress& address) {
+    addressLine1Input_->setText(address.getStreet1());
+    addressLine2Input_->setText(address.getStreet2());
+    cityInput_->setText(address.getCity());
+    zipCodeInput_->setText(address.getPostalCode());
+
+    // Set state if found
+    std::string state = address.getState();
+    if (!state.empty()) {
+        for (int i = 0; i < stateSelect_->count(); ++i) {
+            if (stateSelect_->itemText(i).toUTF8() == state) {
+                stateSelect_->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+
+    // Set country if found
+    std::string country = address.getCountry();
+    if (!country.empty()) {
+        for (int i = 0; i < countrySelect_->count(); ++i) {
+            if (countrySelect_->itemText(i).toUTF8() == country) {
+                countrySelect_->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+}
+
+void PersonalInfoForm::populateMailingAddressFields(const Models::StudentAddress& address) {
+    mailingAddressLine1Input_->setText(address.getStreet1());
+    mailingAddressLine2Input_->setText(address.getStreet2());
+    mailingCityInput_->setText(address.getCity());
+    mailingZipCodeInput_->setText(address.getPostalCode());
+
+    // Set state if found
+    std::string state = address.getState();
+    if (!state.empty()) {
+        for (int i = 0; i < mailingStateSelect_->count(); ++i) {
+            if (mailingStateSelect_->itemText(i).toUTF8() == state) {
+                mailingStateSelect_->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+
+    // Set country if found
+    std::string country = address.getCountry();
+    if (!country.empty()) {
+        for (int i = 0; i < mailingCountrySelect_->count(); ++i) {
+            if (mailingCountrySelect_->itemText(i).toUTF8() == country) {
+                mailingCountrySelect_->setCurrentIndex(i);
+                break;
+            }
+        }
     }
 }
 

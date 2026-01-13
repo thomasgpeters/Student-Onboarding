@@ -88,11 +88,6 @@ CREATE TABLE Student (
     Gender VARCHAR(20),
     PhoneNumber VARCHAR(30),
     AlternatePhone VARCHAR(30),
-    AddressLine1 VARCHAR(200),
-    AddressLine2 VARCHAR(200),
-    City VARCHAR(100),
-    State VARCHAR(100),
-    ZipCode VARCHAR(20),
     Ssn VARCHAR(20),
     CitizenshipStatus VARCHAR(50),
     CurriculumId INTEGER,
@@ -111,6 +106,9 @@ CREATE TABLE Student (
     UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (CurriculumId) REFERENCES Curriculum(Id)
 );
+
+-- Note: Student addresses are stored in the StudentAddress table
+-- with AddressType: 'permanent', 'mailing', 'billing'
 
 CREATE TABLE StudentAddress (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
