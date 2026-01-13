@@ -157,6 +157,11 @@ void StudentIntakeApp::setupUI() {
             setState(AppState::Forms);
         }
     });
+    dashboardWidget_->viewFormClicked().connect([this](const std::string& formId) {
+        // Navigate to forms view and show the specific form
+        setState(AppState::Forms);
+        formContainer_->showForm(formId);
+    });
 
     // Forms view (with progress sidebar)
     formsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());

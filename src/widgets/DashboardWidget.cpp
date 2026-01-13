@@ -1,4 +1,5 @@
 #include "DashboardWidget.h"
+#include "session/SessionManager.h"
 #include <Wt/WBreak.h>
 
 namespace StudentIntake {
@@ -12,7 +13,10 @@ DashboardWidget::DashboardWidget()
     , progressSection_(nullptr)
     , progressText_(nullptr)
     , continueButton_(nullptr)
-    , completionSection_(nullptr) {
+    , completionSection_(nullptr)
+    , completedFormsSection_(nullptr)
+    , completedFormsList_(nullptr)
+    , additionalFormsSection_(nullptr) {
     setupUI();
 }
 
@@ -54,6 +58,33 @@ void DashboardWidget::setupUI() {
     continueButton_->addStyleClass("btn btn-primary btn-lg");
     continueButton_->clicked().connect([this]() {
         continueClicked_.emit();
+    });
+
+    // Completed forms section (shows when forms have been submitted)
+    completedFormsSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    completedFormsSection_->addStyleClass("completed-forms-section card");
+    completedFormsSection_->hide();
+
+    completedFormsSection_->addWidget(std::make_unique<Wt::WText>("<h4>Completed Forms</h4>"));
+    completedFormsList_ = completedFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    completedFormsList_->addStyleClass("completed-forms-list");
+
+    // Additional forms section (post-onboarding forms)
+    additionalFormsSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    additionalFormsSection_->addStyleClass("additional-forms-section card");
+    additionalFormsSection_->hide();
+
+    additionalFormsSection_->addWidget(std::make_unique<Wt::WText>(
+        "<h4>Additional Forms</h4>"
+        "<p>The following optional forms are available for your program:</p>"));
+
+    auto additionalFormsButtons = additionalFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    additionalFormsButtons->addStyleClass("button-container");
+
+    auto viewAdditionalBtn = additionalFormsButtons->addWidget(std::make_unique<Wt::WPushButton>("View Additional Forms"));
+    viewAdditionalBtn->addStyleClass("btn btn-outline-primary");
+    viewAdditionalBtn->clicked().connect([this]() {
+        additionalFormsClicked_.emit();
     });
 
     // Completion section (initially hidden)
@@ -140,13 +171,66 @@ void DashboardWidget::updateDisplay() {
         continueButton_->setText("Continue Application");
     }
 
-    // Show/hide completion section
+    // Update completed forms display
+    updateCompletedFormsDisplay();
+
+    // Show/hide sections based on completion status
     if (session_->isIntakeComplete()) {
         completionSection_->show();
         progressSection_->hide();
+        // Show additional forms section if there are optional forms available
+        additionalFormsSection_->show();
     } else {
         completionSection_->hide();
         progressSection_->show();
+        additionalFormsSection_->hide();
+    }
+
+    // Always show completed forms if any exist
+    if (completed > 0) {
+        completedFormsSection_->show();
+    } else {
+        completedFormsSection_->hide();
+    }
+}
+
+void DashboardWidget::updateCompletedFormsDisplay() {
+    if (!session_ || !completedFormsList_) return;
+
+    completedFormsList_->clear();
+
+    // Get form type info from session manager
+    auto& formTypeInfos = Session::SessionManager::getInstance().getFormTypeInfos();
+    auto completedFormIds = session_->getStudent().getCompletedFormIds();
+
+    if (completedFormIds.empty()) {
+        return;
+    }
+
+    for (const auto& formId : completedFormIds) {
+        // Find form name from form type info
+        std::string formName = formId;
+        for (const auto& info : formTypeInfos) {
+            if (info.id == formId) {
+                formName = info.name;
+                break;
+            }
+        }
+
+        auto formItem = completedFormsList_->addWidget(std::make_unique<Wt::WContainerWidget>());
+        formItem->addStyleClass("completed-form-item");
+
+        // Add checkmark icon and form name
+        auto formLabel = formItem->addWidget(std::make_unique<Wt::WText>(
+            "<span class='form-check-icon'>&#10003;</span> " + formName));
+        formLabel->addStyleClass("form-label");
+
+        // Add view/edit button
+        auto viewBtn = formItem->addWidget(std::make_unique<Wt::WPushButton>("View"));
+        viewBtn->addStyleClass("btn btn-sm btn-outline-secondary");
+        viewBtn->clicked().connect([this, formId]() {
+            viewFormClicked_.emit(formId);
+        });
     }
 }
 
