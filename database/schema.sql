@@ -83,10 +83,18 @@ CREATE TABLE Student (
     LastName VARCHAR(100),
     MiddleName VARCHAR(100),
     PreferredName VARCHAR(100),
+    PreferredPronouns VARCHAR(50),
     DateOfBirth DATE,
     Gender VARCHAR(20),
-    Phone VARCHAR(30),
+    PhoneNumber VARCHAR(30),
     AlternatePhone VARCHAR(30),
+    AddressLine1 VARCHAR(200),
+    AddressLine2 VARCHAR(200),
+    City VARCHAR(100),
+    State VARCHAR(100),
+    ZipCode VARCHAR(20),
+    Ssn VARCHAR(20),
+    CitizenshipStatus VARCHAR(50),
     CurriculumId INTEGER,
     StudentType VARCHAR(50),  -- undergraduate, graduate, doctoral, certificate
     EnrollmentDate DATE,
@@ -98,6 +106,7 @@ CREATE TABLE Student (
     CitizenshipCountry VARCHAR(100),
     VisaType VARCHAR(50),
     IntakeStatus VARCHAR(50) DEFAULT 'in_progress',  -- in_progress, submitted, approved, rejected
+    CompletedForms TEXT,
     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (CurriculumId) REFERENCES Curriculum(Id)
