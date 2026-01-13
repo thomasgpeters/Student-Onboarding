@@ -4,6 +4,7 @@
 #include <Wt/WContainerWidget.h>
 #include <Wt/WText.h>
 #include <Wt/WPushButton.h>
+#include <Wt/WImage.h>
 #include <Wt/WSignal.h>
 #include <memory>
 #include <vector>

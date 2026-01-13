@@ -226,6 +226,14 @@ void StudentIntakeApp::setupUI() {
         setState(AppState::Dashboard);
     });
 
+    // Footer
+    auto footer = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    footer->addStyleClass("app-footer");
+    auto footerContent = footer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    footerContent->addStyleClass("footer-content");
+    footerContent->addWidget(std::make_unique<Wt::WText>(
+        "<span class='copyright-text'>&copy; 2026 Imagery Business Systems LLC. All rights reserved.</span>"));
+
     // Hide all views initially except login
     hideAllViews();
     loginWidget_->show();

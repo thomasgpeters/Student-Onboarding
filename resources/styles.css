@@ -609,6 +609,7 @@ body {
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
+    justify-content: space-between !important;
     gap: 2rem;
     align-items: flex-start;
     min-height: calc(100vh - 250px);
@@ -616,7 +617,7 @@ body {
 }
 
 .dashboard-main {
-    flex: 1 1 auto !important;
+    flex: 0 1 auto !important;
     min-width: 0;
     max-width: 700px;
     display: block !important;
@@ -627,10 +628,11 @@ body {
     width: 300px !important;
     min-width: 300px;
     background: #e8f4fc;
-    border-radius: 12px;
+    border-radius: 12px 0 0 12px;
     padding: 1.5rem;
     align-self: stretch;
     order: 2;
+    margin-right: -2rem;
 }
 
 /* Hide sidebar by default, show when has 'visible' class */
@@ -899,4 +901,40 @@ body {
 
 .add-contact-container {
     margin-top: 1rem;
+}
+
+/* Footer */
+.app-footer {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    margin-top: auto;
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.copyright-text {
+    font-size: 0.875rem;
+    color: #cccccc;
+}
+
+/* Logo in navbar */
+.brand-logo {
+    height: 40px;
+    width: auto;
+    margin-right: 0.75rem;
+    border-radius: 4px;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
 }

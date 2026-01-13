@@ -24,6 +24,14 @@ void NavigationWidget::setupUI() {
     brandContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     brandContainer_->addStyleClass("navbar-brand");
 
+    // Logo image
+    auto logo = brandContainer_->addWidget(std::make_unique<Wt::WImage>(
+        "https://media.licdn.com/dms/image/v2/D4E0BAQFNqqJ59i1lgQ/company-logo_200_200/company-logo_200_200/0/1733939002925/imagery_business_systems_llc_logo?e=2147483647&v=beta&t=s_hATe0kqIDc64S79VJYXNS4N_UwrcnUA1x7VCb3sFA"));
+    logo->addStyleClass("brand-logo");
+    logo->clicked().connect([this]() {
+        homeClicked_.emit();
+    });
+
     auto brandLink = brandContainer_->addWidget(std::make_unique<Wt::WText>("Student Onboarding"));
     brandLink->addStyleClass("brand-text");
     brandLink->clicked().connect([this]() {
