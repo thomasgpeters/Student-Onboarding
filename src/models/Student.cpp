@@ -135,6 +135,11 @@ nlohmann::json Student::toJson() const {
     j["is_veteran"] = isVeteran_;
     j["requires_financial_aid"] = requiresFinancialAid_;
 
+    // Completed forms
+    if (!completedForms_.empty()) {
+        j["completed_forms"] = completedForms_;
+    }
+
     // Convert time points to ISO 8601 date strings (date only for DB)
     auto enrollmentTime = std::chrono::system_clock::to_time_t(enrollmentDate_);
     std::ostringstream enrollmentStream;
@@ -314,8 +319,11 @@ Student Student::fromJson(const nlohmann::json& json) {
         student.requiresFinancialAid_ = attrs["requires_financial_aid"].get<bool>();
     }
 
+    // Handle completedForms/completed_forms
     if (attrs.contains("completedForms") && attrs["completedForms"].is_array()) {
         student.completedForms_ = attrs["completedForms"].get<std::vector<std::string>>();
+    } else if (attrs.contains("completed_forms") && attrs["completed_forms"].is_array()) {
+        student.completedForms_ = attrs["completed_forms"].get<std::vector<std::string>>();
     }
 
     // Parse date strings

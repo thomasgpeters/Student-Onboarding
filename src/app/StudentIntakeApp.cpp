@@ -297,6 +297,14 @@ void StudentIntakeApp::showCurriculumSelection() {
 }
 
 void StudentIntakeApp::showDashboard() {
+    // Calculate and set required forms so dashboard can show completion status
+    if (session_->hasCurriculumSelected()) {
+        auto requiredFormIds = Session::SessionManager::getInstance().calculateRequiredForms(
+            session_->getStudent(),
+            session_->getCurrentCurriculum());
+        session_->setRequiredFormIds(requiredFormIds);
+    }
+
     hideAllViews();
     dashboardWidget_->show();
     dashboardWidget_->refresh();
@@ -347,6 +355,16 @@ void StudentIntakeApp::showCompletion() {
 
 void StudentIntakeApp::handleLoginSuccess() {
     navigationWidget_->refresh();
+
+    // Check if returning student has a curriculum_id - if so, load the curriculum
+    std::string curriculumId = session_->getStudent().getCurriculumId();
+    if (!curriculumId.empty() && !session_->hasCurriculumSelected()) {
+        // Load curriculum from manager
+        auto curriculum = curriculumManager_->getCurriculum(curriculumId);
+        if (!curriculum.getId().empty()) {
+            session_->setCurrentCurriculum(curriculum);
+        }
+    }
 
     if (session_->hasCurriculumSelected()) {
         setState(AppState::Dashboard);
