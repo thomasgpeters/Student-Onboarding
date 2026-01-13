@@ -617,9 +617,8 @@ body {
 }
 
 .dashboard-main {
-    flex: 0 1 auto !important;
+    flex: 1 1 auto !important;
     min-width: 0;
-    max-width: 700px;
     display: block !important;
 }
 
@@ -650,15 +649,13 @@ body {
         min-height: auto;
     }
 
-    .dashboard-main {
-        max-width: 100%;
-    }
-
     .dashboard-sidebar {
         flex: 0 0 auto !important;
         width: 100% !important;
         min-width: 100%;
         order: 2;
+        margin-right: 0;
+        border-radius: 12px;
     }
 }
 

@@ -511,6 +511,98 @@ void PersonalInfoForm::populateFormFields(const Models::FormData& data) {
     }
 }
 
+void PersonalInfoForm::updateStudentFromForm() {
+    if (!session_) return;
+
+    Models::Student& student = session_->getStudent();
+
+    // Update all student fields from form inputs
+    student.setFirstName(firstNameInput_->text().toUTF8());
+    student.setMiddleName(middleNameInput_->text().toUTF8());
+    student.setLastName(lastNameInput_->text().toUTF8());
+    student.setPreferredName(preferredNameInput_->text().toUTF8());
+    student.setEmail(emailInput_->text().toUTF8());
+    student.setPhoneNumber(phoneInput_->text().toUTF8());
+    student.setAlternatePhone(altPhoneInput_->text().toUTF8());
+    student.setAddressLine1(addressLine1Input_->text().toUTF8());
+    student.setAddressLine2(addressLine2Input_->text().toUTF8());
+    student.setCity(cityInput_->text().toUTF8());
+    student.setZipCode(zipCodeInput_->text().toUTF8());
+    student.setSsn(ssnInput_->text().toUTF8());
+    student.setPreferredPronouns(pronounsInput_->text().toUTF8());
+    student.setInternational(internationalCheckbox_->isChecked());
+
+    // Handle gender (skip "Select...")
+    if (genderSelect_->currentIndex() > 0) {
+        student.setGender(genderSelect_->currentText().toUTF8());
+    }
+
+    // Handle state (skip "Select...")
+    if (stateSelect_->currentIndex() > 0) {
+        student.setState(stateSelect_->currentText().toUTF8());
+    }
+
+    // Handle citizenship status (skip "Select...")
+    if (citizenshipSelect_->currentIndex() > 0) {
+        student.setCitizenshipStatus(citizenshipSelect_->currentText().toUTF8());
+    }
+
+    // Handle date of birth
+    if (dateOfBirthInput_->date().isValid()) {
+        Wt::WDate date = dateOfBirthInput_->date();
+        std::tm tm = {};
+        tm.tm_year = date.year() - 1900;
+        tm.tm_mon = date.month() - 1;
+        tm.tm_mday = date.day();
+        student.setDateOfBirth(std::chrono::system_clock::from_time_t(std::mktime(&tm)));
+    }
+}
+
+void PersonalInfoForm::handleSubmit() {
+    // First let base class validate
+    clearErrors();
+    if (!validate()) {
+        showErrors(validationErrors_);
+        return;
+    }
+
+    // Update the Student record with form data
+    updateStudentFromForm();
+
+    // Update student profile on server (save all personal info fields)
+    if (apiService_ && session_) {
+        apiService_->updateStudentProfile(session_->getStudent());
+    }
+
+    // Now proceed with form submission (skip validation since we already did it)
+    isSubmitting_ = true;
+    nextButton_->setEnabled(false);
+    nextButton_->setText("Submitting...");
+
+    Models::FormData data = getFormData();
+    data.setStatus("submitted");
+
+    // Save to session
+    if (session_) {
+        session_->setFormData(formId_, data);
+    }
+
+    // Submit form data to API
+    if (apiService_ && session_) {
+        Api::SubmissionResult result = apiService_->submitForm(
+            session_->getStudent().getId(), formId_, data);
+
+        if (result.success) {
+            onSubmitSuccess(result);
+        } else {
+            onSubmitError(result);
+        }
+    } else {
+        // No API service, just emit success
+        onSubmitSuccess(Api::SubmissionResult{true, "", "Form data saved", {}, {}});
+    }
+}
+
 std::vector<std::string> PersonalInfoForm::getUSStates() const {
     return {
         "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
