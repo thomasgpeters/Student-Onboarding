@@ -97,9 +97,9 @@ void DashboardWidget::setupUI() {
         "</ul>"));
 
     // Right panel - forms sidebar (visible after completion)
+    // Using CSS class-based visibility instead of Wt's hide()/show() to prevent inline style conflicts
     rightPanel_ = mainLayout_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    rightPanel_->addStyleClass("dashboard-sidebar");
-    rightPanel_->hide();
+    rightPanel_->addStyleClass("dashboard-sidebar sidebar-hidden");
 
     // Completed forms section
     completedFormsSection_ = rightPanel_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -169,17 +169,21 @@ void DashboardWidget::updateDisplay() {
     }
 
     // Show/hide sections based on completion status
+    // Using CSS class-based visibility for the sidebar to prevent Wt inline style conflicts
     if (session_->isIntakeComplete()) {
         completionSection_->show();
         progressSection_->hide();
-        // Show right panel with completed forms and recommendations
-        rightPanel_->show();
+        // Show right panel with completed forms and recommendations using CSS classes
+        rightPanel_->removeStyleClass("sidebar-hidden");
+        rightPanel_->addStyleClass("sidebar-visible");
         updateCompletedFormsDisplay();
         updateRecommendedFormsDisplay();
     } else {
         completionSection_->hide();
         progressSection_->show();
-        rightPanel_->hide();
+        // Hide right panel using CSS classes
+        rightPanel_->removeStyleClass("sidebar-visible");
+        rightPanel_->addStyleClass("sidebar-hidden");
     }
 }
 
@@ -277,7 +281,9 @@ void DashboardWidget::updateRecommendedFormsDisplay() {
 void DashboardWidget::showCompletionMessage() {
     completionSection_->show();
     progressSection_->hide();
-    rightPanel_->show();
+    // Show right panel using CSS classes to avoid inline style conflicts
+    rightPanel_->removeStyleClass("sidebar-hidden");
+    rightPanel_->addStyleClass("sidebar-visible");
     updateCompletedFormsDisplay();
     updateRecommendedFormsDisplay();
 }
