@@ -2,6 +2,8 @@
 
 A modular C++ web application built with the Wt (Witty) Web Toolkit for processing student onboarding forms during the enrollment process.
 
+**Developed by Imagery Business Systems LLC**
+
 ## Features
 
 - **Multi-user Support**: Multiple students can simultaneously process their onboarding forms
@@ -15,12 +17,16 @@ A modular C++ web application built with the Wt (Witty) Web Toolkit for processi
 - **Progress Tracking**: Visual progress indicator showing completion status
 - **Post-Onboarding Forms**: Support for additional forms after completing initial onboarding
 - **Completed Forms View**: Students can review and edit previously submitted forms
+- **Returning Student Support**: Form data pre-fills automatically when students log back in
+- **Completion Tracking**: System remembers which forms students have completed across sessions
 
 ## Application Workflow
 
 ### 1. Authentication
 - New users register with name, email, and password
 - Returning users log in to continue their application
+- **Returning students**: Previously selected program is automatically loaded
+- **Completed students**: If all forms were completed, dashboard shows completion view
 - Session persists user progress
 
 ### 2. Program Selection
@@ -234,6 +240,49 @@ The API uses JSON:API format with nested attributes:
 }
 ```
 
+### Student Data Fields
+
+The Student model supports these fields (all use snake_case in API):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int/string | Student ID |
+| `email` | string | Email address |
+| `first_name` | string | First name |
+| `middle_name` | string | Middle name |
+| `last_name` | string | Last name |
+| `preferred_name` | string | Preferred/nickname |
+| `date_of_birth` | date | Date of birth (YYYY-MM-DD) |
+| `gender` | string | Gender |
+| `preferred_pronouns` | string | Preferred pronouns |
+| `phone_number` | string | Primary phone |
+| `alternate_phone` | string | Secondary phone |
+| `address_line1` | string | Street address |
+| `address_line2` | string | Apt/Suite/Unit |
+| `city` | string | City |
+| `state` | string | State |
+| `zip_code` | string | ZIP code |
+| `ssn` | string | Social Security Number |
+| `citizenship_status` | string | Citizenship status |
+| `curriculum_id` | int | Selected program ID |
+| `student_type` | string | undergraduate/graduate/doctoral/certificate |
+| `is_international` | boolean | International student flag |
+| `is_transfer_student` | boolean | Transfer student flag |
+| `is_veteran` | boolean | Veteran status |
+| `requires_financial_aid` | boolean | Needs financial aid |
+| `completed_forms` | array | List of completed form IDs |
+| `enrollment_date` | date | Enrollment date |
+
+### Returning Student Flow
+
+When a student logs in again:
+
+1. API returns full student record including `completed_forms` array
+2. Application loads previously selected `curriculum_id`
+3. Dashboard calculates which forms are required for that curriculum
+4. If all required forms are in `completed_forms`, shows completion view
+5. Forms view pre-fills all fields from student data
+
 ## Form Types
 
 ### Core Onboarding Forms (Required)
@@ -251,21 +300,36 @@ The API uses JSON:API format with nested attributes:
 
 ## UI Components
 
+### Header/Navigation
+- Company logo (48px) with "Student Onboarding" branding
+- Clickable logo and title return to dashboard
+- User welcome message and navigation buttons (Help, Profile, Logout)
+
 ### Dashboard Widget
 - Two-column responsive layout
 - Main content area with program info and progress
-- Collapsible sidebar for completed/recommended forms
-- Sticky sidebar on desktop, stacked on mobile
+- Right-hand sidebar panel (light blue background) for completed/recommended forms
+- Sidebar positioned flush to right edge of screen
+- Sidebar visible only after onboarding completion
+- Responsive: sidebar moves below main content on mobile
 
 ### Forms View
 - Program header with gradient background showing selected curriculum
 - Progress sidebar with clickable steps
 - Form navigation with Previous/Next buttons
+- **Data Pre-fill**: All fields automatically populated from student record
+
+### Footer
+- Black background with white text
+- Copyright notice: "© 2026 Imagery Business Systems LLC. All rights reserved."
+- Sticky footer at bottom of page
 
 ### Styling
 Custom CSS with design tokens:
 - Primary color: `#2563eb` (blue)
 - Success color: `#22c55e` (green)
+- Sidebar color: `#e8f4fc` (light blue)
+- Footer color: `#1a1a1a` (dark gray/black)
 - Responsive breakpoints for mobile support
 
 ## Future Enhancements

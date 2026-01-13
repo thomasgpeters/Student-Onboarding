@@ -10,9 +10,22 @@ Student::Student()
     : id_("")
     , email_("")
     , firstName_("")
+    , middleName_("")
     , lastName_("")
+    , preferredName_("")
     , curriculumId_("")
     , studentType_("undergraduate")
+    , gender_("")
+    , preferredPronouns_("")
+    , phoneNumber_("")
+    , alternatePhone_("")
+    , addressLine1_("")
+    , addressLine2_("")
+    , city_("")
+    , state_("")
+    , zipCode_("")
+    , ssn_("")
+    , citizenshipStatus_("")
     , isInternational_(false)
     , isTransferStudent_(false)
     , isVeteran_(false)
@@ -25,9 +38,22 @@ Student::Student(const std::string& id, const std::string& email)
     : id_(id)
     , email_(email)
     , firstName_("")
+    , middleName_("")
     , lastName_("")
+    , preferredName_("")
     , curriculumId_("")
     , studentType_("undergraduate")
+    , gender_("")
+    , preferredPronouns_("")
+    , phoneNumber_("")
+    , alternatePhone_("")
+    , addressLine1_("")
+    , addressLine2_("")
+    , city_("")
+    , state_("")
+    , zipCode_("")
+    , ssn_("")
+    , citizenshipStatus_("")
     , isInternational_(false)
     , isTransferStudent_(false)
     , isVeteran_(false)
@@ -80,7 +106,20 @@ nlohmann::json Student::toJson() const {
 
     j["email"] = email_;
     j["first_name"] = firstName_;
+    j["middle_name"] = middleName_;
     j["last_name"] = lastName_;
+    j["preferred_name"] = preferredName_;
+    j["gender"] = gender_;
+    j["preferred_pronouns"] = preferredPronouns_;
+    j["phone_number"] = phoneNumber_;
+    j["alternate_phone"] = alternatePhone_;
+    j["address_line1"] = addressLine1_;
+    j["address_line2"] = addressLine2_;
+    j["city"] = city_;
+    j["state"] = state_;
+    j["zip_code"] = zipCode_;
+    j["ssn"] = ssn_;
+    j["citizenship_status"] = citizenshipStatus_;
 
     if (!curriculumId_.empty()) {
         try {
@@ -95,6 +134,11 @@ nlohmann::json Student::toJson() const {
     j["is_transfer_student"] = isTransferStudent_;
     j["is_veteran"] = isVeteran_;
     j["requires_financial_aid"] = requiresFinancialAid_;
+
+    // Completed forms
+    if (!completedForms_.empty()) {
+        j["completed_forms"] = completedForms_;
+    }
 
     // Convert time points to ISO 8601 date strings (date only for DB)
     auto enrollmentTime = std::chrono::system_clock::to_time_t(enrollmentDate_);
@@ -145,6 +189,89 @@ Student Student::fromJson(const nlohmann::json& json) {
         student.lastName_ = attrs["last_name"].get<std::string>();
     }
 
+    // Handle middleName/middle_name
+    if (attrs.contains("middleName") && attrs["middleName"].is_string()) {
+        student.middleName_ = attrs["middleName"].get<std::string>();
+    } else if (attrs.contains("middle_name") && attrs["middle_name"].is_string()) {
+        student.middleName_ = attrs["middle_name"].get<std::string>();
+    }
+
+    // Handle preferredName/preferred_name
+    if (attrs.contains("preferredName") && attrs["preferredName"].is_string()) {
+        student.preferredName_ = attrs["preferredName"].get<std::string>();
+    } else if (attrs.contains("preferred_name") && attrs["preferred_name"].is_string()) {
+        student.preferredName_ = attrs["preferred_name"].get<std::string>();
+    }
+
+    // Handle gender
+    if (attrs.contains("gender") && attrs["gender"].is_string()) {
+        student.gender_ = attrs["gender"].get<std::string>();
+    }
+
+    // Handle preferredPronouns/preferred_pronouns
+    if (attrs.contains("preferredPronouns") && attrs["preferredPronouns"].is_string()) {
+        student.preferredPronouns_ = attrs["preferredPronouns"].get<std::string>();
+    } else if (attrs.contains("preferred_pronouns") && attrs["preferred_pronouns"].is_string()) {
+        student.preferredPronouns_ = attrs["preferred_pronouns"].get<std::string>();
+    }
+
+    // Handle phoneNumber/phone_number
+    if (attrs.contains("phoneNumber") && attrs["phoneNumber"].is_string()) {
+        student.phoneNumber_ = attrs["phoneNumber"].get<std::string>();
+    } else if (attrs.contains("phone_number") && attrs["phone_number"].is_string()) {
+        student.phoneNumber_ = attrs["phone_number"].get<std::string>();
+    }
+
+    // Handle alternatePhone/alternate_phone
+    if (attrs.contains("alternatePhone") && attrs["alternatePhone"].is_string()) {
+        student.alternatePhone_ = attrs["alternatePhone"].get<std::string>();
+    } else if (attrs.contains("alternate_phone") && attrs["alternate_phone"].is_string()) {
+        student.alternatePhone_ = attrs["alternate_phone"].get<std::string>();
+    }
+
+    // Handle addressLine1/address_line1
+    if (attrs.contains("addressLine1") && attrs["addressLine1"].is_string()) {
+        student.addressLine1_ = attrs["addressLine1"].get<std::string>();
+    } else if (attrs.contains("address_line1") && attrs["address_line1"].is_string()) {
+        student.addressLine1_ = attrs["address_line1"].get<std::string>();
+    }
+
+    // Handle addressLine2/address_line2
+    if (attrs.contains("addressLine2") && attrs["addressLine2"].is_string()) {
+        student.addressLine2_ = attrs["addressLine2"].get<std::string>();
+    } else if (attrs.contains("address_line2") && attrs["address_line2"].is_string()) {
+        student.addressLine2_ = attrs["address_line2"].get<std::string>();
+    }
+
+    // Handle city
+    if (attrs.contains("city") && attrs["city"].is_string()) {
+        student.city_ = attrs["city"].get<std::string>();
+    }
+
+    // Handle state
+    if (attrs.contains("state") && attrs["state"].is_string()) {
+        student.state_ = attrs["state"].get<std::string>();
+    }
+
+    // Handle zipCode/zip_code
+    if (attrs.contains("zipCode") && attrs["zipCode"].is_string()) {
+        student.zipCode_ = attrs["zipCode"].get<std::string>();
+    } else if (attrs.contains("zip_code") && attrs["zip_code"].is_string()) {
+        student.zipCode_ = attrs["zip_code"].get<std::string>();
+    }
+
+    // Handle ssn
+    if (attrs.contains("ssn") && attrs["ssn"].is_string()) {
+        student.ssn_ = attrs["ssn"].get<std::string>();
+    }
+
+    // Handle citizenshipStatus/citizenship_status
+    if (attrs.contains("citizenshipStatus") && attrs["citizenshipStatus"].is_string()) {
+        student.citizenshipStatus_ = attrs["citizenshipStatus"].get<std::string>();
+    } else if (attrs.contains("citizenship_status") && attrs["citizenship_status"].is_string()) {
+        student.citizenshipStatus_ = attrs["citizenship_status"].get<std::string>();
+    }
+
     // Handle curriculumId/curriculum_id - could be int or string
     if (attrs.contains("curriculumId")) {
         if (attrs["curriculumId"].is_string()) {
@@ -192,8 +319,11 @@ Student Student::fromJson(const nlohmann::json& json) {
         student.requiresFinancialAid_ = attrs["requires_financial_aid"].get<bool>();
     }
 
+    // Handle completedForms/completed_forms
     if (attrs.contains("completedForms") && attrs["completedForms"].is_array()) {
         student.completedForms_ = attrs["completedForms"].get<std::vector<std::string>>();
+    } else if (attrs.contains("completed_forms") && attrs["completed_forms"].is_array()) {
+        student.completedForms_ = attrs["completed_forms"].get<std::vector<std::string>>();
     }
 
     // Parse date strings

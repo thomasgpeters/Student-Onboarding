@@ -1,6 +1,8 @@
 #include "PersonalInfoForm.h"
 #include <Wt/WLabel.h>
 #include <Wt/WBreak.h>
+#include <Wt/WDate.h>
+#include <ctime>
 
 namespace StudentIntake {
 namespace Forms {
@@ -286,11 +288,79 @@ void PersonalInfoForm::createFormFields() {
         " I am an international student requiring a visa"));
     internationalCheckbox_->addStyleClass("form-check");
 
-    // Pre-populate email if available from session
+    // Pre-populate fields if available from session
     if (session_) {
-        emailInput_->setText(session_->getStudent().getEmail());
-        firstNameInput_->setText(session_->getStudent().getFirstName());
-        lastNameInput_->setText(session_->getStudent().getLastName());
+        const auto& student = session_->getStudent();
+
+        // Personal Details
+        emailInput_->setText(student.getEmail());
+        firstNameInput_->setText(student.getFirstName());
+        middleNameInput_->setText(student.getMiddleName());
+        lastNameInput_->setText(student.getLastName());
+        preferredNameInput_->setText(student.getPreferredName());
+        pronounsInput_->setText(student.getPreferredPronouns());
+
+        // Date of Birth
+        auto dob = student.getDateOfBirth();
+        if (dob != std::chrono::system_clock::time_point{}) {
+            auto time = std::chrono::system_clock::to_time_t(dob);
+            std::tm* tm = std::gmtime(&time);
+            if (tm) {
+                Wt::WDate date(tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+                if (date.isValid()) {
+                    dateOfBirthInput_->setDate(date);
+                }
+            }
+        }
+
+        // Gender - find matching index
+        std::string gender = student.getGender();
+        if (!gender.empty()) {
+            for (int i = 0; i < genderSelect_->count(); ++i) {
+                if (genderSelect_->itemText(i).toUTF8() == gender) {
+                    genderSelect_->setCurrentIndex(i);
+                    break;
+                }
+            }
+        }
+
+        // Contact Information
+        phoneInput_->setText(student.getPhoneNumber());
+        altPhoneInput_->setText(student.getAlternatePhone());
+
+        // Address
+        addressLine1Input_->setText(student.getAddressLine1());
+        addressLine2Input_->setText(student.getAddressLine2());
+        cityInput_->setText(student.getCity());
+        zipCodeInput_->setText(student.getZipCode());
+
+        // State - find matching index
+        std::string state = student.getState();
+        if (!state.empty()) {
+            for (int i = 0; i < stateSelect_->count(); ++i) {
+                if (stateSelect_->itemText(i).toUTF8() == state) {
+                    stateSelect_->setCurrentIndex(i);
+                    break;
+                }
+            }
+        }
+
+        // Citizenship Information
+        ssnInput_->setText(student.getSsn());
+
+        // Citizenship Status - find matching index
+        std::string citizenshipStatus = student.getCitizenshipStatus();
+        if (!citizenshipStatus.empty()) {
+            for (int i = 0; i < citizenshipSelect_->count(); ++i) {
+                if (citizenshipSelect_->itemText(i).toUTF8() == citizenshipStatus) {
+                    citizenshipSelect_->setCurrentIndex(i);
+                    break;
+                }
+            }
+        }
+
+        // International checkbox
+        internationalCheckbox_->setChecked(student.isInternational());
     }
 }
 
