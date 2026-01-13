@@ -217,6 +217,14 @@ void CurriculumSelector::updateCurriculumList() {
         // Store curriculum ID as object name for lookup
         radio->setObjectName(curriculum.getId());
 
+        // Add description in smaller text below the name
+        std::string description = curriculum.getDescription();
+        if (!description.empty()) {
+            auto descText = itemContainer->addWidget(std::make_unique<Wt::WText>(
+                "<div class='curriculum-item-desc'>" + description + "</div>"));
+            descText->addStyleClass("curriculum-description-small");
+        }
+
         // Get department name
         std::string deptName = "";
         auto dept = curriculumManager_->getDepartment(curriculum.getDepartment());
