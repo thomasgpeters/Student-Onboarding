@@ -200,8 +200,8 @@ void DashboardWidget::updateCompletedFormsDisplay() {
     completedFormsList_->clear();
 
     // Get form type info from session manager
-    auto& formTypeInfos = Session::SessionManager::getInstance().getFormTypeInfos();
-    auto completedFormIds = session_->getStudent().getCompletedFormIds();
+    auto formTypeInfos = Session::SessionManager::getInstance().getFormTypeInfos();
+    auto completedFormIds = session_->getStudent().getCompletedForms();
 
     if (completedFormIds.empty()) {
         return;
