@@ -25,6 +25,7 @@ protected:
     void createFormFields() override;
     void collectFormData(Models::FormData& data) const override;
     void populateFormFields(const Models::FormData& data) override;
+    void handleSubmit() override;
 
 private:
     // Personal details
@@ -66,6 +67,7 @@ private:
 
     void setupAddressFields(Wt::WContainerWidget* container, const std::string& prefix);
     void toggleMailingAddress();
+    void updateStudentFromForm();
     std::vector<std::string> getUSStates() const;
     std::vector<std::string> getCountries() const;
 };
