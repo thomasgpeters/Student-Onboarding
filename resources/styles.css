@@ -353,6 +353,17 @@ body {
     color: var(--text-secondary);
 }
 
+.curriculum-item-desc {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 0.5rem 1.5rem;
+    line-height: 1.4;
+}
+
+.curriculum-description-small {
+    display: block;
+}
+
 /* Forms View */
 .forms-view {
     max-width: 1200px;
