@@ -370,6 +370,21 @@ body {
     margin: 0 auto;
 }
 
+.program-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow);
+}
+
+.program-header-text h3 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
 .forms-layout {
     display: flex;
     gap: 2rem;

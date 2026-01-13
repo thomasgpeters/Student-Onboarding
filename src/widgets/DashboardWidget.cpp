@@ -26,7 +26,7 @@ void DashboardWidget::setupUI() {
     auto welcomeSection = addWidget(std::make_unique<Wt::WContainerWidget>());
     welcomeSection->addStyleClass("welcome-section");
 
-    welcomeText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>("<h2>Welcome to the Student Intake Portal</h2>"));
+    welcomeText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>("<h2>Welcome to Student Onboarding</h2>"));
 
     statusText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>());
     statusText_->addStyleClass("status-text");
@@ -63,8 +63,8 @@ void DashboardWidget::setupUI() {
 
     completionSection_->addWidget(std::make_unique<Wt::WText>(
         "<div class='completion-icon'>&#10003;</div>"
-        "<h3>Application Complete!</h3>"
-        "<p>Thank you for completing your student intake application. "
+        "<h3>Onboarding Complete!</h3>"
+        "<p>Thank you for completing your student onboarding forms. "
         "Our admissions team will review your submission and contact you soon.</p>"
         "<p>You will receive a confirmation email with next steps.</p>"));
 
@@ -82,7 +82,7 @@ void DashboardWidget::setupUI() {
     helpSection->addStyleClass("help-section card");
     helpSection->addWidget(std::make_unique<Wt::WText>(
         "<h4>Need Help?</h4>"
-        "<p>If you have questions about the intake process, please contact:</p>"
+        "<p>If you have questions about the onboarding process, please contact:</p>"
         "<ul>"
         "<li>Email: admissions@university.edu</li>"
         "<li>Phone: (555) 123-4567</li>"

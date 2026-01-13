@@ -35,7 +35,7 @@ void RegisterWidget::setupUI() {
 
     // Description
     auto desc = addWidget(std::make_unique<Wt::WText>(
-        "<p>Create a new account to begin your student intake process.</p>"));
+        "<p>Create a new account to begin the student onboarding process.</p>"));
     desc->addStyleClass("register-description");
 
     // Error container (hidden by default)

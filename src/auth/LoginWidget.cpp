@@ -28,7 +28,7 @@ void LoginWidget::setupUI() {
 
     // Description
     auto desc = addWidget(std::make_unique<Wt::WText>(
-        "<p>Welcome to the Student Intake Forms Portal. Please log in to continue.</p>"));
+        "<p>Welcome to Student Onboarding. Please log in to continue.</p>"));
     desc->addStyleClass("login-description");
 
     // Error container (hidden by default)
