@@ -94,6 +94,7 @@ private:
     Curriculum::CurriculumSelector* curriculumSelector_;
     Widgets::DashboardWidget* dashboardWidget_;
     Wt::WContainerWidget* formsView_;
+    Wt::WText* programHeaderText_;
     Widgets::ProgressWidget* progressWidget_;
     Widgets::FormContainer* formContainer_;
     Wt::WContainerWidget* completionView_;

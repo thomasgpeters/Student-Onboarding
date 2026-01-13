@@ -1,4 +1,5 @@
 #include "DashboardWidget.h"
+#include "session/SessionManager.h"
 #include <Wt/WBreak.h>
 
 namespace StudentIntake {
@@ -12,7 +13,10 @@ DashboardWidget::DashboardWidget()
     , progressSection_(nullptr)
     , progressText_(nullptr)
     , continueButton_(nullptr)
-    , completionSection_(nullptr) {
+    , completionSection_(nullptr)
+    , completedFormsSection_(nullptr)
+    , completedFormsList_(nullptr)
+    , additionalFormsSection_(nullptr) {
     setupUI();
 }
 
@@ -26,7 +30,7 @@ void DashboardWidget::setupUI() {
     auto welcomeSection = addWidget(std::make_unique<Wt::WContainerWidget>());
     welcomeSection->addStyleClass("welcome-section");
 
-    welcomeText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>("<h2>Welcome to the Student Intake Portal</h2>"));
+    welcomeText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>("<h2>Welcome to Student Onboarding</h2>"));
 
     statusText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>());
     statusText_->addStyleClass("status-text");
@@ -56,6 +60,33 @@ void DashboardWidget::setupUI() {
         continueClicked_.emit();
     });
 
+    // Completed forms section (shows when forms have been submitted)
+    completedFormsSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    completedFormsSection_->addStyleClass("completed-forms-section card");
+    completedFormsSection_->hide();
+
+    completedFormsSection_->addWidget(std::make_unique<Wt::WText>("<h4>Completed Forms</h4>"));
+    completedFormsList_ = completedFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    completedFormsList_->addStyleClass("completed-forms-list");
+
+    // Additional forms section (post-onboarding forms)
+    additionalFormsSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    additionalFormsSection_->addStyleClass("additional-forms-section card");
+    additionalFormsSection_->hide();
+
+    additionalFormsSection_->addWidget(std::make_unique<Wt::WText>(
+        "<h4>Additional Forms</h4>"
+        "<p>The following optional forms are available for your program:</p>"));
+
+    auto additionalFormsButtons = additionalFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    additionalFormsButtons->addStyleClass("button-container");
+
+    auto viewAdditionalBtn = additionalFormsButtons->addWidget(std::make_unique<Wt::WPushButton>("View Additional Forms"));
+    viewAdditionalBtn->addStyleClass("btn btn-outline-primary");
+    viewAdditionalBtn->clicked().connect([this]() {
+        additionalFormsClicked_.emit();
+    });
+
     // Completion section (initially hidden)
     completionSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     completionSection_->addStyleClass("completion-section card");
@@ -63,8 +94,8 @@ void DashboardWidget::setupUI() {
 
     completionSection_->addWidget(std::make_unique<Wt::WText>(
         "<div class='completion-icon'>&#10003;</div>"
-        "<h3>Application Complete!</h3>"
-        "<p>Thank you for completing your student intake application. "
+        "<h3>Onboarding Complete!</h3>"
+        "<p>Thank you for completing your student onboarding forms. "
         "Our admissions team will review your submission and contact you soon.</p>"
         "<p>You will receive a confirmation email with next steps.</p>"));
 
@@ -82,7 +113,7 @@ void DashboardWidget::setupUI() {
     helpSection->addStyleClass("help-section card");
     helpSection->addWidget(std::make_unique<Wt::WText>(
         "<h4>Need Help?</h4>"
-        "<p>If you have questions about the intake process, please contact:</p>"
+        "<p>If you have questions about the onboarding process, please contact:</p>"
         "<ul>"
         "<li>Email: admissions@university.edu</li>"
         "<li>Phone: (555) 123-4567</li>"
@@ -140,13 +171,66 @@ void DashboardWidget::updateDisplay() {
         continueButton_->setText("Continue Application");
     }
 
-    // Show/hide completion section
+    // Update completed forms display
+    updateCompletedFormsDisplay();
+
+    // Show/hide sections based on completion status
     if (session_->isIntakeComplete()) {
         completionSection_->show();
         progressSection_->hide();
+        // Show additional forms section if there are optional forms available
+        additionalFormsSection_->show();
     } else {
         completionSection_->hide();
         progressSection_->show();
+        additionalFormsSection_->hide();
+    }
+
+    // Always show completed forms if any exist
+    if (completed > 0) {
+        completedFormsSection_->show();
+    } else {
+        completedFormsSection_->hide();
+    }
+}
+
+void DashboardWidget::updateCompletedFormsDisplay() {
+    if (!session_ || !completedFormsList_) return;
+
+    completedFormsList_->clear();
+
+    // Get form type info from session manager
+    auto& formTypeInfos = Session::SessionManager::getInstance().getFormTypeInfos();
+    auto completedFormIds = session_->getStudent().getCompletedFormIds();
+
+    if (completedFormIds.empty()) {
+        return;
+    }
+
+    for (const auto& formId : completedFormIds) {
+        // Find form name from form type info
+        std::string formName = formId;
+        for (const auto& info : formTypeInfos) {
+            if (info.id == formId) {
+                formName = info.name;
+                break;
+            }
+        }
+
+        auto formItem = completedFormsList_->addWidget(std::make_unique<Wt::WContainerWidget>());
+        formItem->addStyleClass("completed-form-item");
+
+        // Add checkmark icon and form name
+        auto formLabel = formItem->addWidget(std::make_unique<Wt::WText>(
+            "<span class='form-check-icon'>&#10003;</span> " + formName));
+        formLabel->addStyleClass("form-label");
+
+        // Add view/edit button
+        auto viewBtn = formItem->addWidget(std::make_unique<Wt::WPushButton>("View"));
+        viewBtn->addStyleClass("btn btn-sm btn-outline-secondary");
+        viewBtn->clicked().connect([this, formId]() {
+            viewFormClicked_.emit(formId);
+        });
     }
 }
 

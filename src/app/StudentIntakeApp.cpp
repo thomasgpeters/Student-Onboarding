@@ -19,6 +19,7 @@ StudentIntakeApp::StudentIntakeApp(const Wt::WEnvironment& env)
     , curriculumSelector_(nullptr)
     , dashboardWidget_(nullptr)
     , formsView_(nullptr)
+    , programHeaderText_(nullptr)
     , progressWidget_(nullptr)
     , formContainer_(nullptr)
     , completionView_(nullptr) {
@@ -156,10 +157,21 @@ void StudentIntakeApp::setupUI() {
             setState(AppState::Forms);
         }
     });
+    dashboardWidget_->viewFormClicked().connect([this](const std::string& formId) {
+        // Navigate to forms view and show the specific form
+        setState(AppState::Forms);
+        formContainer_->showForm(formId);
+    });
 
     // Forms view (with progress sidebar)
     formsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     formsView_->addStyleClass("forms-view");
+
+    // Program header - shows selected program name for context
+    auto programHeader = formsView_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    programHeader->addStyleClass("program-header");
+    programHeaderText_ = programHeader->addWidget(std::make_unique<Wt::WText>());
+    programHeaderText_->addStyleClass("program-header-text");
 
     auto formsLayout = formsView_->addWidget(std::make_unique<Wt::WContainerWidget>());
     formsLayout->addStyleClass("forms-layout");
@@ -200,8 +212,8 @@ void StudentIntakeApp::setupUI() {
 
     completionContent->addWidget(std::make_unique<Wt::WText>(
         "<div class='completion-icon'>&#10003;</div>"
-        "<h1>Application Submitted Successfully!</h1>"
-        "<p class='lead'>Thank you for completing your student intake application.</p>"
+        "<h1>Onboarding Complete!</h1>"
+        "<p class='lead'>Thank you for completing your student onboarding forms.</p>"
         "<p>Our admissions team will review your submission and contact you within 5-7 business days.</p>"
         "<p>A confirmation email has been sent to your registered email address.</p>"));
 
@@ -294,6 +306,12 @@ void StudentIntakeApp::showForms() {
     // Configure form factory with session and API service
     formFactory_->setSession(session_);
     formFactory_->setApiService(apiService_);
+
+    // Update program header with selected curriculum name
+    if (session_->hasCurriculumSelected()) {
+        auto& curriculum = session_->getCurrentCurriculum();
+        programHeaderText_->setText("<h3>" + curriculum.getName() + "</h3>");
+    }
 
     // Load forms
     formContainer_->loadForms(requiredFormIds);

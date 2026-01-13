@@ -26,10 +26,13 @@ public:
 
     Wt::Signal<>& continueClicked() { return continueClicked_; }
     Wt::Signal<>& startOverClicked() { return startOverClicked_; }
+    Wt::Signal<std::string>& viewFormClicked() { return viewFormClicked_; }
+    Wt::Signal<>& additionalFormsClicked() { return additionalFormsClicked_; }
 
 private:
     void setupUI();
     void updateDisplay();
+    void updateCompletedFormsDisplay();
 
     std::shared_ptr<Session::StudentSession> session_;
 
@@ -40,9 +43,14 @@ private:
     Wt::WText* progressText_;
     Wt::WPushButton* continueButton_;
     Wt::WContainerWidget* completionSection_;
+    Wt::WContainerWidget* completedFormsSection_;
+    Wt::WContainerWidget* completedFormsList_;
+    Wt::WContainerWidget* additionalFormsSection_;
 
     Wt::Signal<> continueClicked_;
     Wt::Signal<> startOverClicked_;
+    Wt::Signal<std::string> viewFormClicked_;
+    Wt::Signal<> additionalFormsClicked_;
 };
 
 } // namespace Widgets

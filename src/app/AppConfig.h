@@ -18,7 +18,7 @@ struct AppConfig {
     int sessionTimeoutMinutes = 60;
 
     // UI settings
-    std::string applicationTitle = "Student Intake Portal";
+    std::string applicationTitle = "Student Onboarding";
     std::string applicationSubtitle = "Complete your enrollment forms";
 
     // File upload settings

@@ -24,7 +24,7 @@ void NavigationWidget::setupUI() {
     brandContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     brandContainer_->addStyleClass("navbar-brand");
 
-    auto brandLink = brandContainer_->addWidget(std::make_unique<Wt::WText>("Student Intake Portal"));
+    auto brandLink = brandContainer_->addWidget(std::make_unique<Wt::WText>("Student Onboarding"));
     brandLink->addStyleClass("brand-text");
     brandLink->clicked().connect([this]() {
         homeClicked_.emit();
