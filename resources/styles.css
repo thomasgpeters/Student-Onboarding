@@ -927,10 +927,11 @@ body {
 
 /* Logo in navbar */
 .brand-logo {
-    height: 40px;
+    height: 32px;
     width: auto;
-    margin-right: 0.75rem;
+    margin-right: 0.5rem;
     border-radius: 4px;
+    vertical-align: middle;
 }
 
 .navbar-brand {
