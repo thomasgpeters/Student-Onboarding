@@ -45,6 +45,13 @@ A modular C++ web application built with the Wt (Witty) Web Toolkit for processi
 ### 3. Dashboard
 The dashboard provides a central hub for students:
 
+**Advertisement Banner:**
+- Full-width promotional banner at the top of the dashboard
+- Blue gradient background with "Featured" badge
+- Displays business advertisements and campus promotions
+- Call-to-action link in yellow for visibility
+- Responsive design adapts to mobile screens
+
 **During Onboarding:**
 - Shows selected program information with "Change Program" option
 - Displays progress bar with completion percentage
@@ -60,20 +67,65 @@ The dashboard provides a central hub for students:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│               Welcome, Student Name                      │
-├─────────────────────────────┬───────────────────────────┤
-│                             │  Completed Forms          │
-│  Selected Program           │  ✓ Personal Information 👁│
-│  Bachelor of Science...     │  ✓ Emergency Contacts   👁│
-│                             │  ✓ Academic History     👁│
-│  ┌─────────────────────┐    │  ✓ Terms and Consent    👁│
-│  │ Onboarding Complete!│    │                           │
-│  │ Thank you for...    │    │  Recommended Forms        │
-│  └─────────────────────┘    │  + Medical Information  → │
-│                             │  + Financial Aid        → │
-│  Need Help?                 │                           │
-│  Contact admissions...      │                           │
+│ [Featured] Campus Bookstore - 15% off textbooks! Shop → │  ← Ad Banner
+├─────────────────────────────────────────────────────────┤
+│                             │                           │
+│  ┌───────────────────────┐  │  Completed Forms          │
+│  │ Selected Program      │  │  ✓ Personal Information 👁│
+│  │ Bachelor of Science   │  │  ✓ Emergency Contacts   👁│
+│  │ in Computer Science   │  │  ✓ Academic History     👁│
+│  │ [Change Program]      │  │  ✓ Terms and Consent    👁│
+│  └───────────────────────┘  │                           │
+│                             │  Recommended Forms        │
+│  ┌───────────────────────┐  │  + Medical Information  → │
+│  │ ✓ Onboarding Complete!│  │  + Financial Aid        → │
+│  │ Thank you for         │  │                           │
+│  │ completing your forms │  │                           │
+│  └───────────────────────┘  │                           │
+│                             │                           │
+│  ┌───────────────────────┐  │                           │
+│  │ Need Help?            │  │                           │
+│  │ admissions@univ.edu   │  │                           │
+│  │ (555) 123-4567        │  │                           │
+│  └───────────────────────┘  │                           │
+│                             │                           │
 └─────────────────────────────┴───────────────────────────┘
+        Main Content                  Sidebar (light blue)
+```
+
+**Dashboard Layout Wireframe (During Onboarding):**
+```
+┌─────────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ [Featured] Campus Bookstore - Get 15% off! Shop →   │ │  ← Blue gradient
+│ └─────────────────────────────────────────────────────┘ │     banner
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │ Selected Program                  [Change Program] │  │
+│  │ ─────────────────────────────────────────────────  │  │
+│  │ Bachelor of Science in Computer Science            │  │
+│  │ Comprehensive program covering software...         │  │
+│  │ Credit Hours: 120                                  │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │ Application Progress                               │  │
+│  │ ─────────────────────────────────────────────────  │  │
+│  │ You have completed 2 of 4 required forms.          │  │
+│  │ ████████████░░░░░░░░░░░░  50% Complete             │  │
+│  │                                                    │  │
+│  │            [ Continue Application ]                │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │ Need Help?                                         │  │
+│  │ Email: admissions@university.edu                   │  │
+│  │ Phone: (555) 123-4567                             │  │
+│  │ Office Hours: Mon-Fri, 9 AM - 5 PM                │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ### 4. Forms View
@@ -340,8 +392,26 @@ When a student logs in again:
 - Clickable logo and title return to dashboard
 - User welcome message and navigation buttons (Help, Profile, Logout)
 
+### Advertisement Banner
+- Full-width promotional banner at top of dashboard
+- Blue gradient background (`#1e40af` to `#3b82f6`)
+- "Featured" badge with semi-transparent white background
+- Promotional text with business name and offer
+- Yellow call-to-action link (`#fbbf24`) for high visibility
+- Responsive: stacks vertically on mobile screens
+- Easily customizable content in `DashboardWidget.cpp`
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  [Featured]  Campus Bookstore — Get 15% off!  Shop Now →     │
+└──────────────────────────────────────────────────────────────┘
+     ↑              ↑                               ↑
+   Badge     Business promo text            Yellow CTA link
+```
+
 ### Dashboard Widget
-- Two-column responsive layout
+- Advertisement banner at top for promotions
+- Two-column responsive layout (after completion)
 - Main content area with program info and progress
 - Right-hand sidebar panel (light blue background) for completed/recommended forms
 - Sidebar positioned flush to right edge of screen
@@ -382,6 +452,16 @@ Custom CSS with design tokens:
 - `ARCHITECTURE_ANALYSIS.md` - Technical architecture and module details
 
 ## Recent Changes
+
+### Version 1.9.0
+- **Advertisement Banner**: Replaced redundant welcome message with promotional banner
+  - Full-width banner at top of dashboard for business advertisements
+  - Blue gradient background with "Featured" badge
+  - Sample Campus Bookstore promotion with 15% off textbooks offer
+  - Yellow call-to-action link for high visibility
+  - Responsive design: stacks vertically on mobile devices
+  - Removed duplicate "Welcome, <name>" message (already shown in navbar)
+  - Easily customizable by editing `DashboardWidget.cpp`
 
 ### Version 1.8.0
 - **Program Selection Card Layout**: Redesigned program selection page with modern card-based UI
