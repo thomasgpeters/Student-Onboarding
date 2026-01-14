@@ -283,13 +283,23 @@ void CurriculumSelector::showSyllabusDialog(const Models::Curriculum& curriculum
     dialog->setResizable(false);
     dialog->rejectWhenEscapePressed();
     dialog->addStyleClass("syllabus-dialog");
+    dialog->setAttributeValue("style",
+        "min-width: 500px; max-width: 600px;");
+
+    // Style the title bar
+    dialog->titleBar()->setAttributeValue("style",
+        "background: #2563eb; color: white; padding: 1rem 1.25rem; font-size: 1.1rem; font-weight: 600;");
 
     auto content = dialog->contents();
     content->addStyleClass("syllabus-content");
+    content->setAttributeValue("style",
+        "padding: 1.5rem; background: #ffffff;");
 
     // Program name
     auto nameText = content->addWidget(std::make_unique<Wt::WText>("<h3>" + curriculum.getName() + "</h3>"));
     nameText->setTextFormat(Wt::TextFormat::XHTML);
+    nameText->setAttributeValue("style",
+        "color: #2563eb; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;");
 
     // Get department name
     std::string deptName = "";
@@ -311,33 +321,46 @@ void CurriculumSelector::showSyllabusDialog(const Models::Curriculum& curriculum
     else degreeLabel = degreeType;
 
     // Program details
-    auto detailsHtml = "<div class='syllabus-details'>"
-        "<p><strong>Department:</strong> " + deptName + "</p>"
-        "<p><strong>Degree Type:</strong> " + degreeLabel + "</p>"
-        "<p><strong>Credit Hours:</strong> " + std::to_string(curriculum.getCreditHours()) + "</p>"
-        "<p><strong>Duration:</strong> " + std::to_string(curriculum.getDurationSemesters()) + " semesters</p>"
+    auto detailsHtml = "<div style='background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;'>"
+        "<p style='margin: 0.5rem 0; color: #1e293b;'><strong>Department:</strong> " + deptName + "</p>"
+        "<p style='margin: 0.5rem 0; color: #1e293b;'><strong>Degree Type:</strong> " + degreeLabel + "</p>"
+        "<p style='margin: 0.5rem 0; color: #1e293b;'><strong>Credit Hours:</strong> " + std::to_string(curriculum.getCreditHours()) + "</p>"
+        "<p style='margin: 0.5rem 0; color: #1e293b;'><strong>Duration:</strong> " + std::to_string(curriculum.getDurationSemesters()) + " semesters</p>"
         "</div>";
 
     auto detailsText = content->addWidget(std::make_unique<Wt::WText>(detailsHtml));
     detailsText->setTextFormat(Wt::TextFormat::XHTML);
 
     // Description
-    content->addWidget(std::make_unique<Wt::WText>("<h4>Program Description</h4>"));
+    auto descHeader = content->addWidget(std::make_unique<Wt::WText>("<h4>Program Description</h4>"));
+    descHeader->setTextFormat(Wt::TextFormat::XHTML);
+    descHeader->setAttributeValue("style",
+        "color: #1e293b; margin: 1.5rem 0 0.5rem 0; font-size: 1rem; font-weight: 600;");
     auto descText = content->addWidget(std::make_unique<Wt::WText>("<p>" + curriculum.getDescription() + "</p>"));
     descText->setTextFormat(Wt::TextFormat::XHTML);
+    descText->setAttributeValue("style", "color: #64748b; line-height: 1.6; margin: 0;");
 
     // Required forms info
     auto formsCount = curriculum.getRequiredForms().size();
-    content->addWidget(std::make_unique<Wt::WText>("<h4>Onboarding Requirements</h4>"));
+    auto formsHeader = content->addWidget(std::make_unique<Wt::WText>("<h4>Onboarding Requirements</h4>"));
+    formsHeader->setTextFormat(Wt::TextFormat::XHTML);
+    formsHeader->setAttributeValue("style",
+        "color: #1e293b; margin: 1.5rem 0 0.5rem 0; font-size: 1rem; font-weight: 600;");
     auto formsText = content->addWidget(std::make_unique<Wt::WText>(
         "<p>This program requires completion of <strong>" + std::to_string(formsCount) +
         "</strong> onboarding forms.</p>"));
     formsText->setTextFormat(Wt::TextFormat::XHTML);
+    formsText->setAttributeValue("style", "color: #64748b; margin: 0;");
 
     // Close button
     auto footer = dialog->footer();
+    footer->setAttributeValue("style",
+        "padding: 1rem 1.5rem; border-top: 1px solid #e2e8f0; background: #f8fafc; text-align: right;");
     auto closeBtn = footer->addWidget(std::make_unique<Wt::WPushButton>("Close"));
     closeBtn->addStyleClass("btn btn-secondary");
+    closeBtn->setAttributeValue("style",
+        "padding: 0.5rem 1.5rem; background-color: #64748b; color: white; border: none; "
+        "border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer;");
     closeBtn->clicked().connect([dialog]() {
         dialog->accept();
     });
