@@ -85,14 +85,25 @@ AcademicHistory AcademicHistory::fromJson(const nlohmann::json& json) {
         }
     }
 
-    history.institutionName_ = data.value("institution_name", "");
-    history.institutionType_ = data.value("institution_type", "");
-    history.institutionCity_ = data.value("institution_city", "");
-    history.institutionState_ = data.value("institution_state", "");
-    history.institutionCountry_ = data.value("institution_country", "");
-    history.degreeEarned_ = data.value("degree_earned", "");
-    history.major_ = data.value("major", "");
-    history.minor_ = data.value("minor", "");
+    // Helper lambda to safely get string value (handles null)
+    auto safeGetString = [&data](const std::string& key) -> std::string {
+        if (data.contains(key) && data[key].is_string()) {
+            return data[key].get<std::string>();
+        }
+        return "";
+    };
+
+    history.institutionName_ = safeGetString("institution_name");
+    history.institutionType_ = safeGetString("institution_type");
+    history.institutionCity_ = safeGetString("institution_city");
+    history.institutionState_ = safeGetString("institution_state");
+    history.institutionCountry_ = safeGetString("institution_country");
+    history.degreeEarned_ = safeGetString("degree_earned");
+    history.major_ = safeGetString("major");
+    history.minor_ = safeGetString("minor");
+    history.startDate_ = safeGetString("start_date");
+    history.endDate_ = safeGetString("end_date");
+    history.graduationDate_ = safeGetString("graduation_date");
 
     if (data.contains("gpa") && !data["gpa"].is_null()) {
         if (data["gpa"].is_number()) {
@@ -112,11 +123,13 @@ AcademicHistory AcademicHistory::fromJson(const nlohmann::json& json) {
         }
     }
 
-    history.startDate_ = data.value("start_date", "");
-    history.endDate_ = data.value("end_date", "");
-    history.graduationDate_ = data.value("graduation_date", "");
-    history.isCurrentlyAttending_ = data.value("is_currently_attending", false);
-    history.transcriptReceived_ = data.value("transcript_received", false);
+    if (data.contains("is_currently_attending") && data["is_currently_attending"].is_boolean()) {
+        history.isCurrentlyAttending_ = data["is_currently_attending"].get<bool>();
+    }
+
+    if (data.contains("transcript_received") && data["transcript_received"].is_boolean()) {
+        history.transcriptReceived_ = data["transcript_received"].get<bool>();
+    }
 
     return history;
 }
