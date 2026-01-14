@@ -1,4 +1,5 @@
 #include "CurriculumSelector.h"
+#include <Wt/WApplication.h>
 #include <Wt/WBreak.h>
 #include <Wt/WLabel.h>
 
