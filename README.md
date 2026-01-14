@@ -38,9 +38,10 @@ A modular C++ web application built with the Wt (Witty) Web Toolkit for processi
 The dashboard provides a central hub for students:
 
 **During Onboarding:**
-- Shows selected program information
+- Shows selected program information with "Change Program" option
 - Displays progress bar with completion percentage
 - "Continue Application" button to resume form entry
+- **Change Program**: Allows switching to a different program (resets all form progress)
 
 **After Completion:**
 - Two-column layout with main content and sidebar panel
@@ -359,6 +360,14 @@ Custom CSS with design tokens:
 - `ARCHITECTURE_ANALYSIS.md` - Technical architecture and module details
 
 ## Recent Changes
+
+### Version 1.7.0
+- **Change Program Feature**: Students can now change their selected program from the dashboard
+  - "Change Program" button added to the curriculum section
+  - When clicked, resets all completed forms progress
+  - Clears curriculum selection and navigates to program selection
+  - Changes persisted to API immediately
+  - Students must complete all forms again with the new program
 
 ### Version 1.6.0
 - **Emergency Contact Relationship Limits**: Added validation to enforce maximum contacts per relationship type:
