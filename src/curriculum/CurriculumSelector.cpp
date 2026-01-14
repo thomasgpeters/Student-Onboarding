@@ -74,6 +74,9 @@ void CurriculumSelector::setupUI() {
 
     curriculumCardsContainer_ = programsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     curriculumCardsContainer_->addStyleClass("curriculum-cards-grid");
+    // Force grid layout with inline styles since Wt may override CSS classes
+    curriculumCardsContainer_->setAttributeValue("style",
+        "display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; width: 100%;");
 }
 
 void CurriculumSelector::setCurriculumManager(std::shared_ptr<CurriculumManager> manager) {
@@ -165,13 +168,19 @@ void CurriculumSelector::updateCurriculumList() {
     for (const auto& curriculum : curriculums) {
         auto card = curriculumCardsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
         card->addStyleClass("program-card");
+        // Force card styling with inline styles
+        card->setAttributeValue("style",
+            "background: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); "
+            "display: flex; flex-direction: column; border: 1px solid #e2e8f0;");
 
         // Card header with program name
         auto cardHeader = card->addWidget(std::make_unique<Wt::WContainerWidget>());
         cardHeader->addStyleClass("program-card-header");
+        cardHeader->setAttributeValue("style", "padding: 1.25rem 1.25rem 0.75rem; border-bottom: 1px solid #e2e8f0;");
 
         auto nameText = cardHeader->addWidget(std::make_unique<Wt::WText>(curriculum.getName()));
         nameText->addStyleClass("program-card-title");
+        nameText->setAttributeValue("style", "font-size: 1.1rem; font-weight: 600; color: #2563eb; display: block; margin-bottom: 0.25rem;");
 
         // Get department name
         std::string deptName = "";
@@ -192,10 +201,12 @@ void CurriculumSelector::updateCurriculumList() {
 
         auto deptText = cardHeader->addWidget(std::make_unique<Wt::WText>(deptName));
         deptText->addStyleClass("program-card-dept");
+        deptText->setAttributeValue("style", "font-size: 0.875rem; color: #64748b;");
 
         // Card body with description
         auto cardBody = card->addWidget(std::make_unique<Wt::WContainerWidget>());
         cardBody->addStyleClass("program-card-body");
+        cardBody->setAttributeValue("style", "padding: 1rem 1.25rem; flex: 1;");
 
         std::string description = curriculum.getDescription();
         if (description.length() > 150) {
@@ -203,10 +214,12 @@ void CurriculumSelector::updateCurriculumList() {
         }
         auto descText = cardBody->addWidget(std::make_unique<Wt::WText>(description));
         descText->addStyleClass("program-card-desc");
+        descText->setAttributeValue("style", "font-size: 0.875rem; color: #64748b; line-height: 1.5;");
 
         // Card meta info
         auto cardMeta = card->addWidget(std::make_unique<Wt::WContainerWidget>());
         cardMeta->addStyleClass("program-card-meta");
+        cardMeta->setAttributeValue("style", "padding: 0.75rem 1.25rem; background: #f8fafc; border-top: 1px solid #e2e8f0;");
 
         auto metaText = cardMeta->addWidget(std::make_unique<Wt::WText>(
             "<span class='meta-item'>" + degreeLabel + "</span>"
@@ -217,11 +230,16 @@ void CurriculumSelector::updateCurriculumList() {
         // Card footer with buttons
         auto cardFooter = card->addWidget(std::make_unique<Wt::WContainerWidget>());
         cardFooter->addStyleClass("program-card-footer");
+        cardFooter->setAttributeValue("style",
+            "padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0;");
 
         // Info button
         auto infoBtn = cardFooter->addWidget(std::make_unique<Wt::WPushButton>());
         infoBtn->setText("ℹ");
         infoBtn->addStyleClass("btn btn-info-icon");
+        infoBtn->setAttributeValue("style",
+            "width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; color: #64748b; "
+            "border: 1px solid #e2e8f0; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;");
         infoBtn->setToolTip("View Syllabus");
         infoBtn->clicked().connect([this, curriculum]() {
             showSyllabusDialog(curriculum);
@@ -230,6 +248,9 @@ void CurriculumSelector::updateCurriculumList() {
         // Select button
         auto selectBtn = cardFooter->addWidget(std::make_unique<Wt::WPushButton>("Select"));
         selectBtn->addStyleClass("btn btn-primary");
+        selectBtn->setAttributeValue("style",
+            "padding: 0.5rem 1.25rem; background-color: #2563eb; color: white; border: none; "
+            "border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer;");
         selectBtn->clicked().connect([this, curriculum]() {
             handleSelectProgram(curriculum);
         });
