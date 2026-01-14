@@ -277,6 +277,7 @@ void StudentIntakeApp::setState(AppState state) {
 }
 
 void StudentIntakeApp::showLogin() {
+    std::cout << "[StudentIntakeApp] showLogin called" << std::endl;
     hideAllViews();
     loginWidget_->show();
     loginWidget_->reset();
