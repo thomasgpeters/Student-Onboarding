@@ -365,8 +365,8 @@ void StudentIntakeApp::handleLoginSuccess() {
             session_->setCurrentCurriculum(curriculum);
 
             // Load required forms for this curriculum so we can check completion
-            auto requiredFormIds = curriculumManager_->getRequiredFormIds(curriculum);
-            session_->setRequiredForms(requiredFormIds);
+            auto requiredFormIds = curriculum.getRequiredForms();
+            session_->setRequiredFormIds(requiredFormIds);
         }
     }
 
