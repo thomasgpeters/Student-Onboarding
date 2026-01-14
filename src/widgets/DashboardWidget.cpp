@@ -52,6 +52,7 @@ void DashboardWidget::setupUI() {
     curriculumSection->addStyleClass("curriculum-section card");
 
     curriculumText_ = curriculumSection->addWidget(std::make_unique<Wt::WText>());
+    curriculumText_->setTextFormat(Wt::TextFormat::XHTML);
     curriculumText_->addStyleClass("curriculum-info");
 
     // Change Program link

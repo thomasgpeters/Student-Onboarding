@@ -676,10 +676,12 @@ body {
     right: 1rem;
 }
 
+.curriculum-section .curriculum-info h4,
 .curriculum-info h4 {
-    color: var(--primary-color);
-    font-weight: 600;
+    color: #2563eb !important;
+    font-weight: 600 !important;
     margin-bottom: 0.5rem;
+    font-size: 1.1rem;
 }
 
 /* Sidebar Sections */
