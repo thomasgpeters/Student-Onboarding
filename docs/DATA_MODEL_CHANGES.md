@@ -10,6 +10,51 @@ The application uses a PostgreSQL database with ApiLogicServer as the middleware
 
 ## Change Log
 
+### Version 1.2.0 - StudentAddress Table for Multiple Addresses
+
+**Date:** January 2026
+**Purpose:** Support multiple addresses per student (home, mailing, billing) using the `student_address` table.
+
+#### Architecture Change
+
+Addresses are now stored in the `student_address` table instead of directly on the `student` table. This allows:
+
+1. **Multiple addresses per student** - Home, mailing, billing addresses
+2. **Address history** - Track address changes over time
+3. **Proper normalization** - One-to-many relationship between student and addresses
+
+#### `student_address` Table Schema
+
+| Column Name | Type | Description |
+|-------------|------|-------------|
+| `id` | SERIAL | Primary key |
+| `student_id` | INTEGER | Foreign key to student table |
+| `address_type` | VARCHAR(50) | Type: 'permanent', 'mailing', 'billing' |
+| `street1` | VARCHAR(200) | Street address line 1 |
+| `street2` | VARCHAR(200) | Street address line 2 |
+| `city` | VARCHAR(100) | City |
+| `state` | VARCHAR(100) | State/Province |
+| `postal_code` | VARCHAR(20) | ZIP/Postal code |
+| `country` | VARCHAR(100) | Country |
+| `is_primary` | BOOLEAN | Whether this is the primary address |
+
+#### New C++ Classes
+
+- **`Models::StudentAddress`** - Model class for student addresses
+  - `src/models/StudentAddress.h`
+  - `src/models/StudentAddress.cpp`
+
+#### New API Methods in `FormSubmissionService`
+
+- `getStudentAddresses(studentId)` - Get all addresses for a student
+- `getStudentAddress(studentId, addressType)` - Get specific address by type
+- `createStudentAddress(address)` - Create new address
+- `updateStudentAddress(address)` - Update existing address
+- `deleteStudentAddress(addressId)` - Delete address
+- `saveStudentAddress(address)` - Create or update (upsert)
+
+---
+
 ### Version 1.1.0 - Student Personal Information Fields
 
 **Date:** January 2026
@@ -19,24 +64,11 @@ The application uses a PostgreSQL database with ApiLogicServer as the middleware
 
 | Column Name | Type | Description |
 |-------------|------|-------------|
-| `preferred_pronouns` | VARCHAR(50) | Student's preferred pronouns (e.g., he/him, she/her, they/them) |
-| `phone_number` | VARCHAR(30) | Primary phone number (renamed from `phone`) |
-| `address_line1` | VARCHAR(200) | Street address line 1 |
-| `address_line2` | VARCHAR(200) | Street address line 2 (apt, suite, etc.) |
-| `city` | VARCHAR(100) | City |
-| `state` | VARCHAR(100) | State/Province |
-| `zip_code` | VARCHAR(20) | ZIP/Postal code |
-| `ssn` | VARCHAR(20) | Social Security Number (encrypted at rest) |
-| `citizenship_status` | VARCHAR(50) | Citizenship status (U.S. Citizen, Permanent Resident, etc.) |
-| `completed_forms` | TEXT | JSON array of completed form IDs for tracking progress |
-
-#### Rationale
-
-Previously, address and citizenship information was stored in separate tables (`student_address`) or not stored at all. To support form pre-fill functionality for returning students, these fields were added directly to the `student` table for:
-
-1. **Simpler data retrieval** - Single query returns all personal info
-2. **Form pre-population** - Returning students see their previously entered data
-3. **Session persistence** - Track which forms have been completed across login sessions
+| `preferred_pronouns` | VARCHAR(50) | Student's preferred pronouns |
+| `phone_number` | VARCHAR(30) | Primary phone number |
+| `ssn` | VARCHAR(20) | Social Security Number |
+| `citizenship_status` | VARCHAR(50) | Citizenship status |
+| `completed_forms` | TEXT | JSON array of completed form IDs |
 
 ---
 
@@ -67,17 +99,13 @@ Or run the SQL directly:
 ```sql
 -- PostgreSQL Migration
 ALTER TABLE student ADD COLUMN IF NOT EXISTS preferred_pronouns VARCHAR(50);
-ALTER TABLE student ADD COLUMN IF NOT EXISTS address_line1 VARCHAR(200);
-ALTER TABLE student ADD COLUMN IF NOT EXISTS address_line2 VARCHAR(200);
-ALTER TABLE student ADD COLUMN IF NOT EXISTS city VARCHAR(100);
-ALTER TABLE student ADD COLUMN IF NOT EXISTS state VARCHAR(100);
-ALTER TABLE student ADD COLUMN IF NOT EXISTS zip_code VARCHAR(20);
 ALTER TABLE student ADD COLUMN IF NOT EXISTS ssn VARCHAR(20);
 ALTER TABLE student ADD COLUMN IF NOT EXISTS citizenship_status VARCHAR(50);
 ALTER TABLE student ADD COLUMN IF NOT EXISTS completed_forms TEXT;
+ALTER TABLE student ADD COLUMN IF NOT EXISTS phone_number VARCHAR(30);
 
--- If renaming phone to phone_number (optional, for new installations)
--- ALTER TABLE student RENAME COLUMN phone TO phone_number;
+-- The student_address table should already exist in the schema
+-- It stores addresses with address_type: 'permanent', 'mailing', 'billing'
 ```
 
 ### Step 3: Regenerate ApiLogicServer Models
@@ -121,7 +149,7 @@ make -j$(nproc)
 
 ## Schema Reference
 
-### Full `student` Table Schema (v1.1.0)
+### Full `student` Table Schema (v1.2.0)
 
 ```sql
 CREATE TABLE student (
@@ -137,11 +165,6 @@ CREATE TABLE student (
     gender VARCHAR(20),
     phone_number VARCHAR(30),
     alternate_phone VARCHAR(30),
-    address_line1 VARCHAR(200),
-    address_line2 VARCHAR(200),
-    city VARCHAR(100),
-    state VARCHAR(100),
-    zip_code VARCHAR(20),
     ssn VARCHAR(20),
     citizenship_status VARCHAR(50),
     curriculum_id INTEGER REFERENCES curriculum(id),
@@ -161,31 +184,54 @@ CREATE TABLE student (
 );
 ```
 
+### Full `student_address` Table Schema
+
+```sql
+CREATE TABLE student_address (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES student(id),
+    address_type VARCHAR(50) NOT NULL,  -- 'permanent', 'mailing', 'billing'
+    street1 VARCHAR(200),
+    street2 VARCHAR(200),
+    city VARCHAR(100),
+    state VARCHAR(100),
+    postal_code VARCHAR(20),
+    country VARCHAR(100),
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
 ---
 
 ## Field Mappings
 
 ### API to Database Field Names
 
-The C++ application uses camelCase internally, while the database uses snake_case. The `Student` model handles this conversion automatically.
+The C++ application uses camelCase internally, while the database uses snake_case. Models handle this conversion automatically.
 
 | C++ Model Field | Database Column | JSON API Field |
 |-----------------|-----------------|----------------|
 | `firstName_` | `first_name` | `first_name` |
 | `lastName_` | `last_name` | `last_name` |
-| `middleName_` | `middle_name` | `middle_name` |
-| `preferredName_` | `preferred_name` | `preferred_name` |
-| `preferredPronouns_` | `preferred_pronouns` | `preferred_pronouns` |
 | `phoneNumber_` | `phone_number` | `phone_number` |
-| `alternatePhone_` | `alternate_phone` | `alternate_phone` |
-| `addressLine1_` | `address_line1` | `address_line1` |
-| `addressLine2_` | `address_line2` | `address_line2` |
-| `city_` | `city` | `city` |
-| `state_` | `state` | `state` |
-| `zipCode_` | `zip_code` | `zip_code` |
 | `ssn_` | `ssn` | `ssn` |
 | `citizenshipStatus_` | `citizenship_status` | `citizenship_status` |
-| `completedForms_` | `completed_forms` | `completed_forms` |
+
+### StudentAddress Field Mappings
+
+| C++ Model Field | Database Column | JSON API Field |
+|-----------------|-----------------|----------------|
+| `studentId_` | `student_id` | `student_id` |
+| `addressType_` | `address_type` | `address_type` |
+| `street1_` | `street1` | `street1` |
+| `street2_` | `street2` | `street2` |
+| `city_` | `city` | `city` |
+| `state_` | `state` | `state` |
+| `postalCode_` | `postal_code` | `postal_code` |
+| `country_` | `country` | `country` |
+| `isPrimary_` | `is_primary` | `is_primary` |
 
 ---
 
@@ -196,30 +242,40 @@ The C++ application uses camelCase internally, while the database uses snake_cas
 1. Verify the database columns exist:
    ```sql
    SELECT column_name FROM information_schema.columns WHERE table_name = 'student';
+   SELECT column_name FROM information_schema.columns WHERE table_name = 'student_address';
    ```
 
 2. Verify ApiLogicServer models were regenerated (check `database/models.py`)
 
 3. Check API logs for any field mapping errors
 
-### Fields not being retrieved
+### Addresses not being retrieved
 
-1. Verify the `Student::fromJson()` method handles both camelCase and snake_case field names
+1. Verify addresses exist in student_address table:
+   ```sql
+   SELECT * FROM student_address WHERE student_id = <your_student_id>;
+   ```
 
-2. Check that `loginStudent()` returns the full student record with all attributes
+2. Check that `address_type` is set to 'permanent' or 'mailing'
+
+3. Verify the API endpoint `/StudentAddress` is accessible
 
 ### Pre-fill not working for specific fields
 
-1. Verify the form's `createFormFields()` method reads from the correct getter methods
-2. Check that `updateStudentFromForm()` sets all fields before calling `updateStudentProfile()`
+1. Verify the form's `loadAddressesFromApi()` method is being called
+2. Check that `saveAddressesToApi()` is called in `handleSubmit()`
+3. Verify the API returns the correct `address_type` values
 
 ---
 
 ## Related Files
 
-- `database/postgresql-snake-case.sql` - Full PostgreSQL schema
-- `database/schema.sql` - SQLite schema (for development)
+- `database/schema.sql` - PostgreSQL database schema (snake_case naming)
 - `database/migrations/001_add_student_fields.sql` - Migration script
 - `src/models/Student.h` - Student model header
-- `src/models/Student.cpp` - Student model implementation (toJson/fromJson)
-- `src/forms/PersonalInfoForm.cpp` - Form pre-fill and save logic
+- `src/models/Student.cpp` - Student model implementation
+- `src/models/StudentAddress.h` - StudentAddress model header
+- `src/models/StudentAddress.cpp` - StudentAddress model implementation
+- `src/api/FormSubmissionService.h` - API service with address methods
+- `src/api/FormSubmissionService.cpp` - API service implementation
+- `src/forms/PersonalInfoForm.cpp` - Form with address load/save logic

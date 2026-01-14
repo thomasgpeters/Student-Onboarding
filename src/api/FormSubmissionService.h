@@ -8,6 +8,7 @@
 #include "ApiClient.h"
 #include "models/FormData.h"
 #include "models/Student.h"
+#include "models/StudentAddress.h"
 #include "models/Curriculum.h"
 
 namespace StudentIntake {
@@ -47,6 +48,14 @@ public:
     SubmissionResult loginStudent(const std::string& email, const std::string& password);
     SubmissionResult getStudentProfile(const std::string& studentId);
     SubmissionResult updateStudentProfile(const Models::Student& student);
+
+    // StudentAddress API endpoints
+    std::vector<Models::StudentAddress> getStudentAddresses(const std::string& studentId);
+    Models::StudentAddress getStudentAddress(const std::string& studentId, const std::string& addressType);
+    SubmissionResult createStudentAddress(const Models::StudentAddress& address);
+    SubmissionResult updateStudentAddress(const Models::StudentAddress& address);
+    SubmissionResult deleteStudentAddress(const std::string& addressId);
+    SubmissionResult saveStudentAddress(const Models::StudentAddress& address);  // Create or update
 
     // Curriculum API endpoints
     std::vector<Models::Curriculum> getCurriculums();

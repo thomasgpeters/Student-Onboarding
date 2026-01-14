@@ -2,6 +2,7 @@
 #define PERSONAL_INFO_FORM_H
 
 #include "BaseForm.h"
+#include "models/StudentAddress.h"
 #include <Wt/WLineEdit.h>
 #include <Wt/WComboBox.h>
 #include <Wt/WDateEdit.h>
@@ -68,8 +69,18 @@ private:
     void setupAddressFields(Wt::WContainerWidget* container, const std::string& prefix);
     void toggleMailingAddress();
     void updateStudentFromForm();
+    void loadAddressesFromApi();
+    void saveAddressesToApi();
+    Models::StudentAddress buildAddressFromForm(const std::string& addressType) const;
+    Models::StudentAddress buildMailingAddressFromForm() const;
+    void populateAddressFields(const Models::StudentAddress& address);
+    void populateMailingAddressFields(const Models::StudentAddress& address);
     std::vector<std::string> getUSStates() const;
     std::vector<std::string> getCountries() const;
+
+    // Cached address IDs for updates
+    std::string homeAddressId_;
+    std::string mailingAddressId_;
 };
 
 } // namespace Forms
