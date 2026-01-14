@@ -324,32 +324,34 @@ body {
 
 /* Program Cards Grid */
 .curriculum-cards-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1.5rem !important;
+    width: 100%;
 }
 
 @media (max-width: 1024px) {
     .curriculum-cards-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 
 @media (max-width: 640px) {
     .curriculum-cards-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 
 /* Program Card */
 .program-card {
-    background: var(--card-background);
+    background: #ffffff !important;
+    background-color: #ffffff !important;
     border-radius: 12px;
-    box-shadow: var(--shadow);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     transition: all 0.2s ease;
-    border: 1px solid var(--border-color);
+    border: 1px solid #e2e8f0;
 }
 
 .program-card:hover {
@@ -411,14 +413,14 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
-/* Info button */
+/* Info button - plain/gray style */
 .btn-info-icon {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #e0f2fe;
-    color: #0284c7;
-    border: none;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
     font-size: 1rem;
     cursor: pointer;
     display: flex;
@@ -428,8 +430,8 @@ body {
 }
 
 .btn-info-icon:hover {
-    background: #0284c7;
-    color: white;
+    background: #e2e8f0;
+    color: #475569;
 }
 
 /* Syllabus Dialog */
