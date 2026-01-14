@@ -216,10 +216,12 @@ The application expects the following API endpoints (note: capitalized resource 
 | `/Student/:id` | PATCH | Update student profile |
 | `/Curriculum` | GET | List available programs |
 | `/FormType` | GET | List form types |
-| `/EmergencyContact` | POST | Submit emergency contact |
+| `/EmergencyContact` | GET/POST | List/create emergency contacts |
+| `/EmergencyContact/:id` | PATCH/DELETE | Update/delete emergency contact |
 | `/MedicalInfo` | POST | Submit medical info |
-| `/AcademicHistory` | POST | Submit academic history |
-| `/FinancialAid` | POST | Submit financial aid |
+| `/AcademicHistory` | GET/POST | List/create academic history |
+| `/AcademicHistory/:id` | PATCH/DELETE | Update/delete academic history |
+| `/FinancialAid` | GET/POST/PATCH | Get/create/update financial aid |
 | `/Document` | POST | Submit documents |
 | `/Consent` | POST | Submit consent form |
 
@@ -277,11 +279,18 @@ The Student model supports these fields (all use snake_case in API):
 
 When a student logs in again:
 
-1. API returns full student record including `completed_forms` array
-2. Application loads previously selected `curriculum_id`
+1. API returns full student record including `completed_forms` and `curriculum_id`
+2. Application loads previously selected curriculum from `curriculum_id`
 3. Dashboard calculates which forms are required for that curriculum
 4. If all required forms are in `completed_forms`, shows completion view
-5. Forms view pre-fills all fields from student data
+5. Otherwise, student continues from where they left off
+6. Forms view pre-fills all fields from student data and related records
+
+**Technical Notes:**
+- `completed_forms` is stored as a JSON-encoded string in the database TEXT column
+- Example: `["personal_info","emergency_contact","academic_history"]`
+- The application serializes/deserializes this automatically
+- Related records (EmergencyContact, AcademicHistory, FinancialAid) are loaded via separate API calls
 
 ## Form Types
 
@@ -289,6 +298,9 @@ When a student logs in again:
 
 1. **Personal Information** - Basic personal details, contact info, address
 2. **Emergency Contacts** - Emergency contact information (supports multiple contacts)
+   - **Relationship Limits**: Spouse (max 1), Parent (max 2), Grandparent (max 4), others unlimited
+   - **API Integration**: Remove button deletes contact from database immediately
+   - **Up to 10 contacts** can be added per student
 3. **Academic History** - High school and previous college education
 4. **Consent** - Terms of service, privacy policy, FERPA acknowledgment
 
@@ -345,6 +357,39 @@ Custom CSS with design tokens:
 - `README.md` - This overview document
 - `WORKFLOW.md` - Detailed workflow and state documentation
 - `ARCHITECTURE_ANALYSIS.md` - Technical architecture and module details
+
+## Recent Changes
+
+### Version 1.6.0
+- **Emergency Contact Relationship Limits**: Added validation to enforce maximum contacts per relationship type:
+  - Spouse: maximum 1
+  - Parent: maximum 2
+  - Grandparent: maximum 4
+  - Other relationships: no limit
+- **Emergency Contact API Deletion**: Remove button now deletes records from database via API
+- **Increased Contact Limit**: Support for up to 10 emergency contacts (was 5)
+
+### Version 1.5.0
+- **Session Persistence Fix**: Fixed returning student workflow
+  - `completed_forms` now properly serialized as JSON string for TEXT column storage
+  - `curriculum_id` correctly loaded on login to restore program selection
+  - Students now return to dashboard with progress intact
+- **Debug Logging**: Added tracing for login and profile update API calls
+
+### Version 1.4.0
+- **Academic History Multi-Record Support**: Students can now add multiple education records
+  - Separate high school and college/university entries
+  - Records identified by `institution_type` field
+  - Full CRUD operations via API
+
+### Version 1.3.0
+- **Financial Aid Form Fix**: Proper field mapping to database columns
+  - Handles UNIQUE constraint on student_id (upsert logic)
+  - Check for existing record before POST
+
+### Version 1.2.0
+- **Emergency Contact Model**: Added EmergencyContact model with full API integration
+- **Data Pre-fill**: Forms automatically populate from existing records
 
 ## License
 
