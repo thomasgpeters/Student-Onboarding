@@ -16,12 +16,13 @@ DocumentUploadForm::~DocumentUploadForm() {
 void DocumentUploadForm::createFormFields() {
     auto intro = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     intro->addStyleClass("form-section");
-    intro->addWidget(std::make_unique<Wt::WText>(
+    auto introText = intro->addWidget(std::make_unique<Wt::WText>(
         "<p>Please upload the following required documents. Accepted formats: PDF, JPG, PNG. Maximum file size: 10MB.</p>"));
+    introText->setTextFormat(Wt::TextFormat::XHTML);
 
     auto requirements = intro->addWidget(std::make_unique<Wt::WContainerWidget>());
     requirements->addStyleClass("alert alert-info");
-    requirements->addWidget(std::make_unique<Wt::WText>(
+    auto reqText = requirements->addWidget(std::make_unique<Wt::WText>(
         "<strong>Required Documents:</strong>"
         "<ul>"
         "<li>Government-issued photo ID</li>"
@@ -33,6 +34,7 @@ void DocumentUploadForm::createFormFields() {
         "<li>Immunization records</li>"
         "<li>Visa/immigration documents (international students)</li>"
         "</ul>"));
+    reqText->setTextFormat(Wt::TextFormat::XHTML);
 
     uploadsContainer_ = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     uploadsContainer_->addStyleClass("uploads-container");

@@ -14,8 +14,9 @@ FinancialAidForm::~FinancialAidForm() {
 void FinancialAidForm::createFormFields() {
     auto introSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     introSection->addStyleClass("form-section");
-    introSection->addWidget(std::make_unique<Wt::WText>(
+    auto introText = introSection->addWidget(std::make_unique<Wt::WText>(
         "<p>Complete this form if you are interested in financial aid, scholarships, or work-study programs.</p>"));
+    introText->setTextFormat(Wt::TextFormat::XHTML);
 
     applyingForAidCheckbox_ = introSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I am interested in applying for financial aid"));

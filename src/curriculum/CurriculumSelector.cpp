@@ -24,11 +24,13 @@ void CurriculumSelector::setupUI() {
     // Title
     auto title = addWidget(std::make_unique<Wt::WText>("<h2>Select Your Program</h2>"));
     title->addStyleClass("section-title");
+    title->setTextFormat(Wt::TextFormat::XHTML);
 
     // Description
     auto desc = addWidget(std::make_unique<Wt::WText>(
         "<p>Choose your intended program of study. This will determine which forms you need to complete.</p>"));
     desc->addStyleClass("section-description");
+    desc->setTextFormat(Wt::TextFormat::XHTML);
 
     // Filters container - styled like a card
     auto filtersContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -72,6 +74,7 @@ void CurriculumSelector::setupUI() {
 
     auto programsTitle = programsSection->addWidget(std::make_unique<Wt::WText>("<h4>Available Programs</h4>"));
     programsTitle->addStyleClass("programs-title");
+    programsTitle->setTextFormat(Wt::TextFormat::XHTML);
 
     curriculumCardsContainer_ = programsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     curriculumCardsContainer_->addStyleClass("curriculum-cards-grid");

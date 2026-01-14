@@ -17,8 +17,9 @@ EmergencyContactForm::~EmergencyContactForm() {
 void EmergencyContactForm::createFormFields() {
     auto intro = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     intro->addStyleClass("form-intro");
-    intro->addWidget(std::make_unique<Wt::WText>(
+    auto introText = intro->addWidget(std::make_unique<Wt::WText>(
         "<p>Please provide at least one emergency contact. We recommend adding two contacts.</p>"));
+    introText->setTextFormat(Wt::TextFormat::XHTML);
 
     contactsContainer_ = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contactsContainer_->addStyleClass("contacts-container");
@@ -55,8 +56,9 @@ void EmergencyContactForm::addContactSection(int contactNumber) {
     // Header with remove button
     auto header = fields.container->addWidget(std::make_unique<Wt::WContainerWidget>());
     header->addStyleClass("contact-header");
-    header->addWidget(std::make_unique<Wt::WText>(
+    auto contactHeader = header->addWidget(std::make_unique<Wt::WText>(
         "<h4>Emergency Contact " + std::to_string(contactNumber) + "</h4>"));
+    contactHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     if (contactNumber > 1) {
         auto removeBtn = header->addWidget(std::make_unique<Wt::WPushButton>("Remove"));

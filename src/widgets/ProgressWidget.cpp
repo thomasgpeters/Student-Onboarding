@@ -23,6 +23,7 @@ void ProgressWidget::setupUI() {
     headerContainer_->addStyleClass("progress-header");
 
     auto titleText = headerContainer_->addWidget(std::make_unique<Wt::WText>("<h4>Your Progress</h4>"));
+    titleText->setTextFormat(Wt::TextFormat::XHTML);
 
     auto progressContainer = headerContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     progressContainer->addStyleClass("progress-bar-container");
