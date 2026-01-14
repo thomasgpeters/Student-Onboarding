@@ -65,16 +65,19 @@ void BaseForm::createHeader() {
     auto title = headerContainer_->addWidget(
         std::make_unique<Wt::WText>("<h3>" + formTitle_ + "</h3>"));
     title->addStyleClass("form-title");
+    title->setTextFormat(Wt::TextFormat::XHTML);
 
     if (!formDescription_.empty()) {
         auto desc = headerContainer_->addWidget(
             std::make_unique<Wt::WText>("<p>" + formDescription_ + "</p>"));
         desc->addStyleClass("form-description");
+        desc->setTextFormat(Wt::TextFormat::XHTML);
     }
 
     // Required fields note
     auto requiredNote = headerContainer_->addWidget(
         std::make_unique<Wt::WText>("<p class='required-note'>Fields marked with * are required</p>"));
+    requiredNote->setTextFormat(Wt::TextFormat::XHTML);
 }
 
 void BaseForm::createFooter() {

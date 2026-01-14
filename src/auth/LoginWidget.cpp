@@ -25,11 +25,13 @@ void LoginWidget::setupUI() {
     // Title
     auto title = addWidget(std::make_unique<Wt::WText>("<h2>Student Login</h2>"));
     title->addStyleClass("login-title");
+    title->setTextFormat(Wt::TextFormat::XHTML);
 
     // Description
     auto desc = addWidget(std::make_unique<Wt::WText>(
         "<p>Welcome to Student Onboarding. Please log in to continue.</p>"));
     desc->addStyleClass("login-description");
+    desc->setTextFormat(Wt::TextFormat::XHTML);
 
     // Error container (hidden by default)
     errorContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());

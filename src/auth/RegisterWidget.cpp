@@ -32,11 +32,13 @@ void RegisterWidget::setupUI() {
     // Title
     auto title = addWidget(std::make_unique<Wt::WText>("<h2>Create Account</h2>"));
     title->addStyleClass("register-title");
+    title->setTextFormat(Wt::TextFormat::XHTML);
 
     // Description
     auto desc = addWidget(std::make_unique<Wt::WText>(
         "<p>Create a new account to begin the student onboarding process.</p>"));
     desc->addStyleClass("register-description");
+    desc->setTextFormat(Wt::TextFormat::XHTML);
 
     // Error container (hidden by default)
     errorContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
