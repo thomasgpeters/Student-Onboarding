@@ -30,9 +30,17 @@ A modular C++ web application built with the Wt (Witty) Web Toolkit for processi
 - Session persists user progress
 
 ### 2. Program Selection
-- Students browse available academic programs
-- Programs display name, description, department, and credit hours
-- Selected program determines required onboarding forms
+- Students browse available academic programs in a card-based layout
+- **Card Grid Layout**: Programs displayed in responsive 3-column grid (2 columns on tablet, 1 on mobile)
+- Each program card shows:
+  - Program name (blue header)
+  - Department name
+  - Brief description
+  - Degree type, credit hours, and duration badges
+  - **Info button (i)**: Opens syllabus popup with detailed program information
+  - **Select button**: Immediately selects program and navigates to forms
+- Filter options by department and degree type
+- No separate "Continue" button needed - selection is immediate
 
 ### 3. Dashboard
 The dashboard provides a central hub for students:
@@ -360,6 +368,16 @@ Custom CSS with design tokens:
 - `ARCHITECTURE_ANALYSIS.md` - Technical architecture and module details
 
 ## Recent Changes
+
+### Version 1.8.0
+- **Program Selection Card Layout**: Redesigned program selection page with modern card-based UI
+  - 3-column responsive grid layout (adapts to 2 columns on tablet, 1 on mobile)
+  - Each program displayed as a styled card with white background and subtle shadow
+  - Card sections: header (name/department), body (description), meta (badges), footer (buttons)
+  - Info button (ℹ) opens syllabus popup dialog with detailed program information
+  - Select button immediately navigates to forms (removed separate Continue button)
+  - Inline styles applied directly to Wt widgets to ensure consistent rendering
+  - Filter dropdowns for department and degree type
 
 ### Version 1.7.0
 - **Change Program Feature**: Students can now change their selected program from the dashboard
