@@ -711,13 +711,75 @@ body {
     padding: 0 1rem;
 }
 
-.welcome-section {
-    text-align: center;
-    margin-bottom: 2rem;
+/* Advertisement Banner */
+.banner-section {
+    margin-bottom: 1.5rem;
+}
+
+.ad-banner {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.ad-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.ad-content {
+    flex: 1;
+    font-size: 0.9375rem;
+}
+
+.ad-content strong {
+    font-weight: 600;
+}
+
+.ad-link {
+    color: #fbbf24;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+}
+
+.ad-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+    .ad-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .ad-content {
+        font-size: 0.875rem;
+    }
+
+    .ad-link {
+        display: block;
+        margin-left: 0;
+        margin-top: 0.5rem;
+    }
 }
 
 .status-text {
     color: var(--text-secondary);
+    display: none;
 }
 
 /* Dashboard two-column layout - using !important to override Wt inline styles */

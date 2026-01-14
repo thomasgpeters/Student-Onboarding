@@ -10,7 +10,6 @@ DashboardWidget::DashboardWidget()
     , mainLayout_(nullptr)
     , leftColumn_(nullptr)
     , rightPanel_(nullptr)
-    , welcomeText_(nullptr)
     , statusText_(nullptr)
     , curriculumText_(nullptr)
     , progressSection_(nullptr)
@@ -30,14 +29,22 @@ DashboardWidget::~DashboardWidget() {
 void DashboardWidget::setupUI() {
     addStyleClass("dashboard-widget");
 
-    // Welcome section (full width, above the columns)
-    auto welcomeSection = addWidget(std::make_unique<Wt::WContainerWidget>());
-    welcomeSection->addStyleClass("welcome-section");
+    // Advertisement banner section (full width, above the columns)
+    auto bannerSection = addWidget(std::make_unique<Wt::WContainerWidget>());
+    bannerSection->addStyleClass("banner-section");
 
-    welcomeText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>("<h2>Welcome to Student Onboarding</h2>"));
-    welcomeText_->setTextFormat(Wt::TextFormat::XHTML);
+    auto bannerContent = bannerSection->addWidget(std::make_unique<Wt::WText>(
+        "<div class='ad-banner'>"
+        "<div class='ad-badge'>Featured</div>"
+        "<div class='ad-content'>"
+        "<strong>Campus Bookstore</strong> &mdash; "
+        "Get 15% off textbooks with your student ID! "
+        "<a href='#' class='ad-link'>Shop Now &rarr;</a>"
+        "</div>"
+        "</div>"));
+    bannerContent->setTextFormat(Wt::TextFormat::XHTML);
 
-    statusText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>());
+    statusText_ = bannerSection->addWidget(std::make_unique<Wt::WText>());
     statusText_->addStyleClass("status-text");
 
     // Main layout container (two columns)
@@ -138,13 +145,6 @@ void DashboardWidget::refresh() {
 
 void DashboardWidget::updateDisplay() {
     if (!session_) return;
-
-    // Update welcome message
-    std::string name = session_->getStudent().getFullName();
-    if (name.empty() || name == " ") {
-        name = session_->getStudent().getEmail();
-    }
-    welcomeText_->setText("<h2>Welcome, " + name + "</h2>");
 
     // Update curriculum info
     if (session_->hasCurriculumSelected()) {

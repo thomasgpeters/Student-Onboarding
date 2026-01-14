@@ -44,7 +44,6 @@ private:
     Wt::WContainerWidget* rightPanel_;
 
     // Left column widgets
-    Wt::WText* welcomeText_;
     Wt::WText* statusText_;
     Wt::WText* curriculumText_;
     Wt::WContainerWidget* progressSection_;
