@@ -420,6 +420,107 @@ SubmissionResult FormSubmissionService::saveEmergencyContact(const Models::Emerg
     return createEmergencyContact(contact);
 }
 
+// AcademicHistory API endpoints
+std::vector<Models::AcademicHistory> FormSubmissionService::getAcademicHistories(const std::string& studentId) {
+    std::vector<Models::AcademicHistory> histories;
+
+    std::string endpoint = "/AcademicHistory?filter[student_id]=" + studentId;
+    ApiResponse response = apiClient_->get(endpoint);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        for (const auto& item : items) {
+            histories.push_back(Models::AcademicHistory::fromJson(item));
+        }
+    }
+
+    return histories;
+}
+
+Models::AcademicHistory FormSubmissionService::getAcademicHistoryByType(const std::string& studentId,
+                                                                          const std::string& institutionType) {
+    std::string endpoint = "/AcademicHistory?filter[student_id]=" + studentId +
+                           "&filter[institution_type]=" + institutionType;
+    ApiResponse response = apiClient_->get(endpoint);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        if (!items.empty()) {
+            return Models::AcademicHistory::fromJson(items[0]);
+        }
+    }
+
+    // Return empty history with the requested type
+    Models::AcademicHistory history(studentId);
+    history.setInstitutionType(institutionType);
+    return history;
+}
+
+SubmissionResult FormSubmissionService::createAcademicHistory(const Models::AcademicHistory& history) {
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "AcademicHistory"},
+        {"attributes", history.toJson()}
+    };
+
+    std::cout << "[FormSubmissionService] createAcademicHistory payload: " << payload.dump() << std::endl;
+    ApiResponse response = apiClient_->post("/AcademicHistory", payload);
+    return parseSubmissionResponse(response);
+}
+
+SubmissionResult FormSubmissionService::updateAcademicHistory(const Models::AcademicHistory& history) {
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "AcademicHistory"},
+        {"id", history.getId()},
+        {"attributes", history.toJson()}
+    };
+
+    std::cout << "[FormSubmissionService] updateAcademicHistory payload: " << payload.dump() << std::endl;
+    ApiResponse response = apiClient_->patch("/AcademicHistory/" + history.getId(), payload);
+    return parseSubmissionResponse(response);
+}
+
+SubmissionResult FormSubmissionService::deleteAcademicHistory(const std::string& historyId) {
+    ApiResponse response = apiClient_->del("/AcademicHistory/" + historyId);
+    return parseSubmissionResponse(response);
+}
+
+SubmissionResult FormSubmissionService::saveAcademicHistory(const Models::AcademicHistory& history) {
+    // If history has an ID, update it
+    if (!history.getId().empty()) {
+        return updateAcademicHistory(history);
+    }
+
+    // Check if a record already exists for this student and institution type
+    Models::AcademicHistory existing = getAcademicHistoryByType(history.getStudentId(), history.getInstitutionType());
+    if (!existing.getId().empty()) {
+        // Update existing record
+        Models::AcademicHistory updated = history;
+        updated.setId(existing.getId());
+        return updateAcademicHistory(updated);
+    }
+
+    // Create new record
+    return createAcademicHistory(history);
+}
+
 // Curriculum API endpoints
 std::vector<Models::Curriculum> FormSubmissionService::getCurriculums() {
     std::vector<Models::Curriculum> curriculums;

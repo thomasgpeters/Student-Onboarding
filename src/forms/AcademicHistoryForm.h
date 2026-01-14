@@ -2,6 +2,7 @@
 #define ACADEMIC_HISTORY_FORM_H
 
 #include "BaseForm.h"
+#include "models/AcademicHistory.h"
 #include <Wt/WLineEdit.h>
 #include <Wt/WComboBox.h>
 #include <Wt/WTextArea.h>
@@ -22,6 +23,7 @@ protected:
     void createFormFields() override;
     void collectFormData(Models::FormData& data) const override;
     void populateFormFields(const Models::FormData& data) override;
+    void handleSubmit() override;
 
 private:
     // High School
@@ -67,6 +69,18 @@ private:
     void togglePreviousCollege();
     void toggleTestScores();
     std::vector<std::string> getUSStates() const;
+
+    // API integration
+    void loadHistoriesFromApi();
+    void saveHistoriesToApi();
+    void populateHighSchoolFields(const Models::AcademicHistory& history);
+    void populateCollegeFields(const Models::AcademicHistory& history);
+    Models::AcademicHistory buildHighSchoolHistory() const;
+    Models::AcademicHistory buildCollegeHistory() const;
+
+    // Cached record IDs for updates
+    std::string highSchoolRecordId_;
+    std::string collegeRecordId_;
 };
 
 } // namespace Forms

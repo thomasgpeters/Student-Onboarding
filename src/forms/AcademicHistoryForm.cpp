@@ -1,5 +1,7 @@
 #include "AcademicHistoryForm.h"
+#include "api/FormSubmissionService.h"
 #include <Wt/WLabel.h>
+#include <iostream>
 
 namespace StudentIntake {
 namespace Forms {
@@ -232,6 +234,9 @@ void AcademicHistoryForm::createFormFields() {
     academicInterestsInput_->setPlaceholderText("Describe your academic interests and goals...");
     academicInterestsInput_->addStyleClass("form-control");
     academicInterestsInput_->setRows(3);
+
+    // Load existing data from API
+    loadHistoriesFromApi();
 }
 
 void AcademicHistoryForm::togglePreviousCollege() {
@@ -346,6 +351,250 @@ std::vector<std::string> AcademicHistoryForm::getUSStates() const {
         "West Virginia", "Wisconsin", "Wyoming", "District of Columbia",
         "International"
     };
+}
+
+void AcademicHistoryForm::handleSubmit() {
+    if (validate()) {
+        // Save academic histories to API before base form submission
+        saveHistoriesToApi();
+
+        // Continue with base class submission
+        BaseForm::handleSubmit();
+    }
+}
+
+void AcademicHistoryForm::loadHistoriesFromApi() {
+    if (!apiService_ || !session_) {
+        return;
+    }
+
+    std::string studentId = session_->getStudent().getId();
+    if (studentId.empty()) {
+        return;
+    }
+
+    std::cout << "[AcademicHistoryForm] Loading academic histories for student: " << studentId << std::endl;
+
+    auto histories = apiService_->getAcademicHistories(studentId);
+    std::cout << "[AcademicHistoryForm] Found " << histories.size() << " history records" << std::endl;
+
+    for (const auto& history : histories) {
+        std::cout << "[AcademicHistoryForm] Record type: " << history.getInstitutionType()
+                  << ", name: " << history.getInstitutionName() << std::endl;
+
+        if (history.getInstitutionType() == "High School") {
+            populateHighSchoolFields(history);
+            highSchoolRecordId_ = history.getId();
+        } else if (history.getInstitutionType() == "College" ||
+                   history.getInstitutionType() == "University") {
+            populateCollegeFields(history);
+            collegeRecordId_ = history.getId();
+            hasPreviousCollegeCheckbox_->setChecked(true);
+            togglePreviousCollege();
+        }
+    }
+}
+
+void AcademicHistoryForm::saveHistoriesToApi() {
+    if (!apiService_ || !session_) {
+        return;
+    }
+
+    std::string studentId = session_->getStudent().getId();
+    if (studentId.empty()) {
+        return;
+    }
+
+    std::cout << "[AcademicHistoryForm] Saving academic histories for student: " << studentId << std::endl;
+
+    // Save high school record
+    if (!highSchoolNameInput_->text().empty()) {
+        Models::AcademicHistory hsHistory = buildHighSchoolHistory();
+        hsHistory.setStudentId(studentId);
+        if (!highSchoolRecordId_.empty()) {
+            hsHistory.setId(highSchoolRecordId_);
+        }
+        auto result = apiService_->saveAcademicHistory(hsHistory);
+        if (result.success) {
+            std::cout << "[AcademicHistoryForm] High school record saved successfully" << std::endl;
+            if (!result.submissionId.empty()) {
+                highSchoolRecordId_ = result.submissionId;
+            }
+        } else {
+            std::cout << "[AcademicHistoryForm] Failed to save high school record: " << result.message << std::endl;
+        }
+    }
+
+    // Save college record if applicable
+    if (hasPreviousCollegeCheckbox_->isChecked() && !collegeNameInput_->text().empty()) {
+        Models::AcademicHistory collegeHistory = buildCollegeHistory();
+        collegeHistory.setStudentId(studentId);
+        if (!collegeRecordId_.empty()) {
+            collegeHistory.setId(collegeRecordId_);
+        }
+        auto result = apiService_->saveAcademicHistory(collegeHistory);
+        if (result.success) {
+            std::cout << "[AcademicHistoryForm] College record saved successfully" << std::endl;
+            if (!result.submissionId.empty()) {
+                collegeRecordId_ = result.submissionId;
+            }
+        } else {
+            std::cout << "[AcademicHistoryForm] Failed to save college record: " << result.message << std::endl;
+        }
+    }
+}
+
+void AcademicHistoryForm::populateHighSchoolFields(const Models::AcademicHistory& history) {
+    highSchoolNameInput_->setText(history.getInstitutionName());
+    highSchoolCityInput_->setText(history.getInstitutionCity());
+
+    // Set state in combo box
+    std::string state = history.getInstitutionState();
+    if (!state.empty()) {
+        for (int i = 0; i < highSchoolStateSelect_->count(); ++i) {
+            if (highSchoolStateSelect_->itemText(i).toUTF8() == state) {
+                highSchoolStateSelect_->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+
+    // Set graduation date
+    if (!history.getGraduationDate().empty()) {
+        Wt::WDate gradDate = Wt::WDate::fromString(history.getGraduationDate(), "yyyy-MM-dd");
+        if (gradDate.isValid()) {
+            highSchoolGradDateInput_->setDate(gradDate);
+        }
+    }
+
+    // Set GPA
+    if (history.getGpa() > 0) {
+        highSchoolGpaInput_->setText(std::to_string(history.getGpa()));
+    }
+
+    // Check if GED
+    if (history.getDegreeEarned() == "GED") {
+        gedCheckbox_->setChecked(true);
+    }
+}
+
+void AcademicHistoryForm::populateCollegeFields(const Models::AcademicHistory& history) {
+    collegeNameInput_->setText(history.getInstitutionName());
+    collegeCityInput_->setText(history.getInstitutionCity());
+    collegeMajorInput_->setText(history.getMajor());
+
+    // Set state in combo box
+    std::string state = history.getInstitutionState();
+    if (!state.empty()) {
+        for (int i = 0; i < collegeStateSelect_->count(); ++i) {
+            if (collegeStateSelect_->itemText(i).toUTF8() == state) {
+                collegeStateSelect_->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+
+    // Set GPA
+    if (history.getGpa() > 0) {
+        collegeGpaInput_->setText(std::to_string(history.getGpa()));
+    }
+
+    // Set dates
+    if (!history.getStartDate().empty()) {
+        Wt::WDate startDate = Wt::WDate::fromString(history.getStartDate(), "yyyy-MM-dd");
+        if (startDate.isValid()) {
+            collegeStartDateInput_->setDate(startDate);
+        }
+    }
+    if (!history.getEndDate().empty()) {
+        Wt::WDate endDate = Wt::WDate::fromString(history.getEndDate(), "yyyy-MM-dd");
+        if (endDate.isValid()) {
+            collegeEndDateInput_->setDate(endDate);
+        }
+    }
+
+    // Set degree type in combo box
+    std::string degree = history.getDegreeEarned();
+    if (!degree.empty()) {
+        for (int i = 0; i < collegeDegreeSelect_->count(); ++i) {
+            if (collegeDegreeSelect_->itemText(i).toUTF8() == degree) {
+                collegeDegreeSelect_->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+
+    // Set degree completed checkbox
+    degreeCompletedCheckbox_->setChecked(!history.isCurrentlyAttending() && !history.getDegreeEarned().empty());
+}
+
+Models::AcademicHistory AcademicHistoryForm::buildHighSchoolHistory() const {
+    Models::AcademicHistory history;
+
+    history.setInstitutionType("High School");
+    history.setInstitutionName(highSchoolNameInput_->text().toUTF8());
+    history.setInstitutionCity(highSchoolCityInput_->text().toUTF8());
+
+    std::string state = highSchoolStateSelect_->currentText().toUTF8();
+    if (state != "Select...") {
+        history.setInstitutionState(state);
+    }
+
+    if (highSchoolGradDateInput_->date().isValid()) {
+        history.setGraduationDate(highSchoolGradDateInput_->date().toString("yyyy-MM-dd").toUTF8());
+    }
+
+    std::string gpaStr = highSchoolGpaInput_->text().toUTF8();
+    if (!gpaStr.empty()) {
+        try {
+            history.setGpa(std::stod(gpaStr));
+        } catch (...) {}
+    }
+
+    history.setGpaScale(4.0);
+    history.setDegreeEarned(gedCheckbox_->isChecked() ? "GED" : "High School Diploma");
+    history.setCurrentlyAttending(false);
+
+    return history;
+}
+
+Models::AcademicHistory AcademicHistoryForm::buildCollegeHistory() const {
+    Models::AcademicHistory history;
+
+    history.setInstitutionType("College");
+    history.setInstitutionName(collegeNameInput_->text().toUTF8());
+    history.setInstitutionCity(collegeCityInput_->text().toUTF8());
+    history.setMajor(collegeMajorInput_->text().toUTF8());
+
+    std::string state = collegeStateSelect_->currentText().toUTF8();
+    if (state != "Select...") {
+        history.setInstitutionState(state);
+    }
+
+    std::string gpaStr = collegeGpaInput_->text().toUTF8();
+    if (!gpaStr.empty()) {
+        try {
+            history.setGpa(std::stod(gpaStr));
+        } catch (...) {}
+    }
+
+    history.setGpaScale(4.0);
+
+    if (collegeStartDateInput_->date().isValid()) {
+        history.setStartDate(collegeStartDateInput_->date().toString("yyyy-MM-dd").toUTF8());
+    }
+    if (collegeEndDateInput_->date().isValid()) {
+        history.setEndDate(collegeEndDateInput_->date().toString("yyyy-MM-dd").toUTF8());
+    }
+
+    std::string degree = collegeDegreeSelect_->currentText().toUTF8();
+    if (degree != "Select...") {
+        history.setDegreeEarned(degree);
+    }
+
+    history.setCurrentlyAttending(!degreeCompletedCheckbox_->isChecked());
+
+    return history;
 }
 
 } // namespace Forms

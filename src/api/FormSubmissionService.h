@@ -10,6 +10,7 @@
 #include "models/Student.h"
 #include "models/StudentAddress.h"
 #include "models/EmergencyContact.h"
+#include "models/AcademicHistory.h"
 #include "models/Curriculum.h"
 
 namespace StudentIntake {
@@ -64,6 +65,14 @@ public:
     SubmissionResult updateEmergencyContact(const Models::EmergencyContact& contact);
     SubmissionResult deleteEmergencyContact(const std::string& contactId);
     SubmissionResult saveEmergencyContact(const Models::EmergencyContact& contact);  // Create or update
+
+    // AcademicHistory API endpoints
+    std::vector<Models::AcademicHistory> getAcademicHistories(const std::string& studentId);
+    Models::AcademicHistory getAcademicHistoryByType(const std::string& studentId, const std::string& institutionType);
+    SubmissionResult createAcademicHistory(const Models::AcademicHistory& history);
+    SubmissionResult updateAcademicHistory(const Models::AcademicHistory& history);
+    SubmissionResult deleteAcademicHistory(const std::string& historyId);
+    SubmissionResult saveAcademicHistory(const Models::AcademicHistory& history);  // Create or update
 
     // Curriculum API endpoints
     std::vector<Models::Curriculum> getCurriculums();
