@@ -207,6 +207,15 @@ SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
                 ? studentData["attributes"]
                 : studentData;
 
+            // Debug: Log curriculum_id from API response
+            std::cout << "[FormSubmissionService] Login - curriculum_id in API response: ";
+            if (attributes.contains("curriculum_id")) {
+                std::cout << attributes["curriculum_id"].dump() << std::endl;
+            } else {
+                std::cout << "NOT PRESENT" << std::endl;
+            }
+            std::cout.flush();
+
             // Check password (stored as password_hash in DB)
             std::string storedPassword = attributes.value("password_hash", "");
             if (storedPassword == password) {
@@ -248,6 +257,12 @@ SubmissionResult FormSubmissionService::getStudentProfile(const std::string& stu
 SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Student& student) {
     // Wrap in JSON:API format
     nlohmann::json attributes = student.toJson();
+    std::cout << "[FormSubmissionService] updateStudentProfile - student ID: " << student.getId() << std::endl;
+    std::cout << "[FormSubmissionService] updateStudentProfile - curriculum_id in student: '"
+              << student.getCurriculumId() << "'" << std::endl;
+    std::cout << "[FormSubmissionService] updateStudentProfile - curriculum_id in payload: "
+              << (attributes.contains("curriculum_id") ? attributes["curriculum_id"].dump() : "NOT PRESENT") << std::endl;
+
     nlohmann::json payload;
     payload["data"] = {
         {"type", "Student"},
@@ -255,6 +270,11 @@ SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Stude
         {"attributes", attributes}
     };
     ApiResponse response = apiClient_->patch("/Student/" + student.getId(), payload);
+    std::cout << "[FormSubmissionService] updateStudentProfile - response status: " << response.httpStatusCode << std::endl;
+    if (!response.isSuccess()) {
+        std::cout << "[FormSubmissionService] updateStudentProfile - error: " << response.errorMessage << std::endl;
+    }
+    std::cout.flush();
     return parseSubmissionResponse(response);
 }
 

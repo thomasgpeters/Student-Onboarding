@@ -135,9 +135,10 @@ nlohmann::json Student::toJson() const {
     j["is_veteran"] = isVeteran_;
     j["requires_financial_aid"] = requiresFinancialAid_;
 
-    // Completed forms
+    // Completed forms - serialize as JSON string for TEXT column in database
     if (!completedForms_.empty()) {
-        j["completed_forms"] = completedForms_;
+        nlohmann::json formsArray = completedForms_;
+        j["completed_forms"] = formsArray.dump();  // Store as JSON-encoded string
     }
 
     // Convert time points to ISO 8601 date strings (date only for DB)
@@ -273,6 +274,16 @@ Student Student::fromJson(const nlohmann::json& json) {
     }
 
     // Handle curriculumId/curriculum_id - could be int or string
+    std::cout << "[Student::fromJson] curriculum_id in attrs: ";
+    if (attrs.contains("curriculum_id")) {
+        std::cout << attrs["curriculum_id"].dump() << std::endl;
+    } else if (attrs.contains("curriculumId")) {
+        std::cout << attrs["curriculumId"].dump() << std::endl;
+    } else {
+        std::cout << "NOT PRESENT" << std::endl;
+    }
+    std::cout.flush();
+
     if (attrs.contains("curriculumId")) {
         if (attrs["curriculumId"].is_string()) {
             student.curriculumId_ = attrs["curriculumId"].get<std::string>();
@@ -286,6 +297,8 @@ Student Student::fromJson(const nlohmann::json& json) {
             student.curriculumId_ = std::to_string(attrs["curriculum_id"].get<int>());
         }
     }
+    std::cout << "[Student::fromJson] Parsed curriculumId_: '" << student.curriculumId_ << "'" << std::endl;
+    std::cout.flush();
 
     // Handle studentType/student_type
     if (attrs.contains("studentType") && attrs["studentType"].is_string()) {
@@ -319,11 +332,48 @@ Student Student::fromJson(const nlohmann::json& json) {
         student.requiresFinancialAid_ = attrs["requires_financial_aid"].get<bool>();
     }
 
-    // Handle completedForms/completed_forms
-    if (attrs.contains("completedForms") && attrs["completedForms"].is_array()) {
-        student.completedForms_ = attrs["completedForms"].get<std::vector<std::string>>();
-    } else if (attrs.contains("completed_forms") && attrs["completed_forms"].is_array()) {
-        student.completedForms_ = attrs["completed_forms"].get<std::vector<std::string>>();
+    // Handle completedForms/completed_forms - could be array or JSON-encoded string
+    std::cout << "[Student::fromJson] completed_forms in attrs: ";
+    if (attrs.contains("completed_forms")) {
+        std::cout << attrs["completed_forms"].dump() << std::endl;
+    } else if (attrs.contains("completedForms")) {
+        std::cout << attrs["completedForms"].dump() << std::endl;
+    } else {
+        std::cout << "NOT PRESENT" << std::endl;
+    }
+    std::cout.flush();
+
+    auto parseCompletedForms = [&student](const nlohmann::json& value) {
+        if (value.is_array()) {
+            student.completedForms_ = value.get<std::vector<std::string>>();
+            std::cout << "[Student::fromJson] Parsed completed_forms as array, count: "
+                      << student.completedForms_.size() << std::endl;
+        } else if (value.is_string()) {
+            // Database stores as TEXT, so it might be a JSON-encoded string
+            std::string jsonStr = value.get<std::string>();
+            std::cout << "[Student::fromJson] completed_forms is string: '" << jsonStr << "'" << std::endl;
+            if (!jsonStr.empty() && jsonStr[0] == '[') {
+                try {
+                    auto parsed = nlohmann::json::parse(jsonStr);
+                    if (parsed.is_array()) {
+                        student.completedForms_ = parsed.get<std::vector<std::string>>();
+                        std::cout << "[Student::fromJson] Parsed JSON string, count: "
+                                  << student.completedForms_.size() << std::endl;
+                    }
+                } catch (...) {
+                    std::cout << "[Student::fromJson] Failed to parse completed_forms JSON string" << std::endl;
+                }
+            }
+        } else if (value.is_null()) {
+            std::cout << "[Student::fromJson] completed_forms is null" << std::endl;
+        }
+        std::cout.flush();
+    };
+
+    if (attrs.contains("completedForms")) {
+        parseCompletedForms(attrs["completedForms"]);
+    } else if (attrs.contains("completed_forms")) {
+        parseCompletedForms(attrs["completed_forms"]);
     }
 
     // Parse date strings
