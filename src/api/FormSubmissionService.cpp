@@ -632,7 +632,92 @@ SubmissionResult FormSubmissionService::submitAcademicHistory(const std::string&
 
 SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& studentId,
                                                             const Models::FormData& data) {
-    nlohmann::json payload = prepareFormPayload(studentId, data, "FinancialAid");
+    // Transform form data to match financial_aid table schema (snake_case)
+    nlohmann::json attributes;
+
+    // student_id as integer
+    try {
+        attributes["student_id"] = std::stoi(studentId);
+    } catch (const std::exception&) {
+        attributes["student_id"] = studentId;
+    }
+
+    // Map form fields to database columns
+    attributes["fafsa_completed"] = data.hasField("fafsaCompleted") ? data.getField("fafsaCompleted").boolValue : false;
+
+    // fafsaId maps to efc (Expected Family Contribution)
+    std::string fafsaId = data.hasField("fafsaId") ? data.getField("fafsaId").stringValue : "";
+    if (!fafsaId.empty()) {
+        try {
+            attributes["efc"] = std::stod(fafsaId);
+        } catch (...) {
+            attributes["efc"] = nullptr;
+        }
+    }
+
+    attributes["employment_status"] = data.hasField("employmentStatus") ? data.getField("employmentStatus").stringValue : "";
+    attributes["employer_name"] = data.hasField("employer") ? data.getField("employer").stringValue : "";
+
+    // householdIncome maps to annual_income - extract numeric value if possible
+    std::string incomeStr = data.hasField("householdIncome") ? data.getField("householdIncome").stringValue : "";
+    // Store the text description in aid_types for now since annual_income expects a number
+    if (!incomeStr.empty() && incomeStr != "Select...") {
+        // Just store it as text, backend can handle it
+        attributes["aid_types"] = incomeStr;  // Store income range description
+    }
+
+    // dependents maps to dependents_count
+    std::string dependentsStr = data.hasField("dependents") ? data.getField("dependents").stringValue : "";
+    if (!dependentsStr.empty()) {
+        try {
+            attributes["dependents_count"] = std::stoi(dependentsStr);
+        } catch (...) {
+            attributes["dependents_count"] = 0;
+        }
+    }
+
+    // Build aid_types from checkboxes
+    std::vector<std::string> aidTypes;
+    if (data.hasField("scholarshipInterest") && data.getField("scholarshipInterest").boolValue) {
+        aidTypes.push_back("Scholarships/Grants");
+    }
+    if (data.hasField("workStudyInterest") && data.getField("workStudyInterest").boolValue) {
+        aidTypes.push_back("Work-Study");
+    }
+    if (data.hasField("loanInterest") && data.getField("loanInterest").boolValue) {
+        aidTypes.push_back("Student Loans");
+    }
+    if (data.hasField("veteranBenefits") && data.getField("veteranBenefits").boolValue) {
+        aidTypes.push_back("Veteran Benefits");
+    }
+    if (!aidTypes.empty()) {
+        std::string aidTypesStr;
+        for (size_t i = 0; i < aidTypes.size(); ++i) {
+            if (i > 0) aidTypesStr += ", ";
+            aidTypesStr += aidTypes[i];
+        }
+        attributes["aid_types"] = aidTypesStr;
+    }
+
+    attributes["scholarship_applications"] = data.hasField("currentScholarships") ? data.getField("currentScholarships").stringValue : "";
+
+    // Store special circumstances in scholarship_applications if no scholarships listed
+    std::string specialCirc = data.hasField("specialCircumstances") ? data.getField("specialCircumstances").stringValue : "";
+    if (!specialCirc.empty()) {
+        std::string existing = attributes.value("scholarship_applications", "");
+        if (!existing.empty()) {
+            attributes["scholarship_applications"] = existing + "\n\nSpecial Circumstances: " + specialCirc;
+        } else {
+            attributes["scholarship_applications"] = "Special Circumstances: " + specialCirc;
+        }
+    }
+
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "FinancialAid"},
+        {"attributes", attributes}
+    };
+
     std::cout << "[FormSubmissionService] submitFinancialAid payload: " << payload.dump() << std::endl;
     ApiResponse response = apiClient_->post("/FinancialAid", payload);
     return parseSubmissionResponse(response);
@@ -691,6 +776,9 @@ SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
     }
     if (formId == "academic_history") {
         return submitAcademicHistory(studentId, data);
+    }
+    if (formId == "financial_aid") {
+        return submitFinancialAid(studentId, data);
     }
     if (formId == "consent") {
         return submitConsent(studentId, data);
