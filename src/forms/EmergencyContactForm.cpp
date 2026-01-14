@@ -160,6 +160,19 @@ void EmergencyContactForm::addContactSection(int contactNumber) {
 
 void EmergencyContactForm::removeContact(int index) {
     if (index > 0 && index < static_cast<int>(contacts_.size())) {
+        // Delete from database if this contact has an ID
+        if (index < static_cast<int>(contactIds_.size())) {
+            if (!contactIds_[index].empty() && apiService_) {
+                std::cout << "[EmergencyContactForm] Deleting contact ID: " << contactIds_[index] << std::endl;
+                auto result = apiService_->deleteEmergencyContact(contactIds_[index]);
+                if (!result.success) {
+                    std::cout << "[EmergencyContactForm] Failed to delete contact: " << result.message << std::endl;
+                }
+            }
+            // Keep contactIds_ in sync with contacts_
+            contactIds_.erase(contactIds_.begin() + index);
+        }
+
         contactsContainer_->removeWidget(contacts_[index].container);
         contacts_.erase(contacts_.begin() + index);
 
