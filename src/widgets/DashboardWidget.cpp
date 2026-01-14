@@ -54,6 +54,13 @@ void DashboardWidget::setupUI() {
     curriculumText_ = curriculumSection->addWidget(std::make_unique<Wt::WText>());
     curriculumText_->addStyleClass("curriculum-info");
 
+    // Change Program link
+    auto changeProgramBtn = curriculumSection->addWidget(std::make_unique<Wt::WPushButton>("Change Program"));
+    changeProgramBtn->addStyleClass("btn btn-link btn-sm text-primary");
+    changeProgramBtn->clicked().connect([this]() {
+        changeProgramClicked_.emit();
+    });
+
     // Progress section
     progressSection_ = leftColumn_->addWidget(std::make_unique<Wt::WContainerWidget>());
     progressSection_->addStyleClass("progress-section card");

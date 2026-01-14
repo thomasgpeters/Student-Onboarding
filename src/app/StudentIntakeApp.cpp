@@ -165,6 +165,7 @@ void StudentIntakeApp::setupUI() {
         setState(AppState::Forms);
         formContainer_->showForm(formId);
     });
+    dashboardWidget_->changeProgramClicked().connect(this, &StudentIntakeApp::handleChangeProgram);
 
     // Forms view (with progress sidebar)
     formsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -435,6 +436,29 @@ void StudentIntakeApp::handleCurriculumSelected(const Models::Curriculum& curric
     }
 
     setState(AppState::Dashboard);
+}
+
+void StudentIntakeApp::handleChangeProgram() {
+    std::cout << "[StudentIntakeApp] handleChangeProgram - resetting completed forms" << std::endl;
+
+    // Reset completed forms for the student
+    session_->getStudent().resetCompletedForms();
+
+    // Clear curriculum selection
+    session_->setCurrentCurriculum(Models::Curriculum());
+    session_->getStudent().setCurriculumId("");
+
+    // Clear required forms in session
+    session_->setRequiredFormIds({});
+
+    // Update student profile on server to persist the reset
+    if (apiService_) {
+        std::cout << "[StudentIntakeApp] Updating student profile with cleared forms" << std::endl;
+        apiService_->updateStudentProfile(session_->getStudent());
+    }
+
+    // Navigate to curriculum selection
+    setState(AppState::CurriculumSelection);
 }
 
 void StudentIntakeApp::handleFormCompleted(const std::string& formId) {

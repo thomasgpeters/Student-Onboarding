@@ -66,6 +66,7 @@ private:
     void handleRegistrationSuccess();
     void handleLogout();
     void handleCurriculumSelected(const Models::Curriculum& curriculum);
+    void handleChangeProgram();
     void handleFormCompleted(const std::string& formId);
     void handleAllFormsCompleted();
 
