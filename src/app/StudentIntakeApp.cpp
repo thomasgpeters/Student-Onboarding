@@ -151,9 +151,12 @@ void StudentIntakeApp::setupUI() {
     dashboardWidget_ = contentContainer_->addWidget(std::make_unique<Widgets::DashboardWidget>());
     dashboardWidget_->setSession(session_);
     dashboardWidget_->continueClicked().connect([this]() {
+        std::cout << "[StudentIntakeApp] continueClicked - hasCurriculumSelected: " << session_->hasCurriculumSelected() << std::endl;
         if (!session_->hasCurriculumSelected()) {
+            std::cout << "[StudentIntakeApp] Going to CurriculumSelection from Dashboard" << std::endl;
             setState(AppState::CurriculumSelection);
         } else {
+            std::cout << "[StudentIntakeApp] Going to Forms from Dashboard" << std::endl;
             setState(AppState::Forms);
         }
     });
@@ -290,10 +293,12 @@ void StudentIntakeApp::showRegister() {
 }
 
 void StudentIntakeApp::showCurriculumSelection() {
+    std::cout << "[StudentIntakeApp] showCurriculumSelection called" << std::endl;
     hideAllViews();
     curriculumSelector_->show();
     curriculumSelector_->refresh();
     navigationWidget_->refresh();
+    std::cout << "[StudentIntakeApp] showCurriculumSelection completed" << std::endl;
 }
 
 void StudentIntakeApp::showDashboard() {
@@ -312,11 +317,14 @@ void StudentIntakeApp::showDashboard() {
 }
 
 void StudentIntakeApp::showForms() {
+    std::cout << "[StudentIntakeApp] showForms called" << std::endl;
+
     // Calculate required forms based on student data
     auto requiredFormIds = Session::SessionManager::getInstance().calculateRequiredForms(
         session_->getStudent(),
         session_->getCurrentCurriculum());
 
+    std::cout << "[StudentIntakeApp] Calculated " << requiredFormIds.size() << " required forms" << std::endl;
     session_->setRequiredFormIds(requiredFormIds);
 
     // Configure form factory with session and API service
@@ -354,32 +362,45 @@ void StudentIntakeApp::showCompletion() {
 }
 
 void StudentIntakeApp::handleLoginSuccess() {
+    std::cout << "[StudentIntakeApp] handleLoginSuccess called" << std::endl;
     navigationWidget_->refresh();
 
     // Check if returning student has a curriculum_id - if so, load the curriculum
     std::string curriculumId = session_->getStudent().getCurriculumId();
+    std::cout << "[StudentIntakeApp] Student curriculum_id: '" << curriculumId << "'" << std::endl;
+
     if (!curriculumId.empty() && !session_->hasCurriculumSelected()) {
         // Load curriculum from manager
+        std::cout << "[StudentIntakeApp] Loading curriculum from manager..." << std::endl;
         auto curriculum = curriculumManager_->getCurriculum(curriculumId);
+        std::cout << "[StudentIntakeApp] Loaded curriculum id: '" << curriculum.getId() << "'" << std::endl;
+
         if (!curriculum.getId().empty()) {
             session_->setCurrentCurriculum(curriculum);
 
             // Load required forms for this curriculum so we can check completion
             auto requiredFormIds = curriculum.getRequiredForms();
+            std::cout << "[StudentIntakeApp] Required forms count: " << requiredFormIds.size() << std::endl;
             session_->setRequiredFormIds(requiredFormIds);
         }
     }
 
+    std::cout << "[StudentIntakeApp] hasCurriculumSelected: " << session_->hasCurriculumSelected() << std::endl;
+
     if (session_->hasCurriculumSelected()) {
         // Check if all forms are already completed (returning student)
+        std::cout << "[StudentIntakeApp] isIntakeComplete: " << session_->isIntakeComplete() << std::endl;
         if (session_->isIntakeComplete()) {
             // All forms are complete - go directly to completion view
+            std::cout << "[StudentIntakeApp] Going to Completion" << std::endl;
             setState(AppState::Completion);
         } else {
             // Some forms still need to be filled
+            std::cout << "[StudentIntakeApp] Going to Dashboard" << std::endl;
             setState(AppState::Dashboard);
         }
     } else {
+        std::cout << "[StudentIntakeApp] Going to CurriculumSelection" << std::endl;
         setState(AppState::CurriculumSelection);
     }
 }
