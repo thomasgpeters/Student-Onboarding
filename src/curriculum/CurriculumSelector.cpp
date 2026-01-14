@@ -286,8 +286,7 @@ void CurriculumSelector::showSyllabusDialog(const Models::Curriculum& curriculum
     dialog->rejectWhenEscapePressed();
     dialog->addStyleClass("syllabus-dialog");
     dialog->setAttributeValue("style",
-        "min-width: 500px; max-width: 600px; border-radius: 12px; overflow: hidden; "
-        "box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);");
+        "width: 550px; border-radius: 12px; border: 1px solid #e2e8f0;");
 
     // Style the modal backdrop/overlay
     Wt::WApplication::instance()->styleSheet().addRule(
