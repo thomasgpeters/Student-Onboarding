@@ -6,6 +6,7 @@
 #include <Wt/WPushButton.h>
 #include <Wt/WText.h>
 #include <Wt/WLineEdit.h>
+#include <Wt/WDialog.h>
 #include <Wt/WSignal.h>
 #include <memory>
 #include "CurriculumManager.h"
@@ -45,9 +46,8 @@ private:
     void handleDepartmentChange();
     void handleDegreeTypeChange();
     void handleSearchChange();
-    void handleCurriculumSelect();
-    void handleContinue();
-    void showCurriculumDetails(const Models::Curriculum& curriculum);
+    void handleSelectProgram(const Models::Curriculum& curriculum);
+    void showSyllabusDialog(const Models::Curriculum& curriculum);
 
     std::shared_ptr<CurriculumManager> curriculumManager_;
     std::shared_ptr<Session::StudentSession> session_;
@@ -56,15 +56,7 @@ private:
     Wt::WLineEdit* searchInput_;
     Wt::WComboBox* departmentSelect_;
     Wt::WComboBox* degreeTypeSelect_;
-    Wt::WContainerWidget* curriculumListContainer_;
-    Wt::WContainerWidget* detailsContainer_;
-    Wt::WText* curriculumNameText_;
-    Wt::WText* curriculumDescText_;
-    Wt::WText* curriculumInfoText_;
-    Wt::WPushButton* continueButton_;
-    Wt::WPushButton* backButton_;
-
-    Models::Curriculum selectedCurriculum_;
+    Wt::WContainerWidget* curriculumCardsContainer_;
 
     Wt::Signal<Models::Curriculum> curriculumSelected_;
     Wt::Signal<> backRequested_;

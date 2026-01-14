@@ -291,7 +291,7 @@ body {
 
 /* Curriculum Selector */
 .curriculum-selector {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
@@ -306,62 +306,176 @@ body {
 .filter-row {
     display: flex;
     gap: 1rem;
+    margin-top: 1rem;
 }
 
 .filter-group {
     flex: 1;
 }
 
-.content-area {
-    display: flex;
-    gap: 2rem;
+.programs-section {
+    margin-top: 1.5rem;
 }
 
-.list-section {
-    flex: 1;
+.programs-title {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
 }
 
-.details-section {
-    flex: 1;
+/* Program Cards Grid */
+.curriculum-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .curriculum-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .curriculum-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Program Card */
+.program-card {
     background: var(--card-background);
-    padding: 1.5rem;
     border-radius: 12px;
     box-shadow: var(--shadow);
-}
-
-.curriculum-list {
-    max-height: 500px;
-    overflow-y: auto;
-}
-
-.curriculum-item {
-    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s ease;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-    cursor: pointer;
-    transition: all 0.2s;
 }
 
-.curriculum-item:hover {
-    border-color: var(--primary-color);
-    background-color: #f0f7ff;
+.program-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
 }
 
-.curriculum-meta {
+.program-card-header {
+    padding: 1.25rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.program-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.program-card-dept {
     font-size: 0.875rem;
     color: var(--text-secondary);
 }
 
-.curriculum-item-desc {
-    font-size: 0.8125rem;
-    color: var(--text-secondary);
-    margin: 0.25rem 0 0.5rem 1.5rem;
-    line-height: 1.4;
+.program-card-body {
+    padding: 1rem 1.25rem;
+    flex: 1;
 }
 
-.curriculum-description-small {
-    display: block;
+.program-card-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.program-card-meta {
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    border-top: 1px solid var(--border-color);
+}
+
+.program-card-meta .meta-item {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.program-card-footer {
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Info button */
+.btn-info-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e0f2fe;
+    color: #0284c7;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-info-icon:hover {
+    background: #0284c7;
+    color: white;
+}
+
+/* Syllabus Dialog */
+.syllabus-dialog {
+    min-width: 500px;
+    max-width: 600px;
+}
+
+.syllabus-dialog .Wt-dialog-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.syllabus-content {
+    padding: 1rem;
+}
+
+.syllabus-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.syllabus-content h4 {
+    color: var(--text-primary);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.syllabus-details {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.syllabus-details p {
+    margin: 0.5rem 0;
+}
+
+.no-results {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    grid-column: 1 / -1;
 }
 
 /* Forms View */
