@@ -665,6 +665,23 @@ body {
     margin-bottom: 1.5rem;
 }
 
+/* Curriculum Section Styling */
+.curriculum-section {
+    position: relative;
+}
+
+.curriculum-section .btn-link {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.curriculum-info h4 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
 /* Sidebar Sections */
 .sidebar-section {
     margin-bottom: 1.5rem;
