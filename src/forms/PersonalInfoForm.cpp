@@ -47,7 +47,8 @@ void PersonalInfoForm::createFormFields() {
     // Personal Details Section
     auto personalSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     personalSection->addStyleClass("form-section");
-    personalSection->addWidget(std::make_unique<Wt::WText>("<h4>Personal Details</h4>"));
+    auto personalHeader = personalSection->addWidget(std::make_unique<Wt::WText>("<h4>Personal Details</h4>"));
+    personalHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     // Name row
     auto nameRow = personalSection->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -117,7 +118,8 @@ void PersonalInfoForm::createFormFields() {
     // Contact Information Section
     auto contactSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contactSection->addStyleClass("form-section");
-    contactSection->addWidget(std::make_unique<Wt::WText>("<h4>Contact Information</h4>"));
+    auto contactHeader = contactSection->addWidget(std::make_unique<Wt::WText>("<h4>Contact Information</h4>"));
+    contactHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto contactRow = contactSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     contactRow->addStyleClass("form-row");
@@ -146,7 +148,8 @@ void PersonalInfoForm::createFormFields() {
     // Home Address Section
     auto addressSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     addressSection->addStyleClass("form-section");
-    addressSection->addWidget(std::make_unique<Wt::WText>("<h4>Home Address</h4>"));
+    auto addressHeader = addressSection->addWidget(std::make_unique<Wt::WText>("<h4>Home Address</h4>"));
+    addressHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto addr1Group = addressSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     addr1Group->addStyleClass("form-group");
@@ -200,7 +203,8 @@ void PersonalInfoForm::createFormFields() {
     // Mailing Address Section
     auto mailingSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     mailingSection->addStyleClass("form-section");
-    mailingSection->addWidget(std::make_unique<Wt::WText>("<h4>Mailing Address</h4>"));
+    auto mailingHeader = mailingSection->addWidget(std::make_unique<Wt::WText>("<h4>Mailing Address</h4>"));
+    mailingHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     sameAsHomeCheckbox_ = mailingSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " Same as home address"));
@@ -261,7 +265,8 @@ void PersonalInfoForm::createFormFields() {
     // Citizenship Section
     auto citizenshipSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     citizenshipSection->addStyleClass("form-section");
-    citizenshipSection->addWidget(std::make_unique<Wt::WText>("<h4>Citizenship Information</h4>"));
+    auto citizenHeader = citizenshipSection->addWidget(std::make_unique<Wt::WText>("<h4>Citizenship Information</h4>"));
+    citizenHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto citizenRow = citizenshipSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     citizenRow->addStyleClass("form-row");
