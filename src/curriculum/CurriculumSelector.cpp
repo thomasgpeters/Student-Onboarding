@@ -1,8 +1,6 @@
 #include "CurriculumSelector.h"
 #include <Wt/WBreak.h>
 #include <Wt/WLabel.h>
-#include <Wt/WRadioButton.h>
-#include <Wt/WButtonGroup.h>
 
 namespace StudentIntake {
 namespace Curriculum {
@@ -12,13 +10,7 @@ CurriculumSelector::CurriculumSelector()
     , searchInput_(nullptr)
     , departmentSelect_(nullptr)
     , degreeTypeSelect_(nullptr)
-    , curriculumListContainer_(nullptr)
-    , detailsContainer_(nullptr)
-    , curriculumNameText_(nullptr)
-    , curriculumDescText_(nullptr)
-    , curriculumInfoText_(nullptr)
-    , continueButton_(nullptr)
-    , backButton_(nullptr) {
+    , curriculumCardsContainer_(nullptr) {
     setupUI();
 }
 
@@ -37,9 +29,9 @@ void CurriculumSelector::setupUI() {
         "<p>Choose your intended program of study. This will determine which forms you need to complete.</p>"));
     desc->addStyleClass("section-description");
 
-    // Filters container
+    // Filters container - styled like a card
     auto filtersContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
-    filtersContainer->addStyleClass("filters-container");
+    filtersContainer->addStyleClass("filters-container card");
 
     // Search input
     auto searchGroup = filtersContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -73,47 +65,15 @@ void CurriculumSelector::setupUI() {
     degreeLabel->setBuddy(degreeTypeSelect_);
     degreeTypeSelect_->changed().connect(this, &CurriculumSelector::handleDegreeTypeChange);
 
-    // Main content area
-    auto contentArea = addWidget(std::make_unique<Wt::WContainerWidget>());
-    contentArea->addStyleClass("content-area");
+    // Programs grid container
+    auto programsSection = addWidget(std::make_unique<Wt::WContainerWidget>());
+    programsSection->addStyleClass("programs-section");
 
-    // Curriculum list
-    auto listSection = contentArea->addWidget(std::make_unique<Wt::WContainerWidget>());
-    listSection->addStyleClass("list-section");
-    listSection->addWidget(std::make_unique<Wt::WText>("<h4>Available Programs</h4>"));
-    curriculumListContainer_ = listSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    curriculumListContainer_->addStyleClass("curriculum-list");
+    auto programsTitle = programsSection->addWidget(std::make_unique<Wt::WText>("<h4>Available Programs</h4>"));
+    programsTitle->addStyleClass("programs-title");
 
-    // Details panel
-    detailsContainer_ = contentArea->addWidget(std::make_unique<Wt::WContainerWidget>());
-    detailsContainer_->addStyleClass("details-section");
-    detailsContainer_->hide();
-
-    auto detailsTitle = detailsContainer_->addWidget(std::make_unique<Wt::WText>("<h4>Program Details</h4>"));
-
-    curriculumNameText_ = detailsContainer_->addWidget(std::make_unique<Wt::WText>());
-    curriculumNameText_->addStyleClass("curriculum-name");
-
-    curriculumDescText_ = detailsContainer_->addWidget(std::make_unique<Wt::WText>());
-    curriculumDescText_->addStyleClass("curriculum-description");
-
-    curriculumInfoText_ = detailsContainer_->addWidget(std::make_unique<Wt::WText>());
-    curriculumInfoText_->addStyleClass("curriculum-info");
-
-    // Button container
-    auto buttonContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
-    buttonContainer->addStyleClass("button-container");
-
-    backButton_ = buttonContainer->addWidget(std::make_unique<Wt::WPushButton>("Back"));
-    backButton_->addStyleClass("btn btn-secondary");
-    backButton_->clicked().connect([this]() {
-        backRequested_.emit();
-    });
-
-    continueButton_ = buttonContainer->addWidget(std::make_unique<Wt::WPushButton>("Continue"));
-    continueButton_->addStyleClass("btn btn-primary");
-    continueButton_->setEnabled(false);
-    continueButton_->clicked().connect(this, &CurriculumSelector::handleContinue);
+    curriculumCardsContainer_ = programsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    curriculumCardsContainer_->addStyleClass("curriculum-cards-grid");
 }
 
 void CurriculumSelector::setCurriculumManager(std::shared_ptr<CurriculumManager> manager) {
@@ -151,7 +111,7 @@ void CurriculumSelector::populateDegreeTypes() {
 void CurriculumSelector::updateCurriculumList() {
     if (!curriculumManager_) return;
 
-    curriculumListContainer_->clear();
+    curriculumCardsContainer_->clear();
 
     std::vector<Models::Curriculum> curriculums;
     std::string searchText = searchInput_->text().toUTF8();
@@ -195,35 +155,23 @@ void CurriculumSelector::updateCurriculumList() {
     }
 
     if (curriculums.empty()) {
-        auto noResults = curriculumListContainer_->addWidget(
+        auto noResults = curriculumCardsContainer_->addWidget(
             std::make_unique<Wt::WText>("No programs found matching your criteria."));
         noResults->addStyleClass("no-results");
         return;
     }
 
-    // Create radio button group for curriculum selection
-    auto buttonGroup = std::make_shared<Wt::WButtonGroup>();
-
+    // Create cards for each curriculum
     for (const auto& curriculum : curriculums) {
-        auto itemContainer = curriculumListContainer_->addWidget(
-            std::make_unique<Wt::WContainerWidget>());
-        itemContainer->addStyleClass("curriculum-item");
+        auto card = curriculumCardsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+        card->addStyleClass("program-card");
 
-        auto radio = itemContainer->addWidget(
-            std::make_unique<Wt::WRadioButton>(curriculum.getName()));
-        radio->addStyleClass("curriculum-radio");
-        buttonGroup->addButton(radio);
+        // Card header with program name
+        auto cardHeader = card->addWidget(std::make_unique<Wt::WContainerWidget>());
+        cardHeader->addStyleClass("program-card-header");
 
-        // Store curriculum ID as object name for lookup
-        radio->setObjectName(curriculum.getId());
-
-        // Add description in smaller text below the name
-        std::string description = curriculum.getDescription();
-        if (!description.empty()) {
-            auto descText = itemContainer->addWidget(std::make_unique<Wt::WText>(
-                "<div class='curriculum-item-desc'>" + description + "</div>"));
-            descText->addStyleClass("curriculum-description-small");
-        }
+        auto nameText = cardHeader->addWidget(std::make_unique<Wt::WText>(curriculum.getName()));
+        nameText->addStyleClass("program-card-title");
 
         // Get department name
         std::string deptName = "";
@@ -232,16 +180,58 @@ void CurriculumSelector::updateCurriculumList() {
             deptName = dept.name;
         }
 
-        auto infoText = itemContainer->addWidget(std::make_unique<Wt::WText>(
-            "<span class='curriculum-meta'>" + deptName +
-            " | " + std::to_string(curriculum.getCreditHours()) + " credits</span>"));
-        infoText->addStyleClass("curriculum-item-info");
+        // Degree type label
+        std::string degreeLabel;
+        std::string degreeType = curriculum.getDegreeType();
+        if (degreeType == "bachelor") degreeLabel = "Bachelor's";
+        else if (degreeType == "master") degreeLabel = "Master's";
+        else if (degreeType == "doctoral") degreeLabel = "Doctoral";
+        else if (degreeType == "certificate") degreeLabel = "Certificate";
+        else if (degreeType == "associate") degreeLabel = "Associate";
+        else degreeLabel = degreeType;
 
-        radio->checked().connect([this, curriculum]() {
-            handleCurriculumSelect();
-            showCurriculumDetails(curriculum);
-            selectedCurriculum_ = curriculum;
-            continueButton_->setEnabled(true);
+        auto deptText = cardHeader->addWidget(std::make_unique<Wt::WText>(deptName));
+        deptText->addStyleClass("program-card-dept");
+
+        // Card body with description
+        auto cardBody = card->addWidget(std::make_unique<Wt::WContainerWidget>());
+        cardBody->addStyleClass("program-card-body");
+
+        std::string description = curriculum.getDescription();
+        if (description.length() > 150) {
+            description = description.substr(0, 147) + "...";
+        }
+        auto descText = cardBody->addWidget(std::make_unique<Wt::WText>(description));
+        descText->addStyleClass("program-card-desc");
+
+        // Card meta info
+        auto cardMeta = card->addWidget(std::make_unique<Wt::WContainerWidget>());
+        cardMeta->addStyleClass("program-card-meta");
+
+        auto metaText = cardMeta->addWidget(std::make_unique<Wt::WText>(
+            "<span class='meta-item'>" + degreeLabel + "</span>"
+            "<span class='meta-item'>" + std::to_string(curriculum.getCreditHours()) + " credits</span>"
+            "<span class='meta-item'>" + std::to_string(curriculum.getDurationSemesters()) + " semesters</span>"));
+        metaText->setTextFormat(Wt::TextFormat::XHTML);
+
+        // Card footer with buttons
+        auto cardFooter = card->addWidget(std::make_unique<Wt::WContainerWidget>());
+        cardFooter->addStyleClass("program-card-footer");
+
+        // Info button
+        auto infoBtn = cardFooter->addWidget(std::make_unique<Wt::WPushButton>());
+        infoBtn->setText("ℹ");
+        infoBtn->addStyleClass("btn btn-info-icon");
+        infoBtn->setToolTip("View Syllabus");
+        infoBtn->clicked().connect([this, curriculum]() {
+            showSyllabusDialog(curriculum);
+        });
+
+        // Select button
+        auto selectBtn = cardFooter->addWidget(std::make_unique<Wt::WPushButton>("Select"));
+        selectBtn->addStyleClass("btn btn-primary");
+        selectBtn->clicked().connect([this, curriculum]() {
+            handleSelectProgram(curriculum);
         });
     }
 }
@@ -258,14 +248,29 @@ void CurriculumSelector::handleSearchChange() {
     updateCurriculumList();
 }
 
-void CurriculumSelector::handleCurriculumSelect() {
-    detailsContainer_->show();
+void CurriculumSelector::handleSelectProgram(const Models::Curriculum& curriculum) {
+    if (session_) {
+        session_->setCurrentCurriculum(curriculum);
+        session_->getStudent().setCurriculumId(curriculum.getId());
+    }
+    curriculumSelected_.emit(curriculum);
 }
 
-void CurriculumSelector::showCurriculumDetails(const Models::Curriculum& curriculum) {
-    curriculumNameText_->setText("<h3>" + curriculum.getName() + "</h3>");
-    curriculumDescText_->setText("<p>" + curriculum.getDescription() + "</p>");
+void CurriculumSelector::showSyllabusDialog(const Models::Curriculum& curriculum) {
+    auto dialog = addChild(std::make_unique<Wt::WDialog>("Program Syllabus"));
+    dialog->setClosable(true);
+    dialog->setResizable(false);
+    dialog->rejectWhenEscapePressed();
+    dialog->addStyleClass("syllabus-dialog");
 
+    auto content = dialog->contents();
+    content->addStyleClass("syllabus-content");
+
+    // Program name
+    auto nameText = content->addWidget(std::make_unique<Wt::WText>("<h3>" + curriculum.getName() + "</h3>"));
+    nameText->setTextFormat(Wt::TextFormat::XHTML);
+
+    // Get department name
     std::string deptName = "";
     if (curriculumManager_) {
         auto dept = curriculumManager_->getDepartment(curriculum.getDepartment());
@@ -274,6 +279,7 @@ void CurriculumSelector::showCurriculumDetails(const Models::Curriculum& curricu
         }
     }
 
+    // Degree type label
     std::string degreeLabel;
     std::string degreeType = curriculum.getDegreeType();
     if (degreeType == "bachelor") degreeLabel = "Bachelor's Degree";
@@ -283,25 +289,39 @@ void CurriculumSelector::showCurriculumDetails(const Models::Curriculum& curricu
     else if (degreeType == "associate") degreeLabel = "Associate Degree";
     else degreeLabel = degreeType;
 
-    std::string info = "<ul class='details-list'>";
-    info += "<li><strong>Department:</strong> " + deptName + "</li>";
-    info += "<li><strong>Degree Type:</strong> " + degreeLabel + "</li>";
-    info += "<li><strong>Credit Hours:</strong> " + std::to_string(curriculum.getCreditHours()) + "</li>";
-    info += "<li><strong>Duration:</strong> " + std::to_string(curriculum.getDurationSemesters()) + " semesters</li>";
-    info += "<li><strong>Required Forms:</strong> " + std::to_string(curriculum.getRequiredForms().size()) + " forms</li>";
-    info += "</ul>";
+    // Program details
+    auto detailsHtml = "<div class='syllabus-details'>"
+        "<p><strong>Department:</strong> " + deptName + "</p>"
+        "<p><strong>Degree Type:</strong> " + degreeLabel + "</p>"
+        "<p><strong>Credit Hours:</strong> " + std::to_string(curriculum.getCreditHours()) + "</p>"
+        "<p><strong>Duration:</strong> " + std::to_string(curriculum.getDurationSemesters()) + " semesters</p>"
+        "</div>";
 
-    curriculumInfoText_->setText(info);
-}
+    auto detailsText = content->addWidget(std::make_unique<Wt::WText>(detailsHtml));
+    detailsText->setTextFormat(Wt::TextFormat::XHTML);
 
-void CurriculumSelector::handleContinue() {
-    if (!selectedCurriculum_.getId().empty()) {
-        if (session_) {
-            session_->setCurrentCurriculum(selectedCurriculum_);
-            session_->getStudent().setCurriculumId(selectedCurriculum_.getId());
-        }
-        curriculumSelected_.emit(selectedCurriculum_);
-    }
+    // Description
+    content->addWidget(std::make_unique<Wt::WText>("<h4>Program Description</h4>"));
+    auto descText = content->addWidget(std::make_unique<Wt::WText>("<p>" + curriculum.getDescription() + "</p>"));
+    descText->setTextFormat(Wt::TextFormat::XHTML);
+
+    // Required forms info
+    auto formsCount = curriculum.getRequiredForms().size();
+    content->addWidget(std::make_unique<Wt::WText>("<h4>Onboarding Requirements</h4>"));
+    auto formsText = content->addWidget(std::make_unique<Wt::WText>(
+        "<p>This program requires completion of <strong>" + std::to_string(formsCount) +
+        "</strong> onboarding forms.</p>"));
+    formsText->setTextFormat(Wt::TextFormat::XHTML);
+
+    // Close button
+    auto footer = dialog->footer();
+    auto closeBtn = footer->addWidget(std::make_unique<Wt::WPushButton>("Close"));
+    closeBtn->addStyleClass("btn btn-secondary");
+    closeBtn->clicked().connect([dialog]() {
+        dialog->accept();
+    });
+
+    dialog->show();
 }
 
 void CurriculumSelector::refresh() {
@@ -315,11 +335,9 @@ void CurriculumSelector::refresh() {
 
 void CurriculumSelector::selectCurriculum(const std::string& curriculumId) {
     if (curriculumManager_) {
-        selectedCurriculum_ = curriculumManager_->getCurriculum(curriculumId);
-        if (!selectedCurriculum_.getId().empty()) {
-            showCurriculumDetails(selectedCurriculum_);
-            detailsContainer_->show();
-            continueButton_->setEnabled(true);
+        auto curriculum = curriculumManager_->getCurriculum(curriculumId);
+        if (!curriculum.getId().empty()) {
+            handleSelectProgram(curriculum);
         }
     }
 }
