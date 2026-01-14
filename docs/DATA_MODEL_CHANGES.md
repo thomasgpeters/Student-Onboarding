@@ -270,8 +270,7 @@ The C++ application uses camelCase internally, while the database uses snake_cas
 
 ## Related Files
 
-- `database/postgresql-snake-case.sql` - Full PostgreSQL schema
-- `database/schema.sql` - SQLite schema (for development)
+- `database/schema.sql` - PostgreSQL database schema (snake_case naming)
 - `database/migrations/001_add_student_fields.sql` - Migration script
 - `src/models/Student.h` - Student model header
 - `src/models/Student.cpp` - Student model implementation
