@@ -17,7 +17,8 @@ void AcademicHistoryForm::createFormFields() {
     // High School Section
     auto hsSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     hsSection->addStyleClass("form-section");
-    hsSection->addWidget(std::make_unique<Wt::WText>("<h4>High School Education</h4>"));
+    auto hsHeader = hsSection->addWidget(std::make_unique<Wt::WText>("<h4>High School Education</h4>"));
+    hsHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto hsRow1 = hsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     hsRow1->addStyleClass("form-row");
@@ -66,7 +67,8 @@ void AcademicHistoryForm::createFormFields() {
     // Previous College Section
     auto collegeSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     collegeSection->addStyleClass("form-section");
-    collegeSection->addWidget(std::make_unique<Wt::WText>("<h4>Previous College Education</h4>"));
+    auto collegeHeader = collegeSection->addWidget(std::make_unique<Wt::WText>("<h4>Previous College Education</h4>"));
+    collegeHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     hasPreviousCollegeCheckbox_ = collegeSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I have attended college previously"));
@@ -164,7 +166,8 @@ void AcademicHistoryForm::createFormFields() {
     // Test Scores
     auto testSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     testSection->addStyleClass("form-section");
-    testSection->addWidget(std::make_unique<Wt::WText>("<h4>Standardized Test Scores</h4>"));
+    auto testHeader = testSection->addWidget(std::make_unique<Wt::WText>("<h4>Standardized Test Scores</h4>"));
+    testHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     hasTestScoresCheckbox_ = testSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I have standardized test scores to report"));
@@ -214,7 +217,8 @@ void AcademicHistoryForm::createFormFields() {
     // Honors and Awards
     auto honorsSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     honorsSection->addStyleClass("form-section");
-    honorsSection->addWidget(std::make_unique<Wt::WText>("<h4>Honors & Awards</h4>"));
+    auto honorsHeader = honorsSection->addWidget(std::make_unique<Wt::WText>("<h4>Honors & Awards</h4>"));
+    honorsHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto honorsGroup = honorsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     honorsGroup->addStyleClass("form-group");
@@ -226,7 +230,8 @@ void AcademicHistoryForm::createFormFields() {
     // Academic Interests
     auto interestsSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     interestsSection->addStyleClass("form-section");
-    interestsSection->addWidget(std::make_unique<Wt::WText>("<h4>Academic Interests</h4>"));
+    auto interestsHeader = interestsSection->addWidget(std::make_unique<Wt::WText>("<h4>Academic Interests</h4>"));
+    interestsHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto interestsGroup = interestsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     interestsGroup->addStyleClass("form-group");

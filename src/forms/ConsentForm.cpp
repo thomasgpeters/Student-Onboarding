@@ -21,7 +21,8 @@ void ConsentForm::createFormFields() {
     // Terms of Service
     auto termsSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     termsSection->addStyleClass("form-section consent-section");
-    termsSection->addWidget(std::make_unique<Wt::WText>("<h4>Terms of Service</h4>"));
+    auto termsHeader = termsSection->addWidget(std::make_unique<Wt::WText>("<h4>Terms of Service</h4>"));
+    termsHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto termsText = termsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     termsText->addStyleClass("consent-text");
@@ -37,7 +38,8 @@ void ConsentForm::createFormFields() {
     // Privacy Policy
     auto privacySection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     privacySection->addStyleClass("form-section consent-section");
-    privacySection->addWidget(std::make_unique<Wt::WText>("<h4>Privacy Policy</h4>"));
+    auto privacyHeader = privacySection->addWidget(std::make_unique<Wt::WText>("<h4>Privacy Policy</h4>"));
+    privacyHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto privacyText = privacySection->addWidget(std::make_unique<Wt::WContainerWidget>());
     privacyText->addStyleClass("consent-text");
@@ -53,7 +55,8 @@ void ConsentForm::createFormFields() {
     // FERPA Rights
     auto ferpaSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     ferpaSection->addStyleClass("form-section consent-section");
-    ferpaSection->addWidget(std::make_unique<Wt::WText>("<h4>FERPA Rights Acknowledgment</h4>"));
+    auto ferpaHeader = ferpaSection->addWidget(std::make_unique<Wt::WText>("<h4>FERPA Rights Acknowledgment</h4>"));
+    ferpaHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto ferpaText = ferpaSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     ferpaText->addStyleClass("consent-text");
@@ -69,7 +72,8 @@ void ConsentForm::createFormFields() {
     // Student Code of Conduct
     auto conductSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     conductSection->addStyleClass("form-section consent-section");
-    conductSection->addWidget(std::make_unique<Wt::WText>("<h4>Student Code of Conduct</h4>"));
+    auto conductHeader = conductSection->addWidget(std::make_unique<Wt::WText>("<h4>Student Code of Conduct</h4>"));
+    conductHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto conductText = conductSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     conductText->addStyleClass("consent-text");
@@ -85,7 +89,8 @@ void ConsentForm::createFormFields() {
     // Communication Consent
     auto commSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     commSection->addStyleClass("form-section consent-section");
-    commSection->addWidget(std::make_unique<Wt::WText>("<h4>Communication Preferences</h4>"));
+    auto commHeader = commSection->addWidget(std::make_unique<Wt::WText>("<h4>Communication Preferences</h4>"));
+    commHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     communicationCheckbox_ = commSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I consent to receive communications (email, SMS, mail) from the university regarding "
@@ -95,7 +100,8 @@ void ConsentForm::createFormFields() {
     // Photo Release (Optional)
     auto photoSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     photoSection->addStyleClass("form-section consent-section");
-    photoSection->addWidget(std::make_unique<Wt::WText>("<h4>Photo/Media Release (Optional)</h4>"));
+    auto photoHeader = photoSection->addWidget(std::make_unique<Wt::WText>("<h4>Photo/Media Release (Optional)</h4>"));
+    photoHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto photoText = photoSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     photoText->addStyleClass("consent-text");
@@ -110,7 +116,8 @@ void ConsentForm::createFormFields() {
     // Accuracy Certification
     auto accuracySection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     accuracySection->addStyleClass("form-section consent-section");
-    accuracySection->addWidget(std::make_unique<Wt::WText>("<h4>Certification of Accuracy</h4>"));
+    auto accuracyHeader = accuracySection->addWidget(std::make_unique<Wt::WText>("<h4>Certification of Accuracy</h4>"));
+    accuracyHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     accuracyCheckbox_ = accuracySection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I certify that all information provided in this application is accurate and complete "
@@ -121,7 +128,8 @@ void ConsentForm::createFormFields() {
     // Electronic Signature
     auto signatureSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     signatureSection->addStyleClass("form-section signature-section");
-    signatureSection->addWidget(std::make_unique<Wt::WText>("<h4>Electronic Signature</h4>"));
+    auto signatureHeader = signatureSection->addWidget(std::make_unique<Wt::WText>("<h4>Electronic Signature</h4>"));
+    signatureHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     signatureSection->addWidget(std::make_unique<Wt::WText>(
         "<p>By typing your full legal name below, you are providing an electronic signature that "

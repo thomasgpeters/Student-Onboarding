@@ -22,7 +22,8 @@ void MedicalInfoForm::createFormFields() {
     // Insurance Section
     auto insuranceSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     insuranceSection->addStyleClass("form-section");
-    insuranceSection->addWidget(std::make_unique<Wt::WText>("<h4>Health Insurance</h4>"));
+    auto insuranceHeader = insuranceSection->addWidget(std::make_unique<Wt::WText>("<h4>Health Insurance</h4>"));
+    insuranceHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     hasInsuranceCheckbox_ = insuranceSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I have health insurance"));
@@ -66,7 +67,8 @@ void MedicalInfoForm::createFormFields() {
     // Physician Section
     auto physicianSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     physicianSection->addStyleClass("form-section");
-    physicianSection->addWidget(std::make_unique<Wt::WText>("<h4>Primary Care Physician</h4>"));
+    auto physicianHeader = physicianSection->addWidget(std::make_unique<Wt::WText>("<h4>Primary Care Physician</h4>"));
+    physicianHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto physicianRow = physicianSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     physicianRow->addStyleClass("form-row");
@@ -92,7 +94,8 @@ void MedicalInfoForm::createFormFields() {
     // Medical Conditions
     auto conditionsSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     conditionsSection->addStyleClass("form-section");
-    conditionsSection->addWidget(std::make_unique<Wt::WText>("<h4>Medical History</h4>"));
+    auto conditionsHeader = conditionsSection->addWidget(std::make_unique<Wt::WText>("<h4>Medical History</h4>"));
+    conditionsHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     hasConditionsCheckbox_ = conditionsSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I have existing medical conditions"));
@@ -138,7 +141,8 @@ void MedicalInfoForm::createFormFields() {
     // Immunizations
     auto immunSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     immunSection->addStyleClass("form-section");
-    immunSection->addWidget(std::make_unique<Wt::WText>("<h4>Immunizations</h4>"));
+    auto immunHeader = immunSection->addWidget(std::make_unique<Wt::WText>("<h4>Immunizations</h4>"));
+    immunHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     immunizationsUpToDateCheckbox_ = immunSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " My immunizations are up to date"));
@@ -155,7 +159,8 @@ void MedicalInfoForm::createFormFields() {
     // Accommodations
     auto accommodationsSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     accommodationsSection->addStyleClass("form-section");
-    accommodationsSection->addWidget(std::make_unique<Wt::WText>("<h4>Disability & Accommodations</h4>"));
+    auto accommodationsHeader = accommodationsSection->addWidget(std::make_unique<Wt::WText>("<h4>Disability & Accommodations</h4>"));
+    accommodationsHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     needsAccommodationsCheckbox_ = accommodationsSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I have a disability or need accommodations"));
@@ -173,7 +178,8 @@ void MedicalInfoForm::createFormFields() {
     // Dietary restrictions
     auto dietarySection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     dietarySection->addStyleClass("form-section");
-    dietarySection->addWidget(std::make_unique<Wt::WText>("<h4>Dietary Information</h4>"));
+    auto dietaryHeader = dietarySection->addWidget(std::make_unique<Wt::WText>("<h4>Dietary Information</h4>"));
+    dietaryHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     hasDietaryRestrictionsCheckbox_ = dietarySection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I have dietary restrictions or preferences"));

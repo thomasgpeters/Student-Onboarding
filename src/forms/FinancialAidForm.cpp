@@ -25,7 +25,8 @@ void FinancialAidForm::createFormFields() {
     // FAFSA Section
     auto fafsaSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     fafsaSection->addStyleClass("form-section");
-    fafsaSection->addWidget(std::make_unique<Wt::WText>("<h4>FAFSA Information</h4>"));
+    auto fafsaHeader = fafsaSection->addWidget(std::make_unique<Wt::WText>("<h4>FAFSA Information</h4>"));
+    fafsaHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     fafsaCompletedCheckbox_ = fafsaSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " I have completed the FAFSA (Free Application for Federal Student Aid)"));
@@ -41,7 +42,8 @@ void FinancialAidForm::createFormFields() {
     // Employment Section
     auto employmentSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     employmentSection->addStyleClass("form-section");
-    employmentSection->addWidget(std::make_unique<Wt::WText>("<h4>Employment Information</h4>"));
+    auto empHeader = employmentSection->addWidget(std::make_unique<Wt::WText>("<h4>Employment Information</h4>"));
+    empHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto empRow = employmentSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     empRow->addStyleClass("form-row");
@@ -66,7 +68,8 @@ void FinancialAidForm::createFormFields() {
     // Household Section
     auto householdSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     householdSection->addStyleClass("form-section");
-    householdSection->addWidget(std::make_unique<Wt::WText>("<h4>Household Information</h4>"));
+    auto householdHeader = householdSection->addWidget(std::make_unique<Wt::WText>("<h4>Household Information</h4>"));
+    householdHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto householdRow = householdSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     householdRow->addStyleClass("form-row");
@@ -99,7 +102,8 @@ void FinancialAidForm::createFormFields() {
     // Aid Types Section
     auto aidSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     aidSection->addStyleClass("form-section");
-    aidSection->addWidget(std::make_unique<Wt::WText>("<h4>Types of Aid Interested In</h4>"));
+    auto aidHeader = aidSection->addWidget(std::make_unique<Wt::WText>("<h4>Types of Aid Interested In</h4>"));
+    aidHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     scholarshipInterestCheckbox_ = aidSection->addWidget(std::make_unique<Wt::WCheckBox>(
         " Scholarships and Grants"));
@@ -124,7 +128,8 @@ void FinancialAidForm::createFormFields() {
     // Special Circumstances
     auto specialSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     specialSection->addStyleClass("form-section");
-    specialSection->addWidget(std::make_unique<Wt::WText>("<h4>Special Circumstances</h4>"));
+    auto specialHeader = specialSection->addWidget(std::make_unique<Wt::WText>("<h4>Special Circumstances</h4>"));
+    specialHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto specialGroup = specialSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     specialGroup->addStyleClass("form-group");

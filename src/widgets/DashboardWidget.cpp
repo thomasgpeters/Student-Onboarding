@@ -35,6 +35,7 @@ void DashboardWidget::setupUI() {
     welcomeSection->addStyleClass("welcome-section");
 
     welcomeText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>("<h2>Welcome to Student Onboarding</h2>"));
+    welcomeText_->setTextFormat(Wt::TextFormat::XHTML);
 
     statusText_ = welcomeSection->addWidget(std::make_unique<Wt::WText>());
     statusText_->addStyleClass("status-text");
@@ -66,7 +67,8 @@ void DashboardWidget::setupUI() {
     progressSection_ = leftColumn_->addWidget(std::make_unique<Wt::WContainerWidget>());
     progressSection_->addStyleClass("progress-section card");
 
-    progressSection_->addWidget(std::make_unique<Wt::WText>("<h4>Application Progress</h4>"));
+    auto progressHeader = progressSection_->addWidget(std::make_unique<Wt::WText>("<h4>Application Progress</h4>"));
+    progressHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     progressText_ = progressSection_->addWidget(std::make_unique<Wt::WText>());
     progressText_->addStyleClass("progress-info");
@@ -85,17 +87,18 @@ void DashboardWidget::setupUI() {
     completionSection_->addStyleClass("completion-section card");
     completionSection_->hide();
 
-    completionSection_->addWidget(std::make_unique<Wt::WText>(
+    auto completionText = completionSection_->addWidget(std::make_unique<Wt::WText>(
         "<div class='completion-icon'>&#10003;</div>"
         "<h3>Onboarding Complete!</h3>"
         "<p>Thank you for completing your student onboarding forms. "
         "Our admissions team will review your submission and contact you soon.</p>"
         "<p>You will receive a confirmation email with next steps.</p>"));
+    completionText->setTextFormat(Wt::TextFormat::XHTML);
 
     // Help section
     auto helpSection = leftColumn_->addWidget(std::make_unique<Wt::WContainerWidget>());
     helpSection->addStyleClass("help-section card");
-    helpSection->addWidget(std::make_unique<Wt::WText>(
+    auto helpText = helpSection->addWidget(std::make_unique<Wt::WText>(
         "<h4>Need Help?</h4>"
         "<p>If you have questions about the onboarding process, please contact:</p>"
         "<ul>"
@@ -103,6 +106,7 @@ void DashboardWidget::setupUI() {
         "<li>Phone: (555) 123-4567</li>"
         "<li>Office Hours: Mon-Fri, 9 AM - 5 PM</li>"
         "</ul>"));
+    helpText->setTextFormat(Wt::TextFormat::XHTML);
 
     // Right panel - forms sidebar (visible after completion)
     // Using CSS class-based visibility instead of Wt's hide()/show() to prevent inline style conflicts
@@ -113,7 +117,8 @@ void DashboardWidget::setupUI() {
     completedFormsSection_ = rightPanel_->addWidget(std::make_unique<Wt::WContainerWidget>());
     completedFormsSection_->addStyleClass("sidebar-section");
 
-    completedFormsSection_->addWidget(std::make_unique<Wt::WText>("<h4>Completed Forms</h4>"));
+    auto completedHeader = completedFormsSection_->addWidget(std::make_unique<Wt::WText>("<h4>Completed Forms</h4>"));
+    completedHeader->setTextFormat(Wt::TextFormat::XHTML);
     completedFormsList_ = completedFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
     completedFormsList_->addStyleClass("sidebar-forms-list");
 
@@ -121,7 +126,8 @@ void DashboardWidget::setupUI() {
     recommendedFormsSection_ = rightPanel_->addWidget(std::make_unique<Wt::WContainerWidget>());
     recommendedFormsSection_->addStyleClass("sidebar-section");
 
-    recommendedFormsSection_->addWidget(std::make_unique<Wt::WText>("<h4>Recommended Forms</h4>"));
+    auto recommendedHeader = recommendedFormsSection_->addWidget(std::make_unique<Wt::WText>("<h4>Recommended Forms</h4>"));
+    recommendedHeader->setTextFormat(Wt::TextFormat::XHTML);
     recommendedFormsList_ = recommendedFormsSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
     recommendedFormsList_->addStyleClass("sidebar-forms-list");
 }
