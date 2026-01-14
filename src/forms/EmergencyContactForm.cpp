@@ -41,6 +41,9 @@ void EmergencyContactForm::createFormFields() {
             addContactButton_->setEnabled(false);
         }
     });
+
+    // Load existing contacts from API
+    loadContactsFromApi();
 }
 
 void EmergencyContactForm::addContactSection(int contactNumber) {
@@ -296,6 +299,174 @@ std::vector<std::string> EmergencyContactForm::getUSStates() const {
         "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington",
         "West Virginia", "Wisconsin", "Wyoming", "District of Columbia"
     };
+}
+
+void EmergencyContactForm::loadContactsFromApi() {
+    if (!apiService_ || !session_) return;
+
+    std::string studentId = session_->getStudent().getId();
+    if (studentId.empty()) return;
+
+    // Load all emergency contacts for this student
+    auto apiContacts = apiService_->getEmergencyContacts(studentId);
+
+    if (apiContacts.empty()) return;
+
+    // Clear contact IDs
+    contactIds_.clear();
+
+    // Add additional contact sections if needed
+    while (contacts_.size() < apiContacts.size()) {
+        addContactSection(static_cast<int>(contacts_.size()) + 1);
+    }
+
+    // Populate each contact
+    for (size_t i = 0; i < apiContacts.size() && i < contacts_.size(); ++i) {
+        contactIds_.push_back(apiContacts[i].getId());
+        populateContactFields(static_cast<int>(i), apiContacts[i]);
+    }
+
+    // Ensure contactIds_ has same size as contacts_
+    while (contactIds_.size() < contacts_.size()) {
+        contactIds_.push_back("");
+    }
+}
+
+void EmergencyContactForm::saveContactsToApi() {
+    if (!apiService_ || !session_) return;
+
+    std::string studentId = session_->getStudent().getId();
+    if (studentId.empty()) return;
+
+    // Ensure contactIds_ matches contacts_ size
+    while (contactIds_.size() < contacts_.size()) {
+        contactIds_.push_back("");
+    }
+
+    // Save each contact
+    for (size_t i = 0; i < contacts_.size(); ++i) {
+        Models::EmergencyContact contact = buildContactFromFields(static_cast<int>(i));
+        contact.setStudentId(studentId);
+        contact.setPrimary(i == 0);
+        contact.setPriority(static_cast<int>(i) + 1);
+
+        if (i < contactIds_.size() && !contactIds_[i].empty()) {
+            contact.setId(contactIds_[i]);
+        }
+
+        if (!contact.isEmpty()) {
+            Api::SubmissionResult result = apiService_->saveEmergencyContact(contact);
+            if (result.success && contactIds_[i].empty()) {
+                contactIds_[i] = result.submissionId;
+            }
+        }
+    }
+}
+
+void EmergencyContactForm::populateContactFields(int index, const Models::EmergencyContact& contact) {
+    if (index < 0 || index >= static_cast<int>(contacts_.size())) return;
+
+    auto& fields = contacts_[index];
+
+    fields.firstNameInput->setText(contact.getFirstName());
+    fields.lastNameInput->setText(contact.getLastName());
+    fields.phoneInput->setText(contact.getPhone());
+    fields.altPhoneInput->setText(contact.getAlternatePhone());
+    fields.emailInput->setText(contact.getEmail());
+    fields.addressInput->setText(contact.getStreet1());
+    fields.cityInput->setText(contact.getCity());
+    fields.zipCodeInput->setText(contact.getPostalCode());
+
+    // Set relationship if found
+    std::string relationship = contact.getRelationship();
+    if (!relationship.empty()) {
+        for (int i = 0; i < fields.relationshipSelect->count(); ++i) {
+            if (fields.relationshipSelect->itemText(i).toUTF8() == relationship) {
+                fields.relationshipSelect->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+
+    // Set state if found
+    std::string state = contact.getState();
+    if (!state.empty()) {
+        for (int i = 0; i < fields.stateSelect->count(); ++i) {
+            if (fields.stateSelect->itemText(i).toUTF8() == state) {
+                fields.stateSelect->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+}
+
+Models::EmergencyContact EmergencyContactForm::buildContactFromFields(int index) const {
+    Models::EmergencyContact contact;
+
+    if (index < 0 || index >= static_cast<int>(contacts_.size())) return contact;
+
+    const auto& fields = contacts_[index];
+
+    contact.setFirstName(fields.firstNameInput->text().toUTF8());
+    contact.setLastName(fields.lastNameInput->text().toUTF8());
+    contact.setPhone(fields.phoneInput->text().toUTF8());
+    contact.setAlternatePhone(fields.altPhoneInput->text().toUTF8());
+    contact.setEmail(fields.emailInput->text().toUTF8());
+    contact.setStreet1(fields.addressInput->text().toUTF8());
+    contact.setCity(fields.cityInput->text().toUTF8());
+    contact.setPostalCode(fields.zipCodeInput->text().toUTF8());
+
+    // Get relationship if selected
+    if (fields.relationshipSelect->currentIndex() > 0) {
+        contact.setRelationship(fields.relationshipSelect->currentText().toUTF8());
+    }
+
+    // Get state if selected
+    if (fields.stateSelect->currentIndex() > 0) {
+        contact.setState(fields.stateSelect->currentText().toUTF8());
+    }
+
+    return contact;
+}
+
+void EmergencyContactForm::handleSubmit() {
+    // First validate
+    clearErrors();
+    if (!validate()) {
+        showErrors(validationErrors_);
+        return;
+    }
+
+    // Save contacts to API
+    saveContactsToApi();
+
+    // Now proceed with form submission
+    isSubmitting_ = true;
+    nextButton_->setEnabled(false);
+    nextButton_->setText("Submitting...");
+
+    Models::FormData data = getFormData();
+    data.setStatus("submitted");
+
+    // Save to session
+    if (session_) {
+        session_->setFormData(formId_, data);
+    }
+
+    // Submit form data to API
+    if (apiService_ && session_) {
+        Api::SubmissionResult result = apiService_->submitForm(
+            session_->getStudent().getId(), formId_, data);
+
+        if (result.success) {
+            onSubmitSuccess(result);
+        } else {
+            onSubmitError(result);
+        }
+    } else {
+        // No API service, just emit success
+        onSubmitSuccess(Api::SubmissionResult{true, "", "Form data saved", {}, {}});
+    }
 }
 
 } // namespace Forms

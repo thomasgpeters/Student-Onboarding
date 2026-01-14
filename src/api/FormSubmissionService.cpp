@@ -357,6 +357,69 @@ SubmissionResult FormSubmissionService::saveStudentAddress(const Models::Student
     return createStudentAddress(address);
 }
 
+// EmergencyContact API endpoints
+std::vector<Models::EmergencyContact> FormSubmissionService::getEmergencyContacts(const std::string& studentId) {
+    std::vector<Models::EmergencyContact> contacts;
+
+    std::string endpoint = "/EmergencyContact?filter[student_id]=" + studentId;
+    ApiResponse response = apiClient_->get(endpoint);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        for (const auto& item : items) {
+            contacts.push_back(Models::EmergencyContact::fromJson(item));
+        }
+    }
+
+    return contacts;
+}
+
+SubmissionResult FormSubmissionService::createEmergencyContact(const Models::EmergencyContact& contact) {
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "EmergencyContact"},
+        {"attributes", contact.toJson()}
+    };
+
+    std::cout << "[FormSubmissionService] createEmergencyContact payload: " << payload.dump() << std::endl;
+    ApiResponse response = apiClient_->post("/EmergencyContact", payload);
+    return parseSubmissionResponse(response);
+}
+
+SubmissionResult FormSubmissionService::updateEmergencyContact(const Models::EmergencyContact& contact) {
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "EmergencyContact"},
+        {"id", contact.getId()},
+        {"attributes", contact.toJson()}
+    };
+
+    std::cout << "[FormSubmissionService] updateEmergencyContact payload: " << payload.dump() << std::endl;
+    ApiResponse response = apiClient_->patch("/EmergencyContact/" + contact.getId(), payload);
+    return parseSubmissionResponse(response);
+}
+
+SubmissionResult FormSubmissionService::deleteEmergencyContact(const std::string& contactId) {
+    ApiResponse response = apiClient_->del("/EmergencyContact/" + contactId);
+    return parseSubmissionResponse(response);
+}
+
+SubmissionResult FormSubmissionService::saveEmergencyContact(const Models::EmergencyContact& contact) {
+    // If contact has an ID, update it; otherwise create new
+    if (!contact.getId().empty()) {
+        return updateEmergencyContact(contact);
+    }
+    return createEmergencyContact(contact);
+}
+
 // Curriculum API endpoints
 std::vector<Models::Curriculum> FormSubmissionService::getCurriculums() {
     std::vector<Models::Curriculum> curriculums;
