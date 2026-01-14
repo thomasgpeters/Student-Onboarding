@@ -2,6 +2,7 @@
 #define EMERGENCY_CONTACT_FORM_H
 
 #include "BaseForm.h"
+#include "models/EmergencyContact.h"
 #include <Wt/WLineEdit.h>
 #include <Wt/WComboBox.h>
 #include <Wt/WPushButton.h>
@@ -24,6 +25,7 @@ protected:
     void createFormFields() override;
     void collectFormData(Models::FormData& data) const override;
     void populateFormFields(const Models::FormData& data) override;
+    void handleSubmit() override;
 
 private:
     struct ContactFields {
@@ -46,8 +48,15 @@ private:
 
     void addContactSection(int contactNumber);
     void removeContact(int index);
+    void loadContactsFromApi();
+    void saveContactsToApi();
+    void populateContactFields(int index, const Models::EmergencyContact& contact);
+    Models::EmergencyContact buildContactFromFields(int index) const;
     std::vector<std::string> getRelationships() const;
     std::vector<std::string> getUSStates() const;
+
+    // Cached contact IDs for updates
+    std::vector<std::string> contactIds_;
 };
 
 } // namespace Forms

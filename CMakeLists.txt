@@ -38,6 +38,7 @@ endif()
 set(MODEL_SOURCES
     src/models/Student.cpp
     src/models/StudentAddress.cpp
+    src/models/EmergencyContact.cpp
     src/models/FormData.cpp
     src/models/Curriculum.cpp
 )

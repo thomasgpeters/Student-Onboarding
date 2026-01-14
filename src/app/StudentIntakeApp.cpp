@@ -363,11 +363,22 @@ void StudentIntakeApp::handleLoginSuccess() {
         auto curriculum = curriculumManager_->getCurriculum(curriculumId);
         if (!curriculum.getId().empty()) {
             session_->setCurrentCurriculum(curriculum);
+
+            // Load required forms for this curriculum so we can check completion
+            auto requiredFormIds = curriculumManager_->getRequiredFormIds(curriculum);
+            session_->setRequiredForms(requiredFormIds);
         }
     }
 
     if (session_->hasCurriculumSelected()) {
-        setState(AppState::Dashboard);
+        // Check if all forms are already completed (returning student)
+        if (session_->isIntakeComplete()) {
+            // All forms are complete - go directly to completion view
+            setState(AppState::Completion);
+        } else {
+            // Some forms still need to be filled
+            setState(AppState::Dashboard);
+        }
     } else {
         setState(AppState::CurriculumSelection);
     }

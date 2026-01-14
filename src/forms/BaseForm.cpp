@@ -330,6 +330,11 @@ void BaseForm::onSubmitSuccess(const Api::SubmissionResult& result) {
     // Mark form as completed in session
     if (session_) {
         session_->getStudent().markFormCompleted(formId_);
+
+        // Save completed_forms to API so it persists across sessions
+        if (apiService_) {
+            apiService_->updateStudentProfile(session_->getStudent());
+        }
     }
 
     formSubmitted_.emit();
