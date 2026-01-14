@@ -225,6 +225,8 @@ The application expects the following API endpoints (note: capitalized resource 
 | `/Student/:id` | PATCH | Update student profile |
 | `/Curriculum` | GET | List available programs |
 | `/FormType` | GET | List form types |
+| `/StudentAddress` | GET/POST | List/create student addresses |
+| `/StudentAddress/:id` | PATCH/DELETE | Update/delete student address |
 | `/EmergencyContact` | GET/POST | List/create emergency contacts |
 | `/EmergencyContact/:id` | PATCH/DELETE | Update/delete emergency contact |
 | `/MedicalInfo` | POST | Submit medical info |
@@ -268,11 +270,6 @@ The Student model supports these fields (all use snake_case in API):
 | `preferred_pronouns` | string | Preferred pronouns |
 | `phone_number` | string | Primary phone |
 | `alternate_phone` | string | Secondary phone |
-| `address_line1` | string | Street address |
-| `address_line2` | string | Apt/Suite/Unit |
-| `city` | string | City |
-| `state` | string | State |
-| `zip_code` | string | ZIP code |
 | `ssn` | string | Social Security Number |
 | `citizenship_status` | string | Citizenship status |
 | `curriculum_id` | int | Selected program ID |
@@ -283,6 +280,23 @@ The Student model supports these fields (all use snake_case in API):
 | `requires_financial_aid` | boolean | Needs financial aid |
 | `completed_forms` | array | List of completed form IDs |
 | `enrollment_date` | date | Enrollment date |
+
+### Student Address Data Fields
+
+Student addresses are stored in a separate `student_address` table (not on the student table directly). This allows multiple addresses per student (permanent, mailing, billing).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Address ID |
+| `student_id` | int | Foreign key to student |
+| `address_type` | string | Type: 'permanent', 'mailing', 'billing' |
+| `street1` | string | Street address line 1 |
+| `street2` | string | Street address line 2 (apt/suite) |
+| `city` | string | City |
+| `state` | string | State/Province |
+| `postal_code` | string | ZIP/Postal code |
+| `country` | string | Country |
+| `is_primary` | boolean | Primary address flag |
 
 ### Returning Student Flow
 

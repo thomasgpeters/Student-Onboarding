@@ -17,6 +17,25 @@ ALTER TABLE student ADD COLUMN IF NOT EXISTS phone_number VARCHAR(30);
 --   address_type: 'permanent', 'mailing', 'billing'
 --   is_primary: true/false
 
+-- Create student_address table if it doesn't exist
+CREATE TABLE IF NOT EXISTS student_address (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES student(id),
+    address_type VARCHAR(50) NOT NULL,  -- 'permanent', 'mailing', 'billing'
+    street1 VARCHAR(200),
+    street2 VARCHAR(200),
+    city VARCHAR(100),
+    state VARCHAR(100),
+    postal_code VARCHAR(20),
+    country VARCHAR(100),
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index for student_address if not exists
+CREATE INDEX IF NOT EXISTS idx_student_address_student ON student_address(student_id);
+
 -- If you had address columns on student table, you can migrate them:
 -- INSERT INTO student_address (student_id, address_type, street1, street2, city, state, postal_code, is_primary)
 -- SELECT id, 'permanent', address_line1, address_line2, city, state, zip_code, true
