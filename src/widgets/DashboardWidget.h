@@ -28,6 +28,7 @@ public:
     Wt::Signal<>& startOverClicked() { return startOverClicked_; }
     Wt::Signal<std::string>& viewFormClicked() { return viewFormClicked_; }
     Wt::Signal<>& additionalFormsClicked() { return additionalFormsClicked_; }
+    Wt::Signal<>& changeProgramClicked() { return changeProgramClicked_; }
 
 private:
     void setupUI();
@@ -61,6 +62,7 @@ private:
     Wt::Signal<> startOverClicked_;
     Wt::Signal<std::string> viewFormClicked_;
     Wt::Signal<> additionalFormsClicked_;
+    Wt::Signal<> changeProgramClicked_;
 };
 
 } // namespace Widgets
