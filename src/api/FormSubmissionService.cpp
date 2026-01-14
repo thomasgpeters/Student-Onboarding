@@ -270,7 +270,7 @@ SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Stude
         {"attributes", attributes}
     };
     ApiResponse response = apiClient_->patch("/Student/" + student.getId(), payload);
-    std::cout << "[FormSubmissionService] updateStudentProfile - response status: " << response.httpStatusCode << std::endl;
+    std::cout << "[FormSubmissionService] updateStudentProfile - response status: " << response.statusCode << std::endl;
     if (!response.isSuccess()) {
         std::cout << "[FormSubmissionService] updateStudentProfile - error: " << response.errorMessage << std::endl;
     }
