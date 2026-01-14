@@ -719,7 +719,47 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
     };
 
     std::cout << "[FormSubmissionService] submitFinancialAid payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/FinancialAid", payload);
+
+    // Check if a financial_aid record already exists for this student
+    std::string checkEndpoint = "/FinancialAid?filter[student_id]=" + studentId;
+    ApiResponse checkResponse = apiClient_->get(checkEndpoint);
+
+    ApiResponse response;
+    if (checkResponse.isSuccess()) {
+        auto json = checkResponse.getJson();
+        nlohmann::json items;
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        if (!items.empty()) {
+            // Record exists - update it with PATCH
+            std::string existingId;
+            if (items[0].contains("id")) {
+                if (items[0]["id"].is_string()) {
+                    existingId = items[0]["id"].get<std::string>();
+                } else if (items[0]["id"].is_number()) {
+                    existingId = std::to_string(items[0]["id"].get<int>());
+                }
+            }
+            if (!existingId.empty()) {
+                payload["data"]["id"] = existingId;
+                std::cout << "[FormSubmissionService] Updating existing FinancialAid record: " << existingId << std::endl;
+                response = apiClient_->patch("/FinancialAid/" + existingId, payload);
+            } else {
+                response = apiClient_->post("/FinancialAid", payload);
+            }
+        } else {
+            // No existing record - create new
+            response = apiClient_->post("/FinancialAid", payload);
+        }
+    } else {
+        // Couldn't check - try POST anyway
+        response = apiClient_->post("/FinancialAid", payload);
+    }
+
     return parseSubmissionResponse(response);
 }
 
