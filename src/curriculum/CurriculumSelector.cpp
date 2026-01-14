@@ -279,12 +279,19 @@ void CurriculumSelector::handleSelectProgram(const Models::Curriculum& curriculu
 
 void CurriculumSelector::showSyllabusDialog(const Models::Curriculum& curriculum) {
     auto dialog = addChild(std::make_unique<Wt::WDialog>("Program Syllabus"));
+    dialog->setModal(true);
     dialog->setClosable(true);
     dialog->setResizable(false);
     dialog->rejectWhenEscapePressed();
     dialog->addStyleClass("syllabus-dialog");
     dialog->setAttributeValue("style",
-        "min-width: 500px; max-width: 600px;");
+        "min-width: 500px; max-width: 600px; border-radius: 12px; overflow: hidden; "
+        "box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);");
+
+    // Style the modal backdrop/overlay
+    Wt::WApplication::instance()->styleSheet().addRule(
+        ".Wt-dialogcover",
+        "background-color: rgba(0, 0, 0, 0.5) !important;");
 
     // Style the title bar
     dialog->titleBar()->setAttributeValue("style",
