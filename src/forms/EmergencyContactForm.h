@@ -7,6 +7,7 @@
 #include <Wt/WComboBox.h>
 #include <Wt/WPushButton.h>
 #include <vector>
+#include <map>
 
 namespace StudentIntake {
 namespace Forms {
@@ -54,6 +55,10 @@ private:
     Models::EmergencyContact buildContactFromFields(int index) const;
     std::vector<std::string> getRelationships() const;
     std::vector<std::string> getUSStates() const;
+
+    // Relationship limit validation
+    bool validateRelationshipLimits();
+    std::map<std::string, int> countRelationshipsByType() const;
 
     // Cached contact IDs for updates
     std::vector<std::string> contactIds_;

@@ -34,10 +34,10 @@ void EmergencyContactForm::createFormFields() {
         std::make_unique<Wt::WPushButton>("+ Add Another Contact"));
     addContactButton_->addStyleClass("btn btn-outline-secondary");
     addContactButton_->clicked().connect([this]() {
-        if (contacts_.size() < 5) {
+        if (contacts_.size() < 10) {
             addContactSection(static_cast<int>(contacts_.size()) + 1);
         }
-        if (contacts_.size() >= 5) {
+        if (contacts_.size() >= 10) {
             addContactButton_->setEnabled(false);
         }
     });
@@ -168,7 +168,7 @@ void EmergencyContactForm::removeContact(int index) {
             // Update header text would require more complex handling
         }
 
-        if (contacts_.size() < 5) {
+        if (contacts_.size() < 10) {
             addContactButton_->setEnabled(true);
         }
     }
@@ -221,6 +221,11 @@ bool EmergencyContactForm::validate() {
                 isValid_ = false;
             }
         }
+    }
+
+    // Validate relationship limits (Spouse: max 1, Parent: max 2, Grandparent: max 4)
+    if (!validateRelationshipLimits()) {
+        isValid_ = false;
     }
 
     return isValid_;
@@ -467,6 +472,49 @@ void EmergencyContactForm::handleSubmit() {
         // No API service, just emit success
         onSubmitSuccess(Api::SubmissionResult{true, "", "Form data saved", {}, {}});
     }
+}
+
+std::map<std::string, int> EmergencyContactForm::countRelationshipsByType() const {
+    std::map<std::string, int> counts;
+
+    for (const auto& contact : contacts_) {
+        if (contact.relationshipSelect->currentIndex() > 0) {
+            std::string relationship = contact.relationshipSelect->currentText().toUTF8();
+            counts[relationship]++;
+        }
+    }
+
+    return counts;
+}
+
+bool EmergencyContactForm::validateRelationshipLimits() {
+    bool valid = true;
+    auto counts = countRelationshipsByType();
+
+    // Check Spouse limit (0-1)
+    if (counts.count("Spouse") && counts["Spouse"] > 1) {
+        validationErrors_.push_back("Only one Spouse contact is allowed (found " +
+                                    std::to_string(counts["Spouse"]) + ")");
+        valid = false;
+    }
+
+    // Check Parent limit (0-2)
+    if (counts.count("Parent") && counts["Parent"] > 2) {
+        validationErrors_.push_back("Maximum of 2 Parent contacts allowed (found " +
+                                    std::to_string(counts["Parent"]) + ")");
+        valid = false;
+    }
+
+    // Check Grandparent limit (0-4)
+    if (counts.count("Grandparent") && counts["Grandparent"] > 4) {
+        validationErrors_.push_back("Maximum of 4 Grandparent contacts allowed (found " +
+                                    std::to_string(counts["Grandparent"]) + ")");
+        valid = false;
+    }
+
+    // No limits on other relationship types
+
+    return valid;
 }
 
 } // namespace Forms
