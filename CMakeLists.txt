@@ -37,6 +37,7 @@ endif()
 # Source files organized by module
 set(MODEL_SOURCES
     src/models/Student.cpp
+    src/models/StudentAddress.cpp
     src/models/FormData.cpp
     src/models/Curriculum.cpp
 )
