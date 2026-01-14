@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 namespace StudentIntake {
 namespace Models {
