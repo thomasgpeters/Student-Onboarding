@@ -378,6 +378,13 @@ Custom CSS with design tokens:
   - Select button immediately navigates to forms (removed separate Continue button)
   - Inline styles applied directly to Wt widgets to ensure consistent rendering
   - Filter dropdowns for department and degree type
+- **Syllabus Dialog Styling**: Modal popup with professional appearance
+  - Modal dialog blocks interaction with background content
+  - Dimmed backdrop overlay (50% opacity) when dialog is visible
+  - Blue title bar with white text
+  - Styled content sections: program details, description, onboarding requirements
+  - Rounded corners and drop shadow for polished look
+  - Gray "Close" button in footer
 
 ### Version 1.7.0
 - **Change Program Feature**: Students can now change their selected program from the dashboard
