@@ -439,6 +439,16 @@ Custom CSS with design tokens:
 
 ## Future Enhancements
 
+### Admin Dashboard Portal (In Development)
+A separate web portal for university staff at `/administration`:
+- **Student Management**: View, search, and manage all students
+- **Form Management**: Review submitted forms, manage post-registration forms
+- **Curriculum Management**: Edit syllabus, configure required forms, reorder form sequence
+- **Access Control**: Revoke/restore student login privileges
+- **Role-Based Access**: Super Admin, Administrator, and Instructor roles
+- See `docs/ADMIN_DASHBOARD_DESIGN.md` for full specification
+
+### Other Planned Features
 - PDF form export
 - Print-friendly layouts
 - Document attachments
@@ -450,6 +460,8 @@ Custom CSS with design tokens:
 - `README.md` - This overview document
 - `WORKFLOW.md` - Detailed workflow and state documentation
 - `ARCHITECTURE_ANALYSIS.md` - Technical architecture and module details
+- `docs/ADMIN_DASHBOARD_DESIGN.md` - Admin portal design specification
+- `docs/DATA_MODEL_CHANGES.md` - Database schema change documentation
 
 ## Recent Changes
 
