@@ -7,6 +7,9 @@
 namespace StudentIntake {
 namespace Admin {
 
+// Use Curriculum from the main Models namespace
+using StudentIntake::Models::Curriculum;
+
 CurriculumListWidget::CurriculumListWidget()
     : WContainerWidget()
     , apiService_(nullptr)
@@ -173,7 +176,7 @@ void CurriculumListWidget::loadCurriculums() {
     if (!apiService_) {
         std::cerr << "[CurriculumListWidget] API service not available" << std::endl;
         // Use default data for testing
-        Models::Curriculum cs;
+        Curriculum cs;
         cs.setId("1");
         cs.setName("Computer Science");
         cs.setDescription("Bachelor of Science in Computer Science");
@@ -186,7 +189,7 @@ void CurriculumListWidget::loadCurriculums() {
         cs.setRequiredForms({"personal_info", "academic_history", "consent"});
         curriculums_.push_back(cs);
 
-        Models::Curriculum ba;
+        Curriculum ba;
         ba.setId("2");
         ba.setName("Business Administration");
         ba.setDescription("Bachelor of Business Administration");
@@ -199,7 +202,7 @@ void CurriculumListWidget::loadCurriculums() {
         ba.setRequiredForms({"personal_info", "financial_aid", "consent"});
         curriculums_.push_back(ba);
 
-        Models::Curriculum mba;
+        Curriculum mba;
         mba.setId("3");
         mba.setName("MBA Program");
         mba.setDescription("Master of Business Administration");
@@ -212,7 +215,7 @@ void CurriculumListWidget::loadCurriculums() {
         mba.setRequiredForms({"personal_info", "academic_history", "financial_aid", "consent"});
         curriculums_.push_back(mba);
 
-        Models::Curriculum nursing;
+        Curriculum nursing;
         nursing.setId("4");
         nursing.setName("Nursing");
         nursing.setDescription("Bachelor of Science in Nursing");
@@ -225,7 +228,7 @@ void CurriculumListWidget::loadCurriculums() {
         nursing.setRequiredForms({"personal_info", "medical_info", "academic_history", "consent"});
         curriculums_.push_back(nursing);
 
-        Models::Curriculum cert;
+        Curriculum cert;
         cert.setId("5");
         cert.setName("Data Analytics Certificate");
         cert.setDescription("Professional Certificate in Data Analytics");
@@ -238,7 +241,7 @@ void CurriculumListWidget::loadCurriculums() {
         cert.setRequiredForms({"personal_info", "consent"});
         curriculums_.push_back(cert);
 
-        Models::Curriculum inactive;
+        Curriculum inactive;
         inactive.setId("6");
         inactive.setName("Legacy Engineering Program");
         inactive.setDescription("Old Engineering curriculum - no longer accepting students");
@@ -261,7 +264,7 @@ void CurriculumListWidget::loadCurriculums() {
             auto jsonResponse = nlohmann::json::parse(response.body);
             if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
                 for (const auto& item : jsonResponse["data"]) {
-                    curriculums_.push_back(Models::Curriculum::fromJson(item));
+                    curriculums_.push_back(Curriculum::fromJson(item));
                 }
             }
         }

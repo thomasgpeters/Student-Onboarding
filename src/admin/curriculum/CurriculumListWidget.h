@@ -22,7 +22,7 @@ namespace Admin {
 class CurriculumListWidget : public Wt::WContainerWidget {
 public:
     CurriculumListWidget();
-    ~CurriculumListWidget();
+    ~CurriculumListWidget() override;
 
     void setApiService(std::shared_ptr<Api::FormSubmissionService> apiService);
     void refresh();
@@ -42,8 +42,8 @@ private:
     std::string getDegreeTypeBadgeClass(const std::string& degreeType);
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
-    std::vector<Models::Curriculum> curriculums_;
-    std::vector<Models::Curriculum> filteredCurriculums_;
+    std::vector<StudentIntake::Models::Curriculum> curriculums_;
+    std::vector<StudentIntake::Models::Curriculum> filteredCurriculums_;
 
     // UI Elements
     Wt::WText* headerTitle_;

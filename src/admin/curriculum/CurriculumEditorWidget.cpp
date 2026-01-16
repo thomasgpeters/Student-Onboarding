@@ -7,6 +7,9 @@
 namespace StudentIntake {
 namespace Admin {
 
+// Use Curriculum from the main Models namespace
+using StudentIntake::Models::Curriculum;
+
 CurriculumEditorWidget::CurriculumEditorWidget()
     : WContainerWidget()
     , apiService_(nullptr)
@@ -269,7 +272,7 @@ void CurriculumEditorWidget::loadCurriculum(const std::string& curriculumId) {
             if (response.success) {
                 auto jsonResponse = nlohmann::json::parse(response.body);
                 if (jsonResponse.contains("data")) {
-                    currentCurriculum_ = Models::Curriculum::fromJson(jsonResponse["data"]);
+                    currentCurriculum_ = Curriculum::fromJson(jsonResponse["data"]);
                     populateForm(currentCurriculum_);
                     return;
                 }
@@ -299,7 +302,7 @@ void CurriculumEditorWidget::createNew() {
     isNewCurriculum_ = true;
     headerTitle_->setText("<h2>Add New Program</h2>");
 
-    currentCurriculum_ = Models::Curriculum();
+    currentCurriculum_ = Curriculum();
     currentCurriculum_.setActive(true);
 
     // Reset form fields
@@ -325,7 +328,7 @@ void CurriculumEditorWidget::createNew() {
     }
 }
 
-void CurriculumEditorWidget::populateForm(const Models::Curriculum& curriculum) {
+void CurriculumEditorWidget::populateForm(const Curriculum& curriculum) {
     nameInput_->setText(curriculum.getName());
     descriptionInput_->setText(curriculum.getDescription());
 
