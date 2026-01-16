@@ -81,11 +81,20 @@
     display: flex;
     flex: 1;
     min-height: 0;
-    margin-top: 56px; /* Space for fixed navbar */
+    margin-top: 0; /* No margin by default (login state - navbar hidden) */
+}
+
+.admin-content-wrapper.with-sidebar {
+    margin-top: 56px; /* Space for fixed navbar when authenticated */
 }
 
 .admin-content-wrapper.with-sidebar .admin-content-container {
     margin-left: 220px; /* Space for fixed sidebar when visible */
+}
+
+/* Ensure login widget is hidden when in authenticated state */
+.admin-content-wrapper.with-sidebar .admin-login-widget {
+    display: none !important;
 }
 
 /* =====================================================
