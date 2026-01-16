@@ -34,13 +34,13 @@ private:
     void loadStudents();
     void applyFilters();
     void clearFilters();
-    void updateTable(const std::vector<Models::Student>& students);
+    void updateTable(const std::vector<::StudentIntake::Models::Student>& students);
     void onStudentRowClicked(int studentId);
     std::string formatDate(const std::string& dateStr);
     std::string getStatusBadgeClass(const std::string& status);
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
-    std::vector<Models::Student> allStudents_;
+    std::vector<::StudentIntake::Models::Student> allStudents_;
 
     // UI Elements
     Wt::WLineEdit* searchInput_;
