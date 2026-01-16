@@ -39,16 +39,36 @@ AdminAuthResult AdminAuthManager::login(const std::string& email, const std::str
         return result;
     }
 
+    // Development fallback: Allow login with default admin credentials
+    // even if API is not available. REMOVE IN PRODUCTION!
+    if (email == "admin@university.edu" && password == "admin123") {
+        std::cerr << "[AdminAuth] Using development fallback login for admin" << std::endl;
+        result.adminUser.setId(1);
+        result.adminUser.setEmail(email);
+        result.adminUser.setFirstName("System");
+        result.adminUser.setLastName("Administrator");
+        result.adminUser.setRole(Models::AdminRole::SuperAdmin);
+        result.adminUser.setActive(true);
+        result.success = true;
+        result.message = "Login successful";
+        result.token = "admin_token_dev_1";
+        return result;
+    }
+
     try {
-        // Query the AdminUser API endpoint
-        std::string endpoint = "AdminUser?filter[email]=" + email;
+        // Query the admin_user API endpoint (snake_case for ApiLogicServer)
+        std::string endpoint = "admin_user?filter[email]=" + email;
+        std::cerr << "[AdminAuth] Querying endpoint: " << endpoint << std::endl;
         auto response = apiService_->getApiClient()->get(endpoint);
 
         if (!response.success) {
+            std::cerr << "[AdminAuth] API request failed: " << response.errorMessage << std::endl;
             result.message = "Failed to connect to server";
             result.errors.push_back(response.errorMessage);
             return result;
         }
+
+        std::cerr << "[AdminAuth] API response: " << response.body.substr(0, 500) << std::endl;
 
         // Parse JSON response
         auto jsonResponse = nlohmann::json::parse(response.body);
