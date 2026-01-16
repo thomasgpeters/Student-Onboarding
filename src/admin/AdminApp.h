@@ -50,10 +50,8 @@ private:
     void setupServices();
     void setupUI();
 
-    // State handlers
+    // State handlers - using simple show/hide pattern like StudentIntakeApp
     void hideAllViews();
-    void hideLoginWidget();  // Helper to ensure login widget is fully hidden
-    void showLoginWidget();  // Helper to ensure login widget is fully visible
     void showLogin();
     void showDashboard();
     void showStudents();
