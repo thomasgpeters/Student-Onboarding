@@ -196,10 +196,40 @@ void FormSubmissionsWidget::clearData() {
 void FormSubmissionsWidget::loadSubmissions() {
     submissions_.clear();
 
-    if (!apiService_) {
-        std::cerr << "[FormSubmissionsWidget] API service not available, using mock data" << std::endl;
+    // Try to load from API if available
+    if (apiService_) {
+        try {
+            auto response = apiService_->getApiClient()->get("/FormSubmission");
+            if (response.success) {
+                auto jsonResponse = nlohmann::json::parse(response.body);
+                if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
+                    for (const auto& item : jsonResponse["data"]) {
+                        FormSubmissionRecord record;
+                        record.id = item.value("id", 0);
+                        record.studentId = item["attributes"].value("student_id", 0);
+                        record.studentName = item["attributes"].value("student_name", "");
+                        record.studentEmail = item["attributes"].value("student_email", "");
+                        record.formType = item["attributes"].value("form_type", "");
+                        record.formName = getFormDisplayName(record.formType);
+                        record.status = item["attributes"].value("status", "pending");
+                        record.submittedAt = item["attributes"].value("submitted_at", "");
+                        record.reviewedAt = item["attributes"].value("reviewed_at", "");
+                        record.reviewedBy = item["attributes"].value("reviewed_by", "");
+                        record.programName = item["attributes"].value("program_name", "");
+                        submissions_.push_back(record);
+                    }
+                }
+            }
+            std::cerr << "[FormSubmissionsWidget] Loaded " << submissions_.size() << " submissions from API" << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "[FormSubmissionsWidget] Error loading from API: " << e.what() << std::endl;
+        }
+    }
 
-        // Mock data for testing
+    // Use mock data if API returned no submissions (for testing/development)
+    if (submissions_.empty()) {
+        std::cerr << "[FormSubmissionsWidget] Using mock data for testing" << std::endl;
+
         submissions_.push_back({1, 101, "John Doe", "john.doe@email.com", "personal_info",
             "Personal Information", "pending", "2026-01-15T10:30:00Z", "", "", "Computer Science"});
         submissions_.push_back({2, 101, "John Doe", "john.doe@email.com", "academic_history",
@@ -220,36 +250,6 @@ void FormSubmissionsWidget::loadSubmissions() {
             "Document Upload", "pending", "2026-01-11T08:30:00Z", "", "", "Computer Science"});
         submissions_.push_back({10, 105, "Tom Brown", "tom.b@email.com", "personal_info",
             "Personal Information", "approved", "2026-01-11T08:00:00Z", "2026-01-11T12:00:00Z", "Admin User", "Computer Science"});
-
-        applyFilters();
-        return;
-    }
-
-    try {
-        auto response = apiService_->getApiClient()->get("/FormSubmission");
-        if (response.success) {
-            auto jsonResponse = nlohmann::json::parse(response.body);
-            if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
-                for (const auto& item : jsonResponse["data"]) {
-                    FormSubmissionRecord record;
-                    record.id = item.value("id", 0);
-                    record.studentId = item["attributes"].value("student_id", 0);
-                    record.studentName = item["attributes"].value("student_name", "");
-                    record.studentEmail = item["attributes"].value("student_email", "");
-                    record.formType = item["attributes"].value("form_type", "");
-                    record.formName = getFormDisplayName(record.formType);
-                    record.status = item["attributes"].value("status", "pending");
-                    record.submittedAt = item["attributes"].value("submitted_at", "");
-                    record.reviewedAt = item["attributes"].value("reviewed_at", "");
-                    record.reviewedBy = item["attributes"].value("reviewed_by", "");
-                    record.programName = item["attributes"].value("program_name", "");
-                    submissions_.push_back(record);
-                }
-            }
-        }
-        std::cerr << "[FormSubmissionsWidget] Loaded " << submissions_.size() << " submissions" << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "[FormSubmissionsWidget] Error loading submissions: " << e.what() << std::endl;
     }
 
     applyFilters();
