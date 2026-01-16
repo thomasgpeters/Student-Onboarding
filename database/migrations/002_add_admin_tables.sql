@@ -119,7 +119,7 @@ CREATE TRIGGER update_admin_user_updated_at
 INSERT INTO admin_user (email, password_hash, first_name, last_name, role, is_active)
 VALUES (
     'admin@university.edu',
-    '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',  -- Replace with actual bcrypt hash
+    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',  -- bcrypt hash for 'admin123' - CHANGE IN PRODUCTION!
     'System',
     'Administrator',
     'super_admin',
