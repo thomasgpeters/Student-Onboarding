@@ -1,5 +1,7 @@
 #include "AdminDashboard.h"
 #include <Wt/WBreak.h>
+#include <iostream>
+#include <nlohmann/json.hpp>
 
 namespace StudentIntake {
 namespace Admin {
@@ -150,18 +152,51 @@ void AdminDashboard::refresh() {
 }
 
 void AdminDashboard::loadStatistics() {
-    // In production, these would be loaded from the API
-    // For now, use placeholder values
-    totalStudents_ = 124;
-    pendingForms_ = 45;
-    activePrograms_ = 8;
+    // Reset to zero before loading
+    totalStudents_ = 0;
+    pendingForms_ = 0;
+    activePrograms_ = 0;
 
-    // TODO: Implement actual API calls to get statistics
-    // if (apiService_) {
-    //     auto studentsResponse = apiService_->getApiClient()->get("Student?count=true");
-    //     auto formsResponse = apiService_->getApiClient()->get("FormSubmission?filter[status]=pending&count=true");
-    //     auto curriculumResponse = apiService_->getApiClient()->get("Curriculum?filter[is_active]=true&count=true");
-    // }
+    if (!apiService_) {
+        std::cerr << "[AdminDashboard] API service not available" << std::endl;
+        return;
+    }
+
+    try {
+        // Fetch student count
+        auto studentsResponse = apiService_->getApiClient()->get("student");
+        if (studentsResponse.success) {
+            auto jsonResponse = nlohmann::json::parse(studentsResponse.body);
+            if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
+                totalStudents_ = static_cast<int>(jsonResponse["data"].size());
+            }
+        }
+
+        // Fetch pending forms count
+        auto formsResponse = apiService_->getApiClient()->get("form_submission?filter[status]=pending");
+        if (formsResponse.success) {
+            auto jsonResponse = nlohmann::json::parse(formsResponse.body);
+            if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
+                pendingForms_ = static_cast<int>(jsonResponse["data"].size());
+            }
+        }
+
+        // Fetch active programs count
+        auto curriculumResponse = apiService_->getApiClient()->get("curriculum?filter[is_active]=true");
+        if (curriculumResponse.success) {
+            auto jsonResponse = nlohmann::json::parse(curriculumResponse.body);
+            if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
+                activePrograms_ = static_cast<int>(jsonResponse["data"].size());
+            }
+        }
+
+        std::cerr << "[AdminDashboard] Loaded statistics - Students: " << totalStudents_
+                  << ", Pending Forms: " << pendingForms_
+                  << ", Active Programs: " << activePrograms_ << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminDashboard] Error loading statistics: " << e.what() << std::endl;
+    }
 }
 
 void AdminDashboard::updateDisplay() {
