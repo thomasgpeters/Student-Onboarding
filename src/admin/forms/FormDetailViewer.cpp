@@ -358,7 +358,7 @@ void FormDetailViewer::handleRequestRevision() {
     requestRevisionClicked_.emit(currentSubmissionId_);
 }
 
-void FormDetailViewer::clear() {
+void FormDetailViewer::clearForm() {
     currentSubmissionId_ = 0;
     currentStatus_ = "";
     currentFormType_ = "";

@@ -333,7 +333,7 @@ void AdminApp::showForms() {
     contentWrapper_->addStyleClass("with-sidebar");
 
     formSubmissionsWidget_->show();
-    formSubmissionsWidget_->refresh();
+    formSubmissionsWidget_->loadData();
 }
 
 void AdminApp::showFormDetail(int submissionId) {
@@ -361,7 +361,7 @@ void AdminApp::showCurriculum() {
     contentWrapper_->addStyleClass("with-sidebar");
 
     curriculumListWidget_->show();
-    curriculumListWidget_->refresh();
+    curriculumListWidget_->loadData();
 }
 
 void AdminApp::showCurriculumEdit(const std::string& curriculumId) {
@@ -526,7 +526,7 @@ void AdminApp::handleFormApproved(int submissionId) {
     std::cerr << "[AdminApp] Form approved: " << submissionId << std::endl;
     // Refresh the submissions list if we're on it
     if (currentState_ == AppState::Forms) {
-        formSubmissionsWidget_->refresh();
+        formSubmissionsWidget_->loadData();
     }
 }
 
@@ -534,7 +534,7 @@ void AdminApp::handleFormRejected(int submissionId) {
     std::cerr << "[AdminApp] Form rejected: " << submissionId << std::endl;
     // Refresh the submissions list if we're on it
     if (currentState_ == AppState::Forms) {
-        formSubmissionsWidget_->refresh();
+        formSubmissionsWidget_->loadData();
     }
 }
 

@@ -365,7 +365,7 @@ void CurriculumEditorWidget::populateForm(const Curriculum& curriculum) {
     }
 }
 
-void CurriculumEditorWidget::clear() {
+void CurriculumEditorWidget::clearForm() {
     nameInput_->setText("");
     descriptionInput_->setText("");
     departmentSelect_->setCurrentIndex(0);

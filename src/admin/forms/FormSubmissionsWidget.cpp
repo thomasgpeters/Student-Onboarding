@@ -181,11 +181,11 @@ void FormSubmissionsWidget::setupUI() {
     noDataMessage_->hide();
 }
 
-void FormSubmissionsWidget::refresh() {
+void FormSubmissionsWidget::loadData() {
     loadSubmissions();
 }
 
-void FormSubmissionsWidget::clear() {
+void FormSubmissionsWidget::clearData() {
     submissions_.clear();
     filteredSubmissions_.clear();
     if (submissionsTable_) {
