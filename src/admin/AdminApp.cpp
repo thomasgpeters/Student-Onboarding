@@ -29,6 +29,8 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , curriculumView_(nullptr)
     , settingsView_(nullptr) {
 
+    std::cerr << "[AdminApp] Constructor called - sessionId=" << sessionId() << std::endl;
+
     setTitle("Admin Portal - Student Onboarding");
 
     // Use admin-specific CSS only - no dependency on student styles
