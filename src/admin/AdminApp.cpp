@@ -200,6 +200,8 @@ void AdminApp::setState(AppState state) {
 }
 
 void AdminApp::hideAllViews() {
+    // Explicitly add hidden class to login widget for reliable hiding
+    loginWidget_->addStyleClass("admin-login-hidden");
     loginWidget_->hide();
     dashboardWidget_->hide();
     studentListWidget_->hide();
@@ -216,12 +218,15 @@ void AdminApp::showLogin() {
     navigationWidget_->hide();
     contentWrapper_->removeStyleClass("with-sidebar");
 
+    // Remove hidden class and show login widget
+    loginWidget_->removeStyleClass("admin-login-hidden");
     loginWidget_->show();
     loginWidget_->focus();
 }
 
 void AdminApp::showDashboard() {
     // Explicitly hide login widget when showing authenticated views
+    loginWidget_->addStyleClass("admin-login-hidden");
     loginWidget_->hide();
 
     // Show sidebar and navigation
@@ -238,6 +243,7 @@ void AdminApp::showDashboard() {
 
 void AdminApp::showStudents() {
     // Explicitly hide login widget when showing authenticated views
+    loginWidget_->addStyleClass("admin-login-hidden");
     loginWidget_->hide();
 
     sidebarWidget_->show();
@@ -251,6 +257,7 @@ void AdminApp::showStudents() {
 
 void AdminApp::showStudentDetail(int studentId) {
     // Explicitly hide login widget when showing authenticated views
+    loginWidget_->addStyleClass("admin-login-hidden");
     loginWidget_->hide();
 
     sidebarWidget_->show();
@@ -266,6 +273,7 @@ void AdminApp::showStudentDetail(int studentId) {
 
 void AdminApp::showStudentForms(int studentId) {
     // Explicitly hide login widget when showing authenticated views
+    loginWidget_->addStyleClass("admin-login-hidden");
     loginWidget_->hide();
 
     sidebarWidget_->show();
@@ -280,6 +288,7 @@ void AdminApp::showStudentForms(int studentId) {
 
 void AdminApp::showForms() {
     // Explicitly hide login widget when showing authenticated views
+    loginWidget_->addStyleClass("admin-login-hidden");
     loginWidget_->hide();
 
     sidebarWidget_->show();
@@ -292,6 +301,7 @@ void AdminApp::showForms() {
 
 void AdminApp::showCurriculum() {
     // Explicitly hide login widget when showing authenticated views
+    loginWidget_->addStyleClass("admin-login-hidden");
     loginWidget_->hide();
 
     sidebarWidget_->show();
@@ -304,6 +314,7 @@ void AdminApp::showCurriculum() {
 
 void AdminApp::showSettings() {
     // Explicitly hide login widget when showing authenticated views
+    loginWidget_->addStyleClass("admin-login-hidden");
     loginWidget_->hide();
 
     sidebarWidget_->show();
