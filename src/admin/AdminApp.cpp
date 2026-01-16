@@ -75,10 +75,8 @@ void AdminApp::setupUI() {
     // Navigation bar is always visible - AdminNavigation handles hiding user info when not authenticated
 
     // Content wrapper (sidebar + content)
-    // Start with login-state class since we initialize in Login state - prevents flash before setState
     contentWrapper_ = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contentWrapper_->addStyleClass("admin-content-wrapper");
-    contentWrapper_->addStyleClass("login-state");
 
     // Sidebar (hidden initially for login)
     sidebarWidget_ = contentWrapper_->addWidget(std::make_unique<AdminSidebar>());
@@ -86,18 +84,17 @@ void AdminApp::setupUI() {
     sidebarWidget_->sectionClicked().connect(this, &AdminApp::handleSectionChange);
     sidebarWidget_->hide();
 
-    // Content container
+    // Content container - single container for all views
     contentContainer_ = contentWrapper_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contentContainer_->addStyleClass("admin-content-container");
 
-    // Login widget - start with hidden class to prevent initial flash, shown via setState
+    // Login widget - use simple show/hide pattern like StudentIntakeApp
+    std::cerr << "[AdminApp] Creating AdminLoginWidget..." << std::endl;
     loginWidget_ = contentContainer_->addWidget(std::make_unique<AdminLoginWidget>());
     loginWidget_->setAuthManager(authManager_);
     loginWidget_->setSession(session_);
     loginWidget_->loginSuccess().connect(this, &AdminApp::handleLoginSuccess);
-    // Start with hidden class AND hidden state - will be explicitly shown by setState(Login)
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
+    std::cerr << "[AdminApp] AdminLoginWidget created successfully" << std::endl;
 
     // Dashboard widget (hidden initially)
     dashboardWidget_ = contentContainer_->addWidget(std::make_unique<AdminDashboard>());
@@ -169,6 +166,11 @@ void AdminApp::setupUI() {
     auto footerText = footer->addWidget(std::make_unique<Wt::WText>(
         "© 2026 Imagery Business Systems LLC. All rights reserved."));
     footerText->addStyleClass("admin-footer-text");
+
+    // Hide all views initially except login - same pattern as StudentIntakeApp
+    hideAllViews();
+    loginWidget_->show();
+    std::cerr << "[AdminApp] setupUI complete, loginWidget shown" << std::endl;
 }
 
 void AdminApp::setState(AppState state) {
@@ -204,7 +206,8 @@ void AdminApp::setState(AppState state) {
 }
 
 void AdminApp::hideAllViews() {
-    hideLoginWidget();
+    // Use simple hide() pattern - same as StudentIntakeApp
+    loginWidget_->hide();
     dashboardWidget_->hide();
     studentListWidget_->hide();
     studentDetailWidget_->hide();
@@ -214,40 +217,33 @@ void AdminApp::hideAllViews() {
     settingsView_->hide();
 }
 
-void AdminApp::hideLoginWidget() {
-    // Hide login widget using both Wt's setHidden and CSS class
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
-    std::cerr << "[AdminApp] hideLoginWidget called" << std::endl;
-}
-
-void AdminApp::showLoginWidget() {
-    // Show login widget by removing hidden class and setting visible
-    loginWidget_->removeStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(false);
-    std::cerr << "[AdminApp] showLoginWidget called" << std::endl;
-}
-
 void AdminApp::showLogin() {
-    // Hide sidebar for login (navigation stays visible)
+    std::cerr << "[AdminApp] showLogin called" << std::endl;
+
+    // hideAllViews() already called by setState()
+
+    // Hide sidebar for login state
     sidebarWidget_->hide();
     contentWrapper_->removeStyleClass("with-sidebar");
-    // Add login-state class for proper navbar spacing without sidebar
     contentWrapper_->addStyleClass("login-state");
-    navigationWidget_->refresh();  // Update to hide user info since not authenticated
+    navigationWidget_->refresh();
 
-    showLoginWidget();
+    // Show login widget using simple show() - same as StudentIntakeApp
+    loginWidget_->show();
+    loginWidget_->reset();
     loginWidget_->focus();
+
+    std::cerr << "[AdminApp] showLogin completed, loginWidget visible" << std::endl;
 }
 
 void AdminApp::showDashboard() {
-    hideLoginWidget();
+    // hideAllViews() already called by setState() - no need to call hideLoginWidget()
 
     // Show sidebar (navigation already visible)
     sidebarWidget_->show();
     sidebarWidget_->refresh();
     sidebarWidget_->setActiveSection(AdminSection::Dashboard);
-    navigationWidget_->refresh();  // Update user info display
+    navigationWidget_->refresh();
     contentWrapper_->removeStyleClass("login-state");
     contentWrapper_->addStyleClass("with-sidebar");
 
@@ -256,7 +252,7 @@ void AdminApp::showDashboard() {
 }
 
 void AdminApp::showStudents() {
-    hideLoginWidget();
+    // hideAllViews() already called by setState()
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Students);
@@ -269,7 +265,7 @@ void AdminApp::showStudents() {
 }
 
 void AdminApp::showStudentDetail(int studentId) {
-    hideLoginWidget();
+    // hideAllViews() already called by setState()
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Students);
@@ -284,7 +280,7 @@ void AdminApp::showStudentDetail(int studentId) {
 }
 
 void AdminApp::showStudentForms(int studentId) {
-    hideLoginWidget();
+    // hideAllViews() already called by setState()
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Students);
@@ -298,7 +294,7 @@ void AdminApp::showStudentForms(int studentId) {
 }
 
 void AdminApp::showForms() {
-    hideLoginWidget();
+    // hideAllViews() already called by setState()
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Forms);
@@ -310,7 +306,7 @@ void AdminApp::showForms() {
 }
 
 void AdminApp::showCurriculum() {
-    hideLoginWidget();
+    // hideAllViews() already called by setState()
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Curriculum);
@@ -322,7 +318,7 @@ void AdminApp::showCurriculum() {
 }
 
 void AdminApp::showSettings() {
-    hideLoginWidget();
+    // hideAllViews() already called by setState()
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Settings);

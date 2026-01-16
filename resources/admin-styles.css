@@ -1,4 +1,5 @@
 /* Admin Portal Styles */
+/* Uses simple show()/hide() pattern - same as StudentIntakeApp */
 
 /* =====================================================
    ADMIN MAIN CONTAINER
@@ -81,51 +82,12 @@
     display: flex;
     flex: 1;
     min-height: 0;
-    margin-top: 56px; /* Space for fixed navbar - always visible now */
+    margin-top: 56px; /* Space for fixed navbar */
 }
 
-/* Login state - no sidebar, but navbar still visible */
-.admin-content-wrapper.login-state {
-    margin-top: 56px;
-}
-
-/* CRITICAL: In login state, hide ALL content container children except the login widget */
-/* This prevents any other widgets from accidentally showing during login */
-.admin-content-wrapper.login-state .admin-content-container > * {
-    display: none !important;
-}
-
-/* Explicitly show ONLY the login widget in login state (when not hidden) */
-.admin-content-wrapper.login-state .admin-content-container > .admin-login-widget:not(.admin-login-hidden) {
-    display: block !important;
-}
-
-/* Ensure sidebar is hidden in login state */
-.admin-content-wrapper.login-state .admin-sidebar {
-    display: none !important;
-}
-
-.admin-content-wrapper.with-sidebar {
-    margin-top: 56px; /* Space for fixed navbar when authenticated */
-}
-
+/* With sidebar visible (authenticated state) */
 .admin-content-wrapper.with-sidebar .admin-content-container {
-    margin-left: 220px; /* Space for fixed sidebar when visible */
-}
-
-/* Ensure login widget is hidden when in authenticated state */
-.admin-content-wrapper.with-sidebar .admin-login-widget {
-    display: none !important;
-}
-
-/* Explicit hidden class for login widget - applied directly to widget */
-.admin-login-hidden {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin-left: 220px; /* Space for fixed sidebar */
 }
 
 /* =====================================================
@@ -185,7 +147,6 @@
     flex: 1;
     padding: 1.5rem;
     overflow-y: auto;
-    margin-left: 0; /* No margin by default (login state) */
 }
 
 .admin-section-view {

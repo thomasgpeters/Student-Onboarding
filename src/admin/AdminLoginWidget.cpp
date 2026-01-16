@@ -2,6 +2,7 @@
 #include <Wt/WBreak.h>
 #include <Wt/WLabel.h>
 #include <Wt/WImage.h>
+#include <iostream>
 
 namespace StudentIntake {
 namespace Admin {
@@ -15,13 +16,17 @@ AdminLoginWidget::AdminLoginWidget()
     , loginButton_(nullptr)
     , errorText_(nullptr)
     , errorContainer_(nullptr) {
+    std::cerr << "[AdminLoginWidget] Constructor called - this=" << this << std::endl;
     setupUI();
+    std::cerr << "[AdminLoginWidget] Constructor complete - widget ready, id=" << id() << std::endl;
 }
 
 AdminLoginWidget::~AdminLoginWidget() {
 }
 
 void AdminLoginWidget::setupUI() {
+    // Add unique identifier to prevent any duplicate rendering issues
+    setId("admin-login-widget-main");
     addStyleClass("admin-login-widget");
 
     // Logo and title container
