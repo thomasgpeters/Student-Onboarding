@@ -2,6 +2,13 @@
 /* Uses simple show()/hide() pattern - same as StudentIntakeApp */
 
 /* =====================================================
+   BASE TYPOGRAPHY
+   ===================================================== */
+
+/* Import Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* =====================================================
    ADMIN MAIN CONTAINER
    ===================================================== */
 
@@ -11,6 +18,9 @@
     flex-direction: column;
     background-color: #f1f5f9;
     padding-bottom: 60px; /* Space for fixed footer */
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* =====================================================
@@ -530,6 +540,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     font-size: 0.9375rem;
+    font-family: inherit;
     background: white;
     cursor: pointer;
 }
@@ -731,6 +742,7 @@
     padding: 0.5rem 1rem;
     font-size: 0.9375rem;
     font-weight: 500;
+    font-family: inherit;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
@@ -811,6 +823,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     font-size: 1rem;
+    font-family: inherit;
     box-sizing: border-box;
 }
 
