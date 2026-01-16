@@ -22,6 +22,8 @@ AdminLoginWidget::~AdminLoginWidget() {
 }
 
 void AdminLoginWidget::setupUI() {
+    // Add unique identifier to prevent any duplicate rendering issues
+    setId("admin-login-widget-main");
     addStyleClass("admin-login-widget");
 
     // Logo and title container

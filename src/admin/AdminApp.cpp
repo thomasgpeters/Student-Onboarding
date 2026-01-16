@@ -86,11 +86,13 @@ void AdminApp::setupUI() {
     sidebarWidget_->sectionClicked().connect(this, &AdminApp::handleSectionChange);
     sidebarWidget_->hide();
 
-    // Content container
+    // Content container - single container for all views
     contentContainer_ = contentWrapper_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    contentContainer_->setId("admin-content-container-main");
     contentContainer_->addStyleClass("admin-content-container");
 
-    // Login widget - start with hidden class to prevent initial flash, shown via setState
+    // Login widget - THE ONLY login widget instance
+    // Start with hidden class to prevent initial flash, shown via setState
     loginWidget_ = contentContainer_->addWidget(std::make_unique<AdminLoginWidget>());
     loginWidget_->setAuthManager(authManager_);
     loginWidget_->setSession(session_);
@@ -98,6 +100,7 @@ void AdminApp::setupUI() {
     // Start with hidden class AND hidden state - will be explicitly shown by setState(Login)
     loginWidget_->addStyleClass("admin-login-hidden");
     loginWidget_->setHidden(true);
+    std::cerr << "[AdminApp] Login widget created with ID: admin-login-widget-main" << std::endl;
 
     // Dashboard widget (hidden initially)
     dashboardWidget_ = contentContainer_->addWidget(std::make_unique<AdminDashboard>());
@@ -225,7 +228,11 @@ void AdminApp::showLoginWidget() {
     // Show login widget by removing hidden class and setting visible
     loginWidget_->removeStyleClass("admin-login-hidden");
     loginWidget_->setHidden(false);
-    std::cerr << "[AdminApp] showLoginWidget called" << std::endl;
+    // Ensure the widget has the correct ID (defensive check)
+    if (loginWidget_->id().empty()) {
+        loginWidget_->setId("admin-login-widget-main");
+    }
+    std::cerr << "[AdminApp] showLoginWidget called, widget ID: " << loginWidget_->id() << std::endl;
 }
 
 void AdminApp::showLogin() {

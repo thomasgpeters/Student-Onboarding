@@ -1,6 +1,20 @@
 /* Admin Portal Styles */
 
 /* =====================================================
+   GLOBAL RESETS FOR ADMIN PORTAL
+   ===================================================== */
+
+/* Ensure no duplicate content from browser or framework quirks */
+html, body {
+    overflow-x: hidden;
+}
+
+/* Prevent any accidental duplicate widgets from rendering */
+body > *:not(.Wt-domRoot):not(script):not(style):not(link) {
+    display: none !important;
+}
+
+/* =====================================================
    ADMIN MAIN CONTAINER
    ===================================================== */
 
@@ -10,6 +24,7 @@
     flex-direction: column;
     background-color: #f1f5f9;
     padding-bottom: 60px; /* Space for fixed footer */
+    position: relative;
 }
 
 /* =====================================================
@@ -93,16 +108,30 @@
 /* This prevents any other widgets from accidentally showing during login */
 .admin-content-wrapper.login-state .admin-content-container > * {
     display: none !important;
+    visibility: hidden !important;
 }
 
 /* Explicitly show ONLY the login widget in login state (when not hidden) */
-.admin-content-wrapper.login-state .admin-content-container > .admin-login-widget:not(.admin-login-hidden) {
+/* Target by both class and ID for maximum specificity */
+.admin-content-wrapper.login-state .admin-content-container > .admin-login-widget:not(.admin-login-hidden),
+.admin-content-wrapper.login-state .admin-content-container > #admin-login-widget-main:not(.admin-login-hidden) {
     display: block !important;
+    visibility: visible !important;
 }
 
 /* Ensure sidebar is hidden in login state */
 .admin-content-wrapper.login-state .admin-sidebar {
     display: none !important;
+    visibility: hidden !important;
+}
+
+/* CRITICAL: Ensure there is only ONE visible admin-login-widget at any time */
+/* Hide any duplicate login widgets that might appear */
+.admin-login-widget ~ .admin-login-widget {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
 }
 
 .admin-content-wrapper.with-sidebar {
@@ -123,9 +152,15 @@
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
+    width: 0 !important;
     overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
 }
 
 /* =====================================================
@@ -181,11 +216,19 @@
    ADMIN CONTENT CONTAINER
    ===================================================== */
 
-.admin-content-container {
+.admin-content-container,
+#admin-content-container-main {
     flex: 1;
     padding: 1.5rem;
     overflow-y: auto;
     margin-left: 0; /* No margin by default (login state) */
+    position: relative;
+}
+
+/* Ensure content container only renders widgets once */
+#admin-content-container-main > .admin-login-widget:nth-of-type(n+2) {
+    display: none !important;
+    visibility: hidden !important;
 }
 
 .admin-section-view {
@@ -199,6 +242,14 @@
    ADMIN LOGIN WIDGET
    ===================================================== */
 
+/* Override any conflicting student portal styles */
+.admin-main-container .login-widget,
+.admin-content-container .login-widget {
+    display: none !important;
+}
+
+/* Primary login widget styling - high specificity with ID */
+#admin-login-widget-main.admin-login-widget,
 .admin-login-widget {
     max-width: 420px;
     margin: 4rem auto;
@@ -206,6 +257,8 @@
     background: white;
     border-radius: 16px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1;
 }
 
 .admin-login-header {
@@ -887,4 +940,42 @@
 
 .link-secondary:hover {
     text-decoration: underline;
+}
+
+/* =====================================================
+   CRITICAL: DUPLICATE PREVENTION RULES (FINAL)
+   These rules have maximum specificity to prevent duplicates
+   ===================================================== */
+
+/* Ensure only ONE login widget is visible in login state */
+html body .admin-main-container .admin-content-wrapper.login-state .admin-content-container > *:not(#admin-login-widget-main) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    left: -99999px !important;
+}
+
+/* Force the single login widget to display correctly */
+html body .admin-main-container .admin-content-wrapper.login-state .admin-content-container > #admin-login-widget-main:not(.admin-login-hidden) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    left: auto !important;
+}
+
+/* Absolutely prevent any element that looks like a second login form */
+html body .admin-main-container .admin-login-widget + .admin-login-widget,
+html body .admin-main-container .admin-login-widget ~ .admin-login-widget,
+html body .admin-content-container .admin-login-widget:not(:first-of-type) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -99999px !important;
+    top: -99999px !important;
 }
