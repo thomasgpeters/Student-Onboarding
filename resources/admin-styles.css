@@ -89,6 +89,22 @@
     margin-top: 56px;
 }
 
+/* CRITICAL: In login state, hide ALL content container children except the login widget */
+/* This prevents any other widgets from accidentally showing during login */
+.admin-content-wrapper.login-state .admin-content-container > * {
+    display: none !important;
+}
+
+/* Explicitly show ONLY the login widget in login state (when not hidden) */
+.admin-content-wrapper.login-state .admin-content-container > .admin-login-widget:not(.admin-login-hidden) {
+    display: block !important;
+}
+
+/* Ensure sidebar is hidden in login state */
+.admin-content-wrapper.login-state .admin-sidebar {
+    display: none !important;
+}
+
 .admin-content-wrapper.with-sidebar {
     margin-top: 56px; /* Space for fixed navbar when authenticated */
 }

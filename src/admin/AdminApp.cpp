@@ -75,8 +75,10 @@ void AdminApp::setupUI() {
     // Navigation bar is always visible - AdminNavigation handles hiding user info when not authenticated
 
     // Content wrapper (sidebar + content)
+    // Start with login-state class since we initialize in Login state - prevents flash before setState
     contentWrapper_ = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contentWrapper_->addStyleClass("admin-content-wrapper");
+    contentWrapper_->addStyleClass("login-state");
 
     // Sidebar (hidden initially for login)
     sidebarWidget_ = contentWrapper_->addWidget(std::make_unique<AdminSidebar>());
