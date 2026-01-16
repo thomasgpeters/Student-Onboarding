@@ -90,9 +90,22 @@ ALTER TABLE curriculum_form_requirement ADD COLUMN IF NOT EXISTS added_by INTEGE
 ALTER TABLE curriculum_form_requirement ADD COLUMN IF NOT EXISTS added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 -- =====================================================
+-- FUNCTION: Update timestamp trigger (create if not exists)
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- =====================================================
 -- TRIGGER: Update timestamp for admin_user
 -- =====================================================
 
+DROP TRIGGER IF EXISTS update_admin_user_updated_at ON admin_user;
 CREATE TRIGGER update_admin_user_updated_at
     BEFORE UPDATE ON admin_user
     FOR EACH ROW
