@@ -11,6 +11,8 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , config_(App::AppConfig::getInstance())
     , currentState_(AppState::Login)
     , selectedStudentId_(0)
+    , selectedCurriculumId_("")
+    , selectedSubmissionId_(0)
     , apiClient_(nullptr)
     , apiService_(nullptr)
     , authManager_(nullptr)
@@ -25,8 +27,10 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , studentListWidget_(nullptr)
     , studentDetailWidget_(nullptr)
     , studentFormViewer_(nullptr)
-    , formsView_(nullptr)
-    , curriculumView_(nullptr)
+    , formSubmissionsWidget_(nullptr)
+    , formDetailViewer_(nullptr)
+    , curriculumListWidget_(nullptr)
+    , curriculumEditorWidget_(nullptr)
     , settingsView_(nullptr) {
 
     setTitle("Admin Portal - Student Onboarding");
@@ -130,25 +134,43 @@ void AdminApp::setupUI() {
     });
     studentFormViewer_->hide();
 
-    // Forms view placeholder (hidden initially)
-    formsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    formsView_->addStyleClass("admin-section-view");
-    auto formsTitle = formsView_->addWidget(std::make_unique<Wt::WText>("<h2>Form Submissions</h2>"));
-    formsTitle->setTextFormat(Wt::TextFormat::XHTML);
-    auto formsPlaceholder = formsView_->addWidget(std::make_unique<Wt::WText>(
-        "<p>Form review and approval features will be implemented in Phase 4.</p>"));
-    formsPlaceholder->setTextFormat(Wt::TextFormat::XHTML);
-    formsView_->hide();
+    // Form Submissions widget (hidden initially)
+    formSubmissionsWidget_ = contentContainer_->addWidget(std::make_unique<FormSubmissionsWidget>());
+    formSubmissionsWidget_->setApiService(apiService_);
+    formSubmissionsWidget_->viewSubmissionClicked().connect(this, &AdminApp::handleFormSubmissionSelected);
+    formSubmissionsWidget_->approveClicked().connect([this](int id, const std::string&) {
+        handleFormApproved(id);
+    });
+    formSubmissionsWidget_->rejectClicked().connect([this](int id, const std::string&) {
+        handleFormRejected(id);
+    });
+    formSubmissionsWidget_->hide();
 
-    // Curriculum view placeholder (hidden initially)
-    curriculumView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    curriculumView_->addStyleClass("admin-section-view");
-    auto curriculumTitle = curriculumView_->addWidget(std::make_unique<Wt::WText>("<h2>Curriculum Management</h2>"));
-    curriculumTitle->setTextFormat(Wt::TextFormat::XHTML);
-    auto curriculumPlaceholder = curriculumView_->addWidget(std::make_unique<Wt::WText>(
-        "<p>Syllabus editing and form requirements management will be implemented in Phase 3.</p>"));
-    curriculumPlaceholder->setTextFormat(Wt::TextFormat::XHTML);
-    curriculumView_->hide();
+    // Form Detail Viewer (hidden initially)
+    formDetailViewer_ = contentContainer_->addWidget(std::make_unique<FormDetailViewer>());
+    formDetailViewer_->setApiService(apiService_);
+    formDetailViewer_->backClicked().connect([this]() {
+        setState(AppState::Forms);
+    });
+    formDetailViewer_->approveClicked().connect(this, &AdminApp::handleFormApproved);
+    formDetailViewer_->rejectClicked().connect(this, &AdminApp::handleFormRejected);
+    formDetailViewer_->hide();
+
+    // Curriculum List widget (hidden initially)
+    curriculumListWidget_ = contentContainer_->addWidget(std::make_unique<CurriculumListWidget>());
+    curriculumListWidget_->setApiService(apiService_);
+    curriculumListWidget_->curriculumSelected().connect(this, &AdminApp::handleCurriculumSelected);
+    curriculumListWidget_->addCurriculumClicked().connect(this, &AdminApp::handleAddCurriculum);
+    curriculumListWidget_->hide();
+
+    // Curriculum Editor widget (hidden initially)
+    curriculumEditorWidget_ = contentContainer_->addWidget(std::make_unique<CurriculumEditorWidget>());
+    curriculumEditorWidget_->setApiService(apiService_);
+    curriculumEditorWidget_->backClicked().connect([this]() {
+        setState(AppState::Curriculum);
+    });
+    curriculumEditorWidget_->saveSuccess().connect(this, &AdminApp::handleCurriculumSaved);
+    curriculumEditorWidget_->hide();
 
     // Settings view placeholder (hidden initially)
     settingsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -196,8 +218,14 @@ void AdminApp::setState(AppState state) {
         case AppState::Forms:
             showForms();
             break;
+        case AppState::FormDetail:
+            showFormDetail(selectedSubmissionId_);
+            break;
         case AppState::Curriculum:
             showCurriculum();
+            break;
+        case AppState::CurriculumEdit:
+            showCurriculumEdit(selectedCurriculumId_);
             break;
         case AppState::Settings:
             showSettings();
@@ -212,8 +240,10 @@ void AdminApp::hideAllViews() {
     studentListWidget_->hide();
     studentDetailWidget_->hide();
     studentFormViewer_->hide();
-    formsView_->hide();
-    curriculumView_->hide();
+    formSubmissionsWidget_->hide();
+    formDetailViewer_->hide();
+    curriculumListWidget_->hide();
+    curriculumEditorWidget_->hide();
     settingsView_->hide();
 }
 
@@ -302,7 +332,23 @@ void AdminApp::showForms() {
     contentWrapper_->removeStyleClass("login-state");
     contentWrapper_->addStyleClass("with-sidebar");
 
-    formsView_->show();
+    formSubmissionsWidget_->show();
+    formSubmissionsWidget_->refresh();
+}
+
+void AdminApp::showFormDetail(int submissionId) {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Forms);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    currentState_ = AppState::FormDetail;
+    selectedSubmissionId_ = submissionId;
+    formDetailViewer_->loadSubmission(submissionId);
+    formDetailViewer_->show();
 }
 
 void AdminApp::showCurriculum() {
@@ -314,7 +360,27 @@ void AdminApp::showCurriculum() {
     contentWrapper_->removeStyleClass("login-state");
     contentWrapper_->addStyleClass("with-sidebar");
 
-    curriculumView_->show();
+    curriculumListWidget_->show();
+    curriculumListWidget_->refresh();
+}
+
+void AdminApp::showCurriculumEdit(const std::string& curriculumId) {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Curriculum);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    currentState_ = AppState::CurriculumEdit;
+    selectedCurriculumId_ = curriculumId;
+    if (curriculumId.empty()) {
+        curriculumEditorWidget_->createNew();
+    } else {
+        curriculumEditorWidget_->loadCurriculum(curriculumId);
+    }
+    curriculumEditorWidget_->show();
 }
 
 void AdminApp::showSettings() {
@@ -425,6 +491,50 @@ void AdminApp::handleRestoreAccess(int studentId) {
         }
     } catch (const std::exception& e) {
         std::cerr << "[AdminApp] Exception restoring access: " << e.what() << std::endl;
+    }
+}
+
+void AdminApp::handleCurriculumSelected(const std::string& curriculumId) {
+    std::cerr << "[AdminApp] Curriculum selected: " << curriculumId << std::endl;
+    selectedCurriculumId_ = curriculumId;
+    hideAllViews();
+    showCurriculumEdit(curriculumId);
+}
+
+void AdminApp::handleAddCurriculum() {
+    std::cerr << "[AdminApp] Adding new curriculum" << std::endl;
+    selectedCurriculumId_ = "";
+    hideAllViews();
+    showCurriculumEdit("");
+}
+
+void AdminApp::handleCurriculumSaved() {
+    std::cerr << "[AdminApp] Curriculum saved, returning to list" << std::endl;
+    // Optionally stay on the edit page or go back to list
+    // For now, refresh the list view
+    setState(AppState::Curriculum);
+}
+
+void AdminApp::handleFormSubmissionSelected(int submissionId) {
+    std::cerr << "[AdminApp] Form submission selected: " << submissionId << std::endl;
+    selectedSubmissionId_ = submissionId;
+    hideAllViews();
+    showFormDetail(submissionId);
+}
+
+void AdminApp::handleFormApproved(int submissionId) {
+    std::cerr << "[AdminApp] Form approved: " << submissionId << std::endl;
+    // Refresh the submissions list if we're on it
+    if (currentState_ == AppState::Forms) {
+        formSubmissionsWidget_->refresh();
+    }
+}
+
+void AdminApp::handleFormRejected(int submissionId) {
+    std::cerr << "[AdminApp] Form rejected: " << submissionId << std::endl;
+    // Refresh the submissions list if we're on it
+    if (currentState_ == AppState::Forms) {
+        formSubmissionsWidget_->refresh();
     }
 }
 

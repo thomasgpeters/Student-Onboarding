@@ -17,6 +17,10 @@
 #include "admin/students/StudentListWidget.h"
 #include "admin/students/StudentDetailWidget.h"
 #include "admin/students/StudentFormViewer.h"
+#include "admin/curriculum/CurriculumListWidget.h"
+#include "admin/curriculum/CurriculumEditorWidget.h"
+#include "admin/forms/FormSubmissionsWidget.h"
+#include "admin/forms/FormDetailViewer.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -37,7 +41,9 @@ public:
         StudentDetail,
         StudentForms,
         Forms,
+        FormDetail,
         Curriculum,
+        CurriculumEdit,
         Settings
     };
 
@@ -58,7 +64,9 @@ private:
     void showStudentDetail(int studentId);
     void showStudentForms(int studentId);
     void showForms();
+    void showFormDetail(int submissionId);
     void showCurriculum();
+    void showCurriculumEdit(const std::string& curriculumId);
     void showSettings();
 
     // Event handlers
@@ -69,6 +77,12 @@ private:
     void handleViewStudentForms(int studentId);
     void handleRevokeAccess(int studentId);
     void handleRestoreAccess(int studentId);
+    void handleCurriculumSelected(const std::string& curriculumId);
+    void handleAddCurriculum();
+    void handleCurriculumSaved();
+    void handleFormSubmissionSelected(int submissionId);
+    void handleFormApproved(int submissionId);
+    void handleFormRejected(int submissionId);
 
     // Configuration
     App::AppConfig& config_;
@@ -77,6 +91,8 @@ private:
     AppState currentState_;
     int selectedStudentId_;
     std::string selectedStudentName_;
+    std::string selectedCurriculumId_;
+    int selectedSubmissionId_;
 
     // Services
     std::shared_ptr<Api::ApiClient> apiClient_;
@@ -97,8 +113,10 @@ private:
     StudentListWidget* studentListWidget_;
     StudentDetailWidget* studentDetailWidget_;
     StudentFormViewer* studentFormViewer_;
-    Wt::WContainerWidget* formsView_;
-    Wt::WContainerWidget* curriculumView_;
+    FormSubmissionsWidget* formSubmissionsWidget_;
+    FormDetailViewer* formDetailViewer_;
+    CurriculumListWidget* curriculumListWidget_;
+    CurriculumEditorWidget* curriculumEditorWidget_;
     Wt::WContainerWidget* settingsView_;
 };
 
