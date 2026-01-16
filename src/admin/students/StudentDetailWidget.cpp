@@ -138,7 +138,7 @@ void StudentDetailWidget::loadStudent(int studentId) {
     try {
         std::cerr << "[StudentDetail] Loading student: " << studentId << std::endl;
 
-        std::string endpoint = "student/" + std::to_string(studentId);
+        std::string endpoint = "/Student/" + std::to_string(studentId);
         auto response = apiService_->getApiClient()->get(endpoint);
 
         if (!response.success) {

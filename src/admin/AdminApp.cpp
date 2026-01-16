@@ -221,6 +221,9 @@ void AdminApp::showLogin() {
 }
 
 void AdminApp::showDashboard() {
+    // Explicitly hide login widget when showing authenticated views
+    loginWidget_->hide();
+
     // Show sidebar and navigation
     sidebarWidget_->show();
     sidebarWidget_->refresh();
@@ -234,6 +237,9 @@ void AdminApp::showDashboard() {
 }
 
 void AdminApp::showStudents() {
+    // Explicitly hide login widget when showing authenticated views
+    loginWidget_->hide();
+
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Students);
     navigationWidget_->show();
@@ -244,6 +250,9 @@ void AdminApp::showStudents() {
 }
 
 void AdminApp::showStudentDetail(int studentId) {
+    // Explicitly hide login widget when showing authenticated views
+    loginWidget_->hide();
+
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Students);
     navigationWidget_->show();
@@ -256,6 +265,9 @@ void AdminApp::showStudentDetail(int studentId) {
 }
 
 void AdminApp::showStudentForms(int studentId) {
+    // Explicitly hide login widget when showing authenticated views
+    loginWidget_->hide();
+
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Students);
     navigationWidget_->show();
@@ -267,6 +279,9 @@ void AdminApp::showStudentForms(int studentId) {
 }
 
 void AdminApp::showForms() {
+    // Explicitly hide login widget when showing authenticated views
+    loginWidget_->hide();
+
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Forms);
     navigationWidget_->show();
@@ -276,6 +291,9 @@ void AdminApp::showForms() {
 }
 
 void AdminApp::showCurriculum() {
+    // Explicitly hide login widget when showing authenticated views
+    loginWidget_->hide();
+
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Curriculum);
     navigationWidget_->show();
@@ -285,6 +303,9 @@ void AdminApp::showCurriculum() {
 }
 
 void AdminApp::showSettings() {
+    // Explicitly hide login widget when showing authenticated views
+    loginWidget_->hide();
+
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Settings);
     navigationWidget_->show();
@@ -351,7 +372,7 @@ void AdminApp::handleRevokeAccess(int studentId) {
         updateData["data"]["id"] = std::to_string(studentId);
         updateData["data"]["attributes"]["is_login_revoked"] = true;
 
-        std::string endpoint = "student/" + std::to_string(studentId);
+        std::string endpoint = "/Student/" + std::to_string(studentId);
         auto response = apiService_->getApiClient()->patch(endpoint, updateData.dump());
 
         if (response.success) {
@@ -379,7 +400,7 @@ void AdminApp::handleRestoreAccess(int studentId) {
         updateData["data"]["id"] = std::to_string(studentId);
         updateData["data"]["attributes"]["is_login_revoked"] = false;
 
-        std::string endpoint = "student/" + std::to_string(studentId);
+        std::string endpoint = "/Student/" + std::to_string(studentId);
         auto response = apiService_->getApiClient()->patch(endpoint, updateData.dump());
 
         if (response.success) {
