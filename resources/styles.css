@@ -40,6 +40,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    padding-bottom: 60px; /* Space for fixed footer */
 }
 
 .content-container {
@@ -1101,9 +1102,13 @@ body {
 .app-footer {
     background-color: #1a1a1a;
     color: #ffffff;
-    padding: 1.5rem 2rem;
+    padding: 1rem 2rem;
     text-align: center;
-    margin-top: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
 }
 
 .footer-content {

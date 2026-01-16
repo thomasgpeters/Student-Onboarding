@@ -9,6 +9,7 @@
     display: flex;
     flex-direction: column;
     background-color: #f1f5f9;
+    padding-bottom: 60px; /* Space for fixed footer */
 }
 
 /* =====================================================
@@ -31,8 +32,10 @@
     cursor: pointer;
 }
 
-.admin-brand-icon {
-    font-size: 1.5rem;
+.admin-brand-logo {
+    height: 40px;
+    width: auto;
+    border-radius: 4px;
 }
 
 .admin-brand-text {
@@ -365,7 +368,11 @@
     background: #1e293b;
     padding: 1rem 2rem;
     text-align: center;
-    margin-top: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
 }
 
 .admin-footer-text {
