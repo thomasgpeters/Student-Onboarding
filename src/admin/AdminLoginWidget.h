@@ -50,6 +50,9 @@ private:
 
     Wt::Signal<> loginSuccess_;
     Wt::Signal<> forgotPasswordRequested_;
+
+    // Debug: instance counter to track duplicate creation
+    int instanceNumber_;
 };
 
 } // namespace Admin

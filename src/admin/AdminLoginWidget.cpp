@@ -7,6 +7,9 @@
 namespace StudentIntake {
 namespace Admin {
 
+// Static instance counter for debugging duplicate widget issues
+static int s_instanceCount = 0;
+
 AdminLoginWidget::AdminLoginWidget()
     : WContainerWidget()
     , authManager_(nullptr)
@@ -15,10 +18,13 @@ AdminLoginWidget::AdminLoginWidget()
     , passwordInput_(nullptr)
     , loginButton_(nullptr)
     , errorText_(nullptr)
-    , errorContainer_(nullptr) {
-    std::cerr << "[AdminLoginWidget] Constructor called - this=" << this << std::endl;
+    , errorContainer_(nullptr)
+    , instanceNumber_(++s_instanceCount) {
+    std::cerr << "[AdminLoginWidget] Constructor called - INSTANCE #" << instanceNumber_
+              << " - this=" << this << " - TOTAL INSTANCES: " << s_instanceCount << std::endl;
     setupUI();
-    std::cerr << "[AdminLoginWidget] Constructor complete - widget ready, id=" << id() << std::endl;
+    std::cerr << "[AdminLoginWidget] Constructor complete - INSTANCE #" << instanceNumber_
+              << " - id=" << id() << std::endl;
 }
 
 AdminLoginWidget::~AdminLoginWidget() {
@@ -28,6 +34,13 @@ void AdminLoginWidget::setupUI() {
     // Add unique identifier to prevent any duplicate rendering issues
     setId("admin-login-widget-main");
     addStyleClass("admin-login-widget");
+
+    // DEBUG: Add visible instance number to identify duplicates
+    auto debugBadge = addWidget(std::make_unique<Wt::WText>(
+        "<div style='position:absolute;top:5px;right:5px;background:red;color:white;"
+        "padding:2px 8px;border-radius:4px;font-size:12px;font-weight:bold;'>"
+        "Instance #" + std::to_string(instanceNumber_) + "</div>"));
+    debugBadge->setTextFormat(Wt::TextFormat::UnsafeXHTML);
 
     // Logo and title container
     auto headerContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
