@@ -81,7 +81,7 @@
     display: flex;
     flex: 1;
     min-height: 0;
-    padding-top: 60px; /* Space for fixed navbar */
+    margin-top: 56px; /* Space for fixed navbar */
 }
 
 .admin-content-wrapper.with-sidebar {
@@ -97,6 +97,11 @@
     background: #1e293b;
     padding: 1rem 0;
     flex-shrink: 0;
+    position: fixed;
+    top: 56px; /* Below fixed navbar */
+    left: 0;
+    bottom: 52px; /* Above fixed footer */
+    overflow-y: auto;
 }
 
 .admin-sidebar-item {
@@ -139,6 +144,7 @@
     flex: 1;
     padding: 1.5rem;
     overflow-y: auto;
+    margin-left: 220px; /* Space for fixed sidebar */
 }
 
 .admin-section-view {
