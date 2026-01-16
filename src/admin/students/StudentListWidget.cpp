@@ -128,16 +128,18 @@ void StudentListWidget::setupTable() {
     studentTable_->addStyleClass("admin-data-table");
     studentTable_->setHeaderCount(1);
 
-    // Table headers
-    studentTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("ID"));
-    studentTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Name"));
-    studentTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Email"));
-    studentTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Program"));
-    studentTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Status"));
-    studentTable_->elementAt(0, 5)->addWidget(std::make_unique<Wt::WText>("Enrolled"));
-    studentTable_->elementAt(0, 6)->addWidget(std::make_unique<Wt::WText>("Actions"));
+    // Table headers - icon column first
+    auto iconHeader = studentTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>(""));
+    iconHeader->addStyleClass("admin-table-icon-header");
+    studentTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("ID"));
+    studentTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Name"));
+    studentTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Email"));
+    studentTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Program"));
+    studentTable_->elementAt(0, 5)->addWidget(std::make_unique<Wt::WText>("Status"));
+    studentTable_->elementAt(0, 6)->addWidget(std::make_unique<Wt::WText>("Enrolled"));
+    studentTable_->elementAt(0, 7)->addWidget(std::make_unique<Wt::WText>("Actions"));
 
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 8; i++) {
         studentTable_->elementAt(0, i)->addStyleClass("admin-table-header");
     }
 }
@@ -272,30 +274,35 @@ void StudentListWidget::updateTable(const std::vector<::StudentIntake::Models::S
     // Add student rows
     int row = 1;
     for (const auto& student : students) {
-        studentTable_->elementAt(row, 0)->addWidget(
-            std::make_unique<Wt::WText>(student.getId()));
+        // Student icon
+        auto iconCell = studentTable_->elementAt(row, 0)->addWidget(
+            std::make_unique<Wt::WText>("👤"));
+        iconCell->addStyleClass("admin-row-icon student-icon");
 
         studentTable_->elementAt(row, 1)->addWidget(
-            std::make_unique<Wt::WText>(student.getFullName()));
+            std::make_unique<Wt::WText>(student.getId()));
 
         studentTable_->elementAt(row, 2)->addWidget(
+            std::make_unique<Wt::WText>(student.getFullName()));
+
+        studentTable_->elementAt(row, 3)->addWidget(
             std::make_unique<Wt::WText>(student.getEmail()));
 
         // Program (placeholder for now)
-        studentTable_->elementAt(row, 3)->addWidget(
+        studentTable_->elementAt(row, 4)->addWidget(
             std::make_unique<Wt::WText>("Computer Science - BS"));
 
         // Status badge
-        auto statusBadge = studentTable_->elementAt(row, 4)->addWidget(
+        auto statusBadge = studentTable_->elementAt(row, 5)->addWidget(
             std::make_unique<Wt::WText>("Active"));
         statusBadge->addStyleClass("badge badge-success");
 
         // Enrolled date
-        studentTable_->elementAt(row, 5)->addWidget(
+        studentTable_->elementAt(row, 6)->addWidget(
             std::make_unique<Wt::WText>(formatDate(student.getCreatedAt())));
 
         // Actions
-        auto actionsContainer = studentTable_->elementAt(row, 6)->addWidget(
+        auto actionsContainer = studentTable_->elementAt(row, 7)->addWidget(
             std::make_unique<Wt::WContainerWidget>());
         actionsContainer->addStyleClass("admin-table-actions");
 
@@ -309,7 +316,7 @@ void StudentListWidget::updateTable(const std::vector<::StudentIntake::Models::S
         });
 
         // Style row
-        for (int col = 0; col < 7; col++) {
+        for (int col = 0; col < 8; col++) {
             studentTable_->elementAt(row, col)->addStyleClass("admin-table-cell");
         }
 

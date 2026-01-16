@@ -594,6 +594,32 @@
     border-bottom: 1px solid #e2e8f0;
 }
 
+/* Icon column styling */
+.admin-table-icon-header {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+}
+
+.admin-row-icon {
+    font-size: 1.5rem;
+    text-align: center;
+    display: block;
+    line-height: 1;
+}
+
+.admin-row-icon.student-icon {
+    color: #3b82f6;
+}
+
+.admin-row-icon.form-icon {
+    color: #8b5cf6;
+}
+
+.admin-row-icon.curriculum-icon {
+    color: #f59e0b;
+}
+
 .admin-table-cell {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #e2e8f0;
