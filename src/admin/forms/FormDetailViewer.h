@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <nlohmann/json.hpp>
 #include "../../api/FormSubmissionService.h"
 
 namespace StudentIntake {
@@ -29,7 +30,7 @@ struct FormFieldDisplay {
 class FormDetailViewer : public Wt::WContainerWidget {
 public:
     FormDetailViewer();
-    ~FormDetailViewer();
+    ~FormDetailViewer() override;
 
     void setApiService(std::shared_ptr<Api::FormSubmissionService> apiService);
     void loadSubmission(int submissionId);

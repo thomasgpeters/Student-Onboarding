@@ -25,7 +25,7 @@ namespace Admin {
 class CurriculumEditorWidget : public Wt::WContainerWidget {
 public:
     CurriculumEditorWidget();
-    ~CurriculumEditorWidget();
+    ~CurriculumEditorWidget() override;
 
     void setApiService(std::shared_ptr<Api::FormSubmissionService> apiService);
     void loadCurriculum(const std::string& curriculumId);
@@ -38,7 +38,7 @@ public:
 
 private:
     void setupUI();
-    void populateForm(const Models::Curriculum& curriculum);
+    void populateForm(const StudentIntake::Models::Curriculum& curriculum);
     void loadAvailableForms();
     void saveCurriculum();
     void updateRequiredFormsDisplay();
@@ -49,7 +49,7 @@ private:
     void clearMessages();
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
-    Models::Curriculum currentCurriculum_;
+    StudentIntake::Models::Curriculum currentCurriculum_;
     bool isNewCurriculum_;
     std::vector<std::string> selectedForms_;
 

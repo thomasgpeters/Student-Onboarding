@@ -38,7 +38,7 @@ struct FormSubmissionRecord {
 class FormSubmissionsWidget : public Wt::WContainerWidget {
 public:
     FormSubmissionsWidget();
-    ~FormSubmissionsWidget();
+    ~FormSubmissionsWidget() override;
 
     void setApiService(std::shared_ptr<Api::FormSubmissionService> apiService);
     void refresh();
