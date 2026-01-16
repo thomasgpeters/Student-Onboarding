@@ -112,7 +112,7 @@ void StudentDetailWidget::setupUI() {
     viewFormsBtn_ = buttonsContainer->addWidget(std::make_unique<Wt::WPushButton>("View Submitted Forms"));
     viewFormsBtn_->addStyleClass("btn btn-primary");
     viewFormsBtn_->clicked().connect([this]() {
-        viewFormsClicked_.emit(currentStudent_.getId());
+        viewFormsClicked_.emit(std::stoi(currentStudent_.getId()));
     });
 
     revokeBtn_ = buttonsContainer->addWidget(std::make_unique<Wt::WPushButton>("Revoke Access"));
@@ -153,9 +153,9 @@ void StudentDetailWidget::loadStudent(int studentId) {
 
             if (studentData.contains("id")) {
                 if (studentData["id"].is_string()) {
-                    currentStudent_.setId(std::stoi(studentData["id"].get<std::string>()));
+                    currentStudent_.setId(studentData["id"].get<std::string>());
                 } else {
-                    currentStudent_.setId(studentData["id"].get<int>());
+                    currentStudent_.setId(std::to_string(studentData["id"].get<int>()));
                 }
             }
 
@@ -172,7 +172,7 @@ void StudentDetailWidget::loadStudent(int studentId) {
                     currentStudent_.setLastName(attrs["last_name"].get<std::string>());
                 }
                 if (attrs.contains("phone") && !attrs["phone"].is_null()) {
-                    currentStudent_.setPhone(attrs["phone"].get<std::string>());
+                    currentStudent_.setPhoneNumber(attrs["phone"].get<std::string>());
                 }
                 if (attrs.contains("created_at") && !attrs["created_at"].is_null()) {
                     currentStudent_.setCreatedAt(attrs["created_at"].get<std::string>());
@@ -218,7 +218,7 @@ void StudentDetailWidget::updateDisplay() {
     programText_->setText("Computer Science - BS"); // Placeholder
     enrolledText_->setText(formatDate(currentStudent_.getCreatedAt()));
 
-    std::string phone = currentStudent_.getPhone();
+    std::string phone = currentStudent_.getPhoneNumber();
     phoneText_->setText(phone.empty() ? "Not provided" : phone);
 
     addressText_->setText("Not provided"); // Address needs to be loaded separately
@@ -226,7 +226,7 @@ void StudentDetailWidget::updateDisplay() {
 
 void StudentDetailWidget::onRevokeAccess() {
     std::cerr << "[StudentDetail] Revoking access for student: " << currentStudent_.getId() << std::endl;
-    revokeAccessClicked_.emit(currentStudent_.getId());
+    revokeAccessClicked_.emit(std::stoi(currentStudent_.getId()));
 
     // Update local state
     isRevoked_ = true;
@@ -235,7 +235,7 @@ void StudentDetailWidget::onRevokeAccess() {
 
 void StudentDetailWidget::onRestoreAccess() {
     std::cerr << "[StudentDetail] Restoring access for student: " << currentStudent_.getId() << std::endl;
-    restoreAccessClicked_.emit(currentStudent_.getId());
+    restoreAccessClicked_.emit(std::stoi(currentStudent_.getId()));
 
     // Update local state
     isRevoked_ = false;

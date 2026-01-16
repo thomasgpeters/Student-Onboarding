@@ -171,9 +171,9 @@ void StudentListWidget::loadStudents() {
 
                 if (studentData.contains("id")) {
                     if (studentData["id"].is_string()) {
-                        student.setId(std::stoi(studentData["id"].get<std::string>()));
+                        student.setId(studentData["id"].get<std::string>());
                     } else {
-                        student.setId(studentData["id"].get<int>());
+                        student.setId(std::to_string(studentData["id"].get<int>()));
                     }
                 }
 
@@ -273,7 +273,7 @@ void StudentListWidget::updateTable(const std::vector<::StudentIntake::Models::S
     int row = 1;
     for (const auto& student : students) {
         studentTable_->elementAt(row, 0)->addWidget(
-            std::make_unique<Wt::WText>(std::to_string(student.getId())));
+            std::make_unique<Wt::WText>(student.getId()));
 
         studentTable_->elementAt(row, 1)->addWidget(
             std::make_unique<Wt::WText>(student.getFullName()));
@@ -303,7 +303,7 @@ void StudentListWidget::updateTable(const std::vector<::StudentIntake::Models::S
             std::make_unique<Wt::WPushButton>("View"));
         viewBtn->addStyleClass("btn btn-sm btn-primary");
 
-        int studentId = student.getId();
+        int studentId = std::stoi(student.getId());
         viewBtn->clicked().connect([this, studentId]() {
             onStudentRowClicked(studentId);
         });
