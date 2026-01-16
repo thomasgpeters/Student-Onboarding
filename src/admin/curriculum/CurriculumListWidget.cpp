@@ -158,11 +158,11 @@ void CurriculumListWidget::setupUI() {
     noDataMessage_->hide();
 }
 
-void CurriculumListWidget::refresh() {
+void CurriculumListWidget::loadData() {
     loadCurriculums();
 }
 
-void CurriculumListWidget::clear() {
+void CurriculumListWidget::clearData() {
     curriculums_.clear();
     filteredCurriculums_.clear();
     if (curriculumTable_) {

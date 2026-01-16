@@ -30,7 +30,7 @@ public:
     void setApiService(std::shared_ptr<Api::FormSubmissionService> apiService);
     void loadCurriculum(const std::string& curriculumId);
     void createNew();
-    void clear();
+    void clearForm();
 
     // Signals
     Wt::Signal<>& backClicked() { return backClicked_; }

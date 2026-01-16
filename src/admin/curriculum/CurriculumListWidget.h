@@ -25,8 +25,8 @@ public:
     ~CurriculumListWidget() override;
 
     void setApiService(std::shared_ptr<Api::FormSubmissionService> apiService);
-    void refresh();
-    void clear();
+    void loadData();
+    void clearData();
 
     // Signals
     Wt::Signal<std::string>& curriculumSelected() { return curriculumSelected_; }
