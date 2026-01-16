@@ -23,6 +23,11 @@
     background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
     color: white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
 }
 
 .admin-navbar-brand {
@@ -76,6 +81,7 @@
     display: flex;
     flex: 1;
     min-height: 0;
+    padding-top: 60px; /* Space for fixed navbar */
 }
 
 .admin-content-wrapper.with-sidebar {
