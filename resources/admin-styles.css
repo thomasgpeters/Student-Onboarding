@@ -97,6 +97,16 @@
     display: none !important;
 }
 
+/* Explicit hidden class for login widget - applied directly to widget */
+.admin-login-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 /* =====================================================
    ADMIN SIDEBAR
    ===================================================== */
