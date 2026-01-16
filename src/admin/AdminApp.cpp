@@ -46,7 +46,7 @@ void AdminApp::initialize() {
 
 void AdminApp::setupServices() {
     // Create API client
-    apiClient_ = std::make_shared<Api::ApiClient>(config_.getApiBaseUrl());
+    apiClient_ = std::make_shared<Api::ApiClient>(config_.apiBaseUrl);
 
     // Create form submission service
     apiService_ = std::make_shared<Api::FormSubmissionService>(apiClient_);
