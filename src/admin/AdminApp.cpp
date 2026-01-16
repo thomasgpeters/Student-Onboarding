@@ -28,9 +28,9 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
 
     setTitle("Admin Portal - Student Onboarding");
 
-    // Use custom CSS
-    useStyleSheet("resources/styles.css");
-    useStyleSheet("resources/admin-styles.css");
+    // Use custom CSS - path relative to docroot (resources folder)
+    useStyleSheet("styles.css");
+    useStyleSheet("admin-styles.css");
 
     initialize();
 }
@@ -63,42 +63,45 @@ void AdminApp::setupUI() {
     mainContainer_ = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
     mainContainer_->addStyleClass("admin-main-container");
 
-    // Navigation bar
+    // Navigation bar (hidden initially for login)
     navigationWidget_ = mainContainer_->addWidget(std::make_unique<AdminNavigation>());
     navigationWidget_->setSession(session_);
     navigationWidget_->logoutClicked().connect(this, &AdminApp::handleLogout);
     navigationWidget_->homeClicked().connect([this]() {
         setState(AppState::Dashboard);
     });
+    navigationWidget_->hide();
 
     // Content wrapper (sidebar + content)
     contentWrapper_ = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contentWrapper_->addStyleClass("admin-content-wrapper");
 
-    // Sidebar
+    // Sidebar (hidden initially for login)
     sidebarWidget_ = contentWrapper_->addWidget(std::make_unique<AdminSidebar>());
     sidebarWidget_->setSession(session_);
     sidebarWidget_->sectionClicked().connect(this, &AdminApp::handleSectionChange);
+    sidebarWidget_->hide();
 
     // Content container
     contentContainer_ = contentWrapper_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contentContainer_->addStyleClass("admin-content-container");
 
-    // Login widget (full screen, separate from sidebar layout)
+    // Login widget (shown initially)
     loginWidget_ = contentContainer_->addWidget(std::make_unique<AdminLoginWidget>());
     loginWidget_->setAuthManager(authManager_);
     loginWidget_->setSession(session_);
     loginWidget_->loginSuccess().connect(this, &AdminApp::handleLoginSuccess);
 
-    // Dashboard widget
+    // Dashboard widget (hidden initially)
     dashboardWidget_ = contentContainer_->addWidget(std::make_unique<AdminDashboard>());
     dashboardWidget_->setSession(session_);
     dashboardWidget_->setApiService(apiService_);
     dashboardWidget_->viewStudentsClicked().connect([this]() { setState(AppState::Students); });
     dashboardWidget_->viewFormsClicked().connect([this]() { setState(AppState::Forms); });
     dashboardWidget_->viewCurriculumClicked().connect([this]() { setState(AppState::Curriculum); });
+    dashboardWidget_->hide();
 
-    // Students view placeholder
+    // Students view placeholder (hidden initially)
     studentsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     studentsView_->addStyleClass("admin-section-view");
     auto studentsTitle = studentsView_->addWidget(std::make_unique<Wt::WText>("<h2>Student Management</h2>"));
@@ -106,8 +109,9 @@ void AdminApp::setupUI() {
     auto studentsPlaceholder = studentsView_->addWidget(std::make_unique<Wt::WText>(
         "<p>Student list, search, and management features will be implemented in Phase 2.</p>"));
     studentsPlaceholder->setTextFormat(Wt::TextFormat::XHTML);
+    studentsView_->hide();
 
-    // Forms view placeholder
+    // Forms view placeholder (hidden initially)
     formsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     formsView_->addStyleClass("admin-section-view");
     auto formsTitle = formsView_->addWidget(std::make_unique<Wt::WText>("<h2>Form Submissions</h2>"));
@@ -115,8 +119,9 @@ void AdminApp::setupUI() {
     auto formsPlaceholder = formsView_->addWidget(std::make_unique<Wt::WText>(
         "<p>Form review and approval features will be implemented in Phase 4.</p>"));
     formsPlaceholder->setTextFormat(Wt::TextFormat::XHTML);
+    formsView_->hide();
 
-    // Curriculum view placeholder
+    // Curriculum view placeholder (hidden initially)
     curriculumView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     curriculumView_->addStyleClass("admin-section-view");
     auto curriculumTitle = curriculumView_->addWidget(std::make_unique<Wt::WText>("<h2>Curriculum Management</h2>"));
@@ -124,8 +129,9 @@ void AdminApp::setupUI() {
     auto curriculumPlaceholder = curriculumView_->addWidget(std::make_unique<Wt::WText>(
         "<p>Syllabus editing and form requirements management will be implemented in Phase 3.</p>"));
     curriculumPlaceholder->setTextFormat(Wt::TextFormat::XHTML);
+    curriculumView_->hide();
 
-    // Settings view placeholder
+    // Settings view placeholder (hidden initially)
     settingsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     settingsView_->addStyleClass("admin-section-view");
     auto settingsTitle = settingsView_->addWidget(std::make_unique<Wt::WText>("<h2>System Settings</h2>"));
@@ -133,6 +139,7 @@ void AdminApp::setupUI() {
     auto settingsPlaceholder = settingsView_->addWidget(std::make_unique<Wt::WText>(
         "<p>Admin user management and system configuration will be implemented in Phase 5.</p>"));
     settingsPlaceholder->setTextFormat(Wt::TextFormat::XHTML);
+    settingsView_->hide();
 
     // Footer
     auto footer = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
