@@ -100,8 +100,9 @@
     position: fixed;
     top: 56px; /* Below fixed navbar */
     left: 0;
-    bottom: 52px; /* Above fixed footer */
+    bottom: 0; /* Extend to bottom, footer overlays */
     overflow-y: auto;
+    z-index: 50; /* Below footer */
 }
 
 .admin-sidebar-item {
