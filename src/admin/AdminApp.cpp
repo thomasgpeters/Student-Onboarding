@@ -200,15 +200,7 @@ void AdminApp::setState(AppState state) {
 }
 
 void AdminApp::hideAllViews() {
-    // Explicitly add hidden class to login widget for reliable hiding
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
-
-    // Force browser to hide login widget immediately via JavaScript
-    if (!loginWidget_->id().empty()) {
-        doJavaScript("var el = document.getElementById('" + loginWidget_->id() + "'); if(el) { el.style.display = 'none'; el.style.visibility = 'hidden'; }");
-    }
-
+    hideLoginWidget();
     dashboardWidget_->hide();
     studentListWidget_->hide();
     studentDetailWidget_->hide();
@@ -218,33 +210,59 @@ void AdminApp::hideAllViews() {
     settingsView_->hide();
 }
 
+void AdminApp::hideLoginWidget() {
+    // Use multiple approaches to ensure the login widget is hidden
+    loginWidget_->addStyleClass("admin-login-hidden");
+    loginWidget_->setHidden(true);
+
+    // Force browser to hide login widget immediately via JavaScript
+    // Target by CSS class as fallback in case ID isn't available yet
+    std::string js = "setTimeout(function() {"
+        "var els = document.querySelectorAll('.admin-login-widget');"
+        "for(var i = 0; i < els.length; i++) {"
+        "  els[i].style.display = 'none';"
+        "  els[i].style.visibility = 'hidden';"
+        "  els[i].style.height = '0';"
+        "  els[i].style.overflow = 'hidden';"
+        "}"
+        "}, 0);";
+    doJavaScript(js);
+
+    std::cerr << "[AdminApp] hideLoginWidget called" << std::endl;
+}
+
+void AdminApp::showLoginWidget() {
+    // Remove hidden class and show login widget
+    loginWidget_->removeStyleClass("admin-login-hidden");
+    loginWidget_->setHidden(false);
+
+    // Force browser to show login widget immediately via JavaScript
+    std::string js = "setTimeout(function() {"
+        "var els = document.querySelectorAll('.admin-login-widget');"
+        "for(var i = 0; i < els.length; i++) {"
+        "  els[i].style.display = '';"
+        "  els[i].style.visibility = '';"
+        "  els[i].style.height = '';"
+        "  els[i].style.overflow = '';"
+        "}"
+        "}, 0);";
+    doJavaScript(js);
+
+    std::cerr << "[AdminApp] showLoginWidget called" << std::endl;
+}
+
 void AdminApp::showLogin() {
     // Hide sidebar and navigation for login
     sidebarWidget_->hide();
     navigationWidget_->hide();
     contentWrapper_->removeStyleClass("with-sidebar");
 
-    // Remove hidden class and show login widget
-    loginWidget_->removeStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(false);
-
-    // Force browser to show login widget immediately via JavaScript
-    if (!loginWidget_->id().empty()) {
-        doJavaScript("var el = document.getElementById('" + loginWidget_->id() + "'); if(el) { el.style.display = ''; el.style.visibility = ''; }");
-    }
-
+    showLoginWidget();
     loginWidget_->focus();
 }
 
 void AdminApp::showDashboard() {
-    // Explicitly hide login widget when showing authenticated views
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
-
-    // Force browser to hide login widget immediately via JavaScript
-    if (!loginWidget_->id().empty()) {
-        doJavaScript("var el = document.getElementById('" + loginWidget_->id() + "'); if(el) { el.style.display = 'none'; el.style.visibility = 'hidden'; }");
-    }
+    hideLoginWidget();
 
     // Show sidebar and navigation
     sidebarWidget_->show();
@@ -259,14 +277,7 @@ void AdminApp::showDashboard() {
 }
 
 void AdminApp::showStudents() {
-    // Explicitly hide login widget when showing authenticated views
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
-
-    // Force browser to hide login widget immediately via JavaScript
-    if (!loginWidget_->id().empty()) {
-        doJavaScript("var el = document.getElementById('" + loginWidget_->id() + "'); if(el) { el.style.display = 'none'; el.style.visibility = 'hidden'; }");
-    }
+    hideLoginWidget();
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Students);
@@ -278,14 +289,7 @@ void AdminApp::showStudents() {
 }
 
 void AdminApp::showStudentDetail(int studentId) {
-    // Explicitly hide login widget when showing authenticated views
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
-
-    // Force browser to hide login widget immediately via JavaScript
-    if (!loginWidget_->id().empty()) {
-        doJavaScript("var el = document.getElementById('" + loginWidget_->id() + "'); if(el) { el.style.display = 'none'; el.style.visibility = 'hidden'; }");
-    }
+    hideLoginWidget();
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Students);
@@ -299,14 +303,7 @@ void AdminApp::showStudentDetail(int studentId) {
 }
 
 void AdminApp::showStudentForms(int studentId) {
-    // Explicitly hide login widget when showing authenticated views
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
-
-    // Force browser to hide login widget immediately via JavaScript
-    if (!loginWidget_->id().empty()) {
-        doJavaScript("var el = document.getElementById('" + loginWidget_->id() + "'); if(el) { el.style.display = 'none'; el.style.visibility = 'hidden'; }");
-    }
+    hideLoginWidget();
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Students);
@@ -319,14 +316,7 @@ void AdminApp::showStudentForms(int studentId) {
 }
 
 void AdminApp::showForms() {
-    // Explicitly hide login widget when showing authenticated views
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
-
-    // Force browser to hide login widget immediately via JavaScript
-    if (!loginWidget_->id().empty()) {
-        doJavaScript("var el = document.getElementById('" + loginWidget_->id() + "'); if(el) { el.style.display = 'none'; el.style.visibility = 'hidden'; }");
-    }
+    hideLoginWidget();
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Forms);
@@ -337,14 +327,7 @@ void AdminApp::showForms() {
 }
 
 void AdminApp::showCurriculum() {
-    // Explicitly hide login widget when showing authenticated views
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
-
-    // Force browser to hide login widget immediately via JavaScript
-    if (!loginWidget_->id().empty()) {
-        doJavaScript("var el = document.getElementById('" + loginWidget_->id() + "'); if(el) { el.style.display = 'none'; el.style.visibility = 'hidden'; }");
-    }
+    hideLoginWidget();
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Curriculum);
@@ -355,14 +338,7 @@ void AdminApp::showCurriculum() {
 }
 
 void AdminApp::showSettings() {
-    // Explicitly hide login widget when showing authenticated views
-    loginWidget_->addStyleClass("admin-login-hidden");
-    loginWidget_->setHidden(true);
-
-    // Force browser to hide login widget immediately via JavaScript
-    if (!loginWidget_->id().empty()) {
-        doJavaScript("var el = document.getElementById('" + loginWidget_->id() + "'); if(el) { el.style.display = 'none'; el.style.visibility = 'hidden'; }");
-    }
+    hideLoginWidget();
 
     sidebarWidget_->show();
     sidebarWidget_->setActiveSection(AdminSection::Settings);

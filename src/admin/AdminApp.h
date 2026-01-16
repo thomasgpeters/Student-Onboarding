@@ -52,6 +52,8 @@ private:
 
     // State handlers
     void hideAllViews();
+    void hideLoginWidget();  // Helper to ensure login widget is fully hidden
+    void showLoginWidget();  // Helper to ensure login widget is fully visible
     void showLogin();
     void showDashboard();
     void showStudents();
