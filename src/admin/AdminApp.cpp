@@ -29,8 +29,6 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , curriculumView_(nullptr)
     , settingsView_(nullptr) {
 
-    std::cerr << "[AdminApp] Constructor called - sessionId=" << sessionId() << std::endl;
-
     setTitle("Admin Portal - Student Onboarding");
 
     // Use admin-specific CSS only - no dependency on student styles
@@ -63,6 +61,10 @@ void AdminApp::setupServices() {
 }
 
 void AdminApp::setupUI() {
+    // Clear any existing content from root - handles Wt's progressive bootstrap
+    // which can create multiple app instances
+    root()->clear();
+
     // Main container
     mainContainer_ = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
     mainContainer_->addStyleClass("admin-main-container");
@@ -91,12 +93,10 @@ void AdminApp::setupUI() {
     contentContainer_->addStyleClass("admin-content-container");
 
     // Login widget - use simple show/hide pattern like StudentIntakeApp
-    std::cerr << "[AdminApp] Creating AdminLoginWidget..." << std::endl;
     loginWidget_ = contentContainer_->addWidget(std::make_unique<AdminLoginWidget>());
     loginWidget_->setAuthManager(authManager_);
     loginWidget_->setSession(session_);
     loginWidget_->loginSuccess().connect(this, &AdminApp::handleLoginSuccess);
-    std::cerr << "[AdminApp] AdminLoginWidget created successfully" << std::endl;
 
     // Dashboard widget (hidden initially)
     dashboardWidget_ = contentContainer_->addWidget(std::make_unique<AdminDashboard>());
@@ -172,7 +172,6 @@ void AdminApp::setupUI() {
     // Hide all views initially except login - same pattern as StudentIntakeApp
     hideAllViews();
     loginWidget_->show();
-    std::cerr << "[AdminApp] setupUI complete, loginWidget shown" << std::endl;
 }
 
 void AdminApp::setState(AppState state) {
@@ -220,8 +219,6 @@ void AdminApp::hideAllViews() {
 }
 
 void AdminApp::showLogin() {
-    std::cerr << "[AdminApp] showLogin called" << std::endl;
-
     // hideAllViews() already called by setState()
 
     // Hide sidebar for login state
@@ -234,8 +231,6 @@ void AdminApp::showLogin() {
     loginWidget_->show();
     loginWidget_->reset();
     loginWidget_->focus();
-
-    std::cerr << "[AdminApp] showLogin completed, loginWidget visible" << std::endl;
 }
 
 void AdminApp::showDashboard() {
