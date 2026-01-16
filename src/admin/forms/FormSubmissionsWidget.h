@@ -60,6 +60,7 @@ private:
     std::string getStatusBadgeClass(const std::string& status);
     std::string formatDate(const std::string& dateStr);
     std::string getFormDisplayName(const std::string& formType);
+    std::string getFormTypeFromId(int formTypeId);
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     std::vector<FormSubmissionRecord> submissions_;
