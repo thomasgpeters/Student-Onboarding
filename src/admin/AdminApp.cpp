@@ -10,6 +10,7 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     : WApplication(env)
     , config_(App::AppConfig::getInstance())
     , currentState_(AppState::Login)
+    , selectedStudentId_(0)
     , apiClient_(nullptr)
     , apiService_(nullptr)
     , authManager_(nullptr)
@@ -21,7 +22,9 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , contentContainer_(nullptr)
     , loginWidget_(nullptr)
     , dashboardWidget_(nullptr)
-    , studentsView_(nullptr)
+    , studentListWidget_(nullptr)
+    , studentDetailWidget_(nullptr)
+    , studentFormViewer_(nullptr)
     , formsView_(nullptr)
     , curriculumView_(nullptr)
     , settingsView_(nullptr) {
@@ -101,15 +104,30 @@ void AdminApp::setupUI() {
     dashboardWidget_->viewCurriculumClicked().connect([this]() { setState(AppState::Curriculum); });
     dashboardWidget_->hide();
 
-    // Students view placeholder (hidden initially)
-    studentsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    studentsView_->addStyleClass("admin-section-view");
-    auto studentsTitle = studentsView_->addWidget(std::make_unique<Wt::WText>("<h2>Student Management</h2>"));
-    studentsTitle->setTextFormat(Wt::TextFormat::XHTML);
-    auto studentsPlaceholder = studentsView_->addWidget(std::make_unique<Wt::WText>(
-        "<p>Student list, search, and management features will be implemented in Phase 2.</p>"));
-    studentsPlaceholder->setTextFormat(Wt::TextFormat::XHTML);
-    studentsView_->hide();
+    // Student List widget (hidden initially)
+    studentListWidget_ = contentContainer_->addWidget(std::make_unique<StudentListWidget>());
+    studentListWidget_->setApiService(apiService_);
+    studentListWidget_->studentSelected().connect(this, &AdminApp::handleStudentSelected);
+    studentListWidget_->hide();
+
+    // Student Detail widget (hidden initially)
+    studentDetailWidget_ = contentContainer_->addWidget(std::make_unique<StudentDetailWidget>());
+    studentDetailWidget_->setApiService(apiService_);
+    studentDetailWidget_->backClicked().connect([this]() {
+        setState(AppState::Students);
+    });
+    studentDetailWidget_->viewFormsClicked().connect(this, &AdminApp::handleViewStudentForms);
+    studentDetailWidget_->revokeAccessClicked().connect(this, &AdminApp::handleRevokeAccess);
+    studentDetailWidget_->restoreAccessClicked().connect(this, &AdminApp::handleRestoreAccess);
+    studentDetailWidget_->hide();
+
+    // Student Form Viewer widget (hidden initially)
+    studentFormViewer_ = contentContainer_->addWidget(std::make_unique<StudentFormViewer>());
+    studentFormViewer_->setApiService(apiService_);
+    studentFormViewer_->backClicked().connect([this]() {
+        showStudentDetail(selectedStudentId_);
+    });
+    studentFormViewer_->hide();
 
     // Forms view placeholder (hidden initially)
     formsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -163,6 +181,12 @@ void AdminApp::setState(AppState state) {
         case AppState::Students:
             showStudents();
             break;
+        case AppState::StudentDetail:
+            showStudentDetail(selectedStudentId_);
+            break;
+        case AppState::StudentForms:
+            showStudentForms(selectedStudentId_);
+            break;
         case AppState::Forms:
             showForms();
             break;
@@ -178,7 +202,9 @@ void AdminApp::setState(AppState state) {
 void AdminApp::hideAllViews() {
     loginWidget_->hide();
     dashboardWidget_->hide();
-    studentsView_->hide();
+    studentListWidget_->hide();
+    studentDetailWidget_->hide();
+    studentFormViewer_->hide();
     formsView_->hide();
     curriculumView_->hide();
     settingsView_->hide();
@@ -213,7 +239,31 @@ void AdminApp::showStudents() {
     navigationWidget_->show();
     contentWrapper_->addStyleClass("with-sidebar");
 
-    studentsView_->show();
+    studentListWidget_->show();
+    studentListWidget_->refresh();
+}
+
+void AdminApp::showStudentDetail(int studentId) {
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Students);
+    navigationWidget_->show();
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    currentState_ = AppState::StudentDetail;
+    selectedStudentId_ = studentId;
+    studentDetailWidget_->loadStudent(studentId);
+    studentDetailWidget_->show();
+}
+
+void AdminApp::showStudentForms(int studentId) {
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Students);
+    navigationWidget_->show();
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    currentState_ = AppState::StudentForms;
+    studentFormViewer_->loadStudentForms(studentId, selectedStudentName_);
+    studentFormViewer_->show();
 }
 
 void AdminApp::showForms() {
@@ -270,6 +320,75 @@ void AdminApp::handleSectionChange(AdminSection section) {
         case AdminSection::Settings:
             setState(AppState::Settings);
             break;
+    }
+}
+
+void AdminApp::handleStudentSelected(int studentId) {
+    std::cerr << "[AdminApp] Student selected: " << studentId << std::endl;
+    selectedStudentId_ = studentId;
+    hideAllViews();
+    showStudentDetail(studentId);
+}
+
+void AdminApp::handleViewStudentForms(int studentId) {
+    std::cerr << "[AdminApp] View forms for student: " << studentId << std::endl;
+    hideAllViews();
+    showStudentForms(studentId);
+}
+
+void AdminApp::handleRevokeAccess(int studentId) {
+    std::cerr << "[AdminApp] Revoking access for student: " << studentId << std::endl;
+
+    if (!apiService_) {
+        std::cerr << "[AdminApp] API service not available" << std::endl;
+        return;
+    }
+
+    try {
+        // Update student record to revoke access
+        nlohmann::json updateData;
+        updateData["data"]["type"] = "student";
+        updateData["data"]["id"] = std::to_string(studentId);
+        updateData["data"]["attributes"]["is_login_revoked"] = true;
+
+        std::string endpoint = "student/" + std::to_string(studentId);
+        auto response = apiService_->getApiClient()->patch(endpoint, updateData.dump());
+
+        if (response.success) {
+            std::cerr << "[AdminApp] Access revoked successfully" << std::endl;
+        } else {
+            std::cerr << "[AdminApp] Failed to revoke access: " << response.errorMessage << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminApp] Exception revoking access: " << e.what() << std::endl;
+    }
+}
+
+void AdminApp::handleRestoreAccess(int studentId) {
+    std::cerr << "[AdminApp] Restoring access for student: " << studentId << std::endl;
+
+    if (!apiService_) {
+        std::cerr << "[AdminApp] API service not available" << std::endl;
+        return;
+    }
+
+    try {
+        // Update student record to restore access
+        nlohmann::json updateData;
+        updateData["data"]["type"] = "student";
+        updateData["data"]["id"] = std::to_string(studentId);
+        updateData["data"]["attributes"]["is_login_revoked"] = false;
+
+        std::string endpoint = "student/" + std::to_string(studentId);
+        auto response = apiService_->getApiClient()->patch(endpoint, updateData.dump());
+
+        if (response.success) {
+            std::cerr << "[AdminApp] Access restored successfully" << std::endl;
+        } else {
+            std::cerr << "[AdminApp] Failed to restore access: " << response.errorMessage << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminApp] Exception restoring access: " << e.what() << std::endl;
     }
 }
 

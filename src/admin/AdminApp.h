@@ -14,6 +14,9 @@
 #include "admin/AdminSidebar.h"
 #include "admin/AdminDashboard.h"
 #include "admin/models/AdminSession.h"
+#include "admin/students/StudentListWidget.h"
+#include "admin/students/StudentDetailWidget.h"
+#include "admin/students/StudentFormViewer.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -31,6 +34,8 @@ public:
         Login,
         Dashboard,
         Students,
+        StudentDetail,
+        StudentForms,
         Forms,
         Curriculum,
         Settings
@@ -50,6 +55,8 @@ private:
     void showLogin();
     void showDashboard();
     void showStudents();
+    void showStudentDetail(int studentId);
+    void showStudentForms(int studentId);
     void showForms();
     void showCurriculum();
     void showSettings();
@@ -58,12 +65,18 @@ private:
     void handleLoginSuccess();
     void handleLogout();
     void handleSectionChange(AdminSection section);
+    void handleStudentSelected(int studentId);
+    void handleViewStudentForms(int studentId);
+    void handleRevokeAccess(int studentId);
+    void handleRestoreAccess(int studentId);
 
     // Configuration
     App::AppConfig& config_;
 
     // State
     AppState currentState_;
+    int selectedStudentId_;
+    std::string selectedStudentName_;
 
     // Services
     std::shared_ptr<Api::ApiClient> apiClient_;
@@ -81,7 +94,9 @@ private:
     // Views
     AdminLoginWidget* loginWidget_;
     AdminDashboard* dashboardWidget_;
-    Wt::WContainerWidget* studentsView_;
+    StudentListWidget* studentListWidget_;
+    StudentDetailWidget* studentDetailWidget_;
+    StudentFormViewer* studentFormViewer_;
     Wt::WContainerWidget* formsView_;
     Wt::WContainerWidget* curriculumView_;
     Wt::WContainerWidget* settingsView_;
