@@ -84,8 +84,8 @@
     margin-top: 56px; /* Space for fixed navbar */
 }
 
-.admin-content-wrapper.with-sidebar {
-    /* When sidebar is visible */
+.admin-content-wrapper.with-sidebar .admin-content-container {
+    margin-left: 220px; /* Space for fixed sidebar when visible */
 }
 
 /* =====================================================
@@ -145,7 +145,7 @@
     flex: 1;
     padding: 1.5rem;
     overflow-y: auto;
-    margin-left: 220px; /* Space for fixed sidebar */
+    margin-left: 0; /* No margin by default (login state) */
 }
 
 .admin-section-view {
@@ -448,7 +448,10 @@
 
     .admin-content-container {
         padding: 1rem;
-        margin-left: 60px;
+    }
+
+    .admin-content-wrapper.with-sidebar .admin-content-container {
+        margin-left: 60px; /* Smaller margin for mobile sidebar */
     }
 
     .admin-login-widget {
