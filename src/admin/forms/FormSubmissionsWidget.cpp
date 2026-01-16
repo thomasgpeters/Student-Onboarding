@@ -375,9 +375,12 @@ void FormSubmissionsWidget::updateTable() {
     resultCount_->setText("Showing " + std::to_string(filteredSubmissions_.size()) + " of " +
                           std::to_string(submissions_.size()) + " submissions");
 
-    // Header row
+    // Header row - icon column first
     submissionsTable_->setHeaderCount(1);
     int col = 0;
+    auto iconHeader = submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>(""));
+    iconHeader->addStyleClass("admin-table-icon-header");
+    submissionsTable_->elementAt(0, 0)->addStyleClass("admin-table-header");
     submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Student"))->addStyleClass("admin-table-header");
     submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Form"))->addStyleClass("admin-table-header");
     submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Program"))->addStyleClass("admin-table-header");
@@ -388,6 +391,11 @@ void FormSubmissionsWidget::updateTable() {
     int row = 1;
     for (const auto& submission : filteredSubmissions_) {
         col = 0;
+
+        // Form icon
+        auto iconCell = submissionsTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>("📋"));
+        iconCell->addStyleClass("admin-row-icon form-icon");
+        submissionsTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
 
         // Student info
         auto studentContainer = submissionsTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WContainerWidget>());

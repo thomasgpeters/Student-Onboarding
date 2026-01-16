@@ -359,9 +359,12 @@ void CurriculumListWidget::updateTable() {
     resultCount_->setText("Showing " + std::to_string(filteredCurriculums_.size()) + " of " +
                           std::to_string(curriculums_.size()) + " programs");
 
-    // Header row
+    // Header row - icon column first
     curriculumTable_->setHeaderCount(1);
     int col = 0;
+    auto iconHeader = curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>(""));
+    iconHeader->addStyleClass("admin-table-icon-header");
+    curriculumTable_->elementAt(0, 0)->addStyleClass("admin-table-header");
     curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Program Name"))->addStyleClass("admin-table-header");
     curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Department"))->addStyleClass("admin-table-header");
     curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Degree"))->addStyleClass("admin-table-header");
@@ -374,6 +377,11 @@ void CurriculumListWidget::updateTable() {
     int row = 1;
     for (const auto& curriculum : filteredCurriculums_) {
         col = 0;
+
+        // Curriculum icon
+        auto iconCell = curriculumTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>("📚"));
+        iconCell->addStyleClass("admin-row-icon curriculum-icon");
+        curriculumTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
 
         // Program Name
         auto nameContainer = curriculumTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WContainerWidget>());
