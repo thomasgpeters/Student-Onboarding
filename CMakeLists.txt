@@ -93,6 +93,9 @@ set(ADMIN_SOURCES
     src/admin/AdminSidebar.cpp
     src/admin/AdminDashboard.cpp
     src/admin/AdminApp.cpp
+    src/admin/students/StudentListWidget.cpp
+    src/admin/students/StudentDetailWidget.cpp
+    src/admin/students/StudentFormViewer.cpp
 )
 
 set(APP_SOURCES
@@ -129,6 +132,7 @@ target_include_directories(student_intake PRIVATE
     ${CMAKE_SOURCE_DIR}/src/widgets
     ${CMAKE_SOURCE_DIR}/src/admin
     ${CMAKE_SOURCE_DIR}/src/admin/models
+    ${CMAKE_SOURCE_DIR}/src/admin/students
 )
 
 # Link libraries
