@@ -378,15 +378,18 @@ void FormSubmissionsWidget::updateTable() {
     // Header row - icon column first
     submissionsTable_->setHeaderCount(1);
     int col = 0;
-    auto iconHeader = submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>(""));
-    iconHeader->addStyleClass("admin-table-icon-header");
-    submissionsTable_->elementAt(0, 0)->addStyleClass("admin-table-header");
-    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Student"))->addStyleClass("admin-table-header");
-    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Form"))->addStyleClass("admin-table-header");
-    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Program"))->addStyleClass("admin-table-header");
-    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Submitted"))->addStyleClass("admin-table-header");
-    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Status"))->addStyleClass("admin-table-header");
-    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Actions"))->addStyleClass("admin-table-header");
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>(""));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Student"));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Form"));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Program"));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Submitted"));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Status"));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Actions"));
+
+    // Apply header styling to cells
+    for (int i = 0; i < col; i++) {
+        submissionsTable_->elementAt(0, i)->addStyleClass("admin-table-header");
+    }
 
     int row = 1;
     for (const auto& submission : filteredSubmissions_) {

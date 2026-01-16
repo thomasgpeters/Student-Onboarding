@@ -362,17 +362,20 @@ void CurriculumListWidget::updateTable() {
     // Header row - icon column first
     curriculumTable_->setHeaderCount(1);
     int col = 0;
-    auto iconHeader = curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>(""));
-    iconHeader->addStyleClass("admin-table-icon-header");
-    curriculumTable_->elementAt(0, 0)->addStyleClass("admin-table-header");
-    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Program Name"))->addStyleClass("admin-table-header");
-    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Department"))->addStyleClass("admin-table-header");
-    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Degree"))->addStyleClass("admin-table-header");
-    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Credits"))->addStyleClass("admin-table-header");
-    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Duration"))->addStyleClass("admin-table-header");
-    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Forms"))->addStyleClass("admin-table-header");
-    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Status"))->addStyleClass("admin-table-header");
-    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Actions"))->addStyleClass("admin-table-header");
+    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>(""));
+    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Program Name"));
+    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Department"));
+    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Degree"));
+    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Credits"));
+    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Duration"));
+    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Forms"));
+    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Status"));
+    curriculumTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Actions"));
+
+    // Apply header styling to cells
+    for (int i = 0; i < col; i++) {
+        curriculumTable_->elementAt(0, i)->addStyleClass("admin-table-header");
+    }
 
     int row = 1;
     for (const auto& curriculum : filteredCurriculums_) {
