@@ -96,6 +96,10 @@ set(ADMIN_SOURCES
     src/admin/students/StudentListWidget.cpp
     src/admin/students/StudentDetailWidget.cpp
     src/admin/students/StudentFormViewer.cpp
+    src/admin/curriculum/CurriculumListWidget.cpp
+    src/admin/curriculum/CurriculumEditorWidget.cpp
+    src/admin/forms/FormSubmissionsWidget.cpp
+    src/admin/forms/FormDetailViewer.cpp
 )
 
 set(APP_SOURCES
@@ -133,6 +137,8 @@ target_include_directories(student_intake PRIVATE
     ${CMAKE_SOURCE_DIR}/src/admin
     ${CMAKE_SOURCE_DIR}/src/admin/models
     ${CMAKE_SOURCE_DIR}/src/admin/students
+    ${CMAKE_SOURCE_DIR}/src/admin/curriculum
+    ${CMAKE_SOURCE_DIR}/src/admin/forms
 )
 
 # Link libraries
