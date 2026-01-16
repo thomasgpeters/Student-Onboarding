@@ -56,8 +56,8 @@ AdminAuthResult AdminAuthManager::login(const std::string& email, const std::str
     }
 
     try {
-        // Query the admin_user API endpoint (snake_case for ApiLogicServer)
-        std::string endpoint = "admin_user?filter[email]=" + email;
+        // Query the AdminUser API endpoint (PascalCase for ApiLogicServer)
+        std::string endpoint = "/AdminUser?filter[email]=" + email;
         std::cerr << "[AdminAuth] Querying endpoint: " << endpoint << std::endl;
         auto response = apiService_->getApiClient()->get(endpoint);
 
