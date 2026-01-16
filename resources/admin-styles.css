@@ -81,7 +81,12 @@
     display: flex;
     flex: 1;
     min-height: 0;
-    margin-top: 0; /* No margin by default (login state - navbar hidden) */
+    margin-top: 56px; /* Space for fixed navbar - always visible now */
+}
+
+/* Login state - no sidebar, but navbar still visible */
+.admin-content-wrapper.login-state {
+    margin-top: 56px;
 }
 
 .admin-content-wrapper.with-sidebar {
