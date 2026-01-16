@@ -167,7 +167,7 @@ void StudentListWidget::loadStudents() {
 
         if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
             for (const auto& studentData : jsonResponse["data"]) {
-                Models::Student student;
+                ::StudentIntake::Models::Student student;
 
                 if (studentData.contains("id")) {
                     if (studentData["id"].is_string()) {
@@ -211,7 +211,7 @@ void StudentListWidget::applyFilters() {
     int programIndex = programFilter_->currentIndex();
     int statusIndex = statusFilter_->currentIndex();
 
-    std::vector<Models::Student> filtered;
+    std::vector<::StudentIntake::Models::Student> filtered;
 
     for (const auto& student : allStudents_) {
         bool matches = true;
@@ -260,7 +260,7 @@ void StudentListWidget::clearFilters() {
     updateTable(allStudents_);
 }
 
-void StudentListWidget::updateTable(const std::vector<Models::Student>& students) {
+void StudentListWidget::updateTable(const std::vector<::StudentIntake::Models::Student>& students) {
     // Clear existing rows (except header)
     while (studentTable_->rowCount() > 1) {
         studentTable_->removeRow(1);

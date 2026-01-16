@@ -243,7 +243,7 @@ void StudentDetailWidget::onRestoreAccess() {
 }
 
 void StudentDetailWidget::clear() {
-    currentStudent_ = Models::Student();
+    currentStudent_ = ::StudentIntake::Models::Student();
     isRevoked_ = false;
     studentName_->setText("");
     studentEmail_->setText("");

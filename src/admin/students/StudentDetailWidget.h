@@ -35,7 +35,7 @@ private:
     std::string formatDate(const std::string& dateStr);
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
-    Models::Student currentStudent_;
+    ::StudentIntake::Models::Student currentStudent_;
     bool isRevoked_;
 
     // UI Elements
