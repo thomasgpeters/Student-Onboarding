@@ -28,12 +28,13 @@ void AdminNavigation::setupUI() {
         homeClicked_.emit();
     });
 
-    // Logo icon
-    auto logoIcon = brandContainer_->addWidget(std::make_unique<Wt::WText>("🎓"));
-    logoIcon->addStyleClass("admin-brand-icon");
+    // Logo image (same as student portal)
+    auto logo = brandContainer_->addWidget(std::make_unique<Wt::WImage>(
+        "https://media.licdn.com/dms/image/v2/D4E0BAQFNqqJ59i1lgQ/company-logo_200_200/company-logo_200_200/0/1733939002925/imagery_business_systems_llc_logo?e=2147483647&v=beta&t=s_hATe0kqIDc64S79VJYXNS4N_UwrcnUA1x7VCb3sFA"));
+    logo->addStyleClass("admin-brand-logo");
 
     // Brand text
-    auto brandText = brandContainer_->addWidget(std::make_unique<Wt::WText>("Admin Portal"));
+    auto brandText = brandContainer_->addWidget(std::make_unique<Wt::WText>("Student Intake Administration"));
     brandText->addStyleClass("admin-brand-text");
 
     // Spacer

@@ -32,8 +32,10 @@
     cursor: pointer;
 }
 
-.admin-brand-icon {
-    font-size: 1.5rem;
+.admin-brand-logo {
+    height: 40px;
+    width: auto;
+    border-radius: 4px;
 }
 
 .admin-brand-text {
