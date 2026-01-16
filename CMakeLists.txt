@@ -84,6 +84,17 @@ set(WIDGETS_SOURCES
     src/widgets/DashboardWidget.cpp
 )
 
+set(ADMIN_SOURCES
+    src/admin/models/AdminUser.cpp
+    src/admin/models/AdminSession.cpp
+    src/admin/AdminAuthManager.cpp
+    src/admin/AdminLoginWidget.cpp
+    src/admin/AdminNavigation.cpp
+    src/admin/AdminSidebar.cpp
+    src/admin/AdminDashboard.cpp
+    src/admin/AdminApp.cpp
+)
+
 set(APP_SOURCES
     src/app/StudentIntakeApp.cpp
     src/main.cpp
@@ -98,6 +109,7 @@ set(ALL_SOURCES
     ${CURRICULUM_SOURCES}
     ${FORMS_SOURCES}
     ${WIDGETS_SOURCES}
+    ${ADMIN_SOURCES}
     ${APP_SOURCES}
 )
 
@@ -115,6 +127,8 @@ target_include_directories(student_intake PRIVATE
     ${CMAKE_SOURCE_DIR}/src/models
     ${CMAKE_SOURCE_DIR}/src/session
     ${CMAKE_SOURCE_DIR}/src/widgets
+    ${CMAKE_SOURCE_DIR}/src/admin
+    ${CMAKE_SOURCE_DIR}/src/admin/models
 )
 
 # Link libraries
