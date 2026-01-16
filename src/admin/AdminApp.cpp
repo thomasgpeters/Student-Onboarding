@@ -31,8 +31,7 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
 
     setTitle("Admin Portal - Student Onboarding");
 
-    // Use custom CSS - path relative to docroot (resources folder)
-    useStyleSheet("styles.css");
+    // Use admin-specific CSS only - no dependency on student styles
     useStyleSheet("admin-styles.css");
 
     initialize();
@@ -89,11 +88,12 @@ void AdminApp::setupUI() {
     contentContainer_ = contentWrapper_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contentContainer_->addStyleClass("admin-content-container");
 
-    // Login widget (shown initially)
+    // Login widget (hidden initially, shown via setState)
     loginWidget_ = contentContainer_->addWidget(std::make_unique<AdminLoginWidget>());
     loginWidget_->setAuthManager(authManager_);
     loginWidget_->setSession(session_);
     loginWidget_->loginSuccess().connect(this, &AdminApp::handleLoginSuccess);
+    loginWidget_->hide();  // Hide initially - will be shown by setState(Login)
 
     // Dashboard widget (hidden initially)
     dashboardWidget_ = contentContainer_->addWidget(std::make_unique<AdminDashboard>());
