@@ -155,7 +155,7 @@ void StudentListWidget::loadStudents() {
     try {
         std::cerr << "[StudentList] Loading students..." << std::endl;
 
-        auto response = apiService_->getApiClient()->get("student");
+        auto response = apiService_->getApiClient()->get("/Student");
 
         if (!response.success) {
             std::cerr << "[StudentList] Failed to load students: " << response.errorMessage << std::endl;

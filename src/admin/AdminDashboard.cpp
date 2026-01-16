@@ -163,8 +163,8 @@ void AdminDashboard::loadStatistics() {
     }
 
     try {
-        // Fetch student count
-        auto studentsResponse = apiService_->getApiClient()->get("student");
+        // Fetch student count (ApiLogicServer uses PascalCase endpoints)
+        auto studentsResponse = apiService_->getApiClient()->get("/Student");
         if (studentsResponse.success) {
             auto jsonResponse = nlohmann::json::parse(studentsResponse.body);
             if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
@@ -173,7 +173,7 @@ void AdminDashboard::loadStatistics() {
         }
 
         // Fetch pending forms count
-        auto formsResponse = apiService_->getApiClient()->get("form_submission?filter[status]=pending");
+        auto formsResponse = apiService_->getApiClient()->get("/FormSubmission?filter[status]=pending");
         if (formsResponse.success) {
             auto jsonResponse = nlohmann::json::parse(formsResponse.body);
             if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
@@ -182,7 +182,7 @@ void AdminDashboard::loadStatistics() {
         }
 
         // Fetch active programs count
-        auto curriculumResponse = apiService_->getApiClient()->get("curriculum?filter[is_active]=true");
+        auto curriculumResponse = apiService_->getApiClient()->get("/Curriculum?filter[is_active]=true");
         if (curriculumResponse.success) {
             auto jsonResponse = nlohmann::json::parse(curriculumResponse.body);
             if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
