@@ -94,7 +94,7 @@
 
 .admin-sidebar {
     width: 220px;
-    background: #1e293b;
+    background: #334155; /* Lighter slate blue than footer */
     padding: 1rem 0;
     flex-shrink: 0;
     position: fixed;
