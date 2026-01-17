@@ -158,6 +158,7 @@ void AdminApp::setupUI() {
     formDetailViewer_->approveClicked().connect(this, &AdminApp::handleFormApproved);
     formDetailViewer_->rejectClicked().connect(this, &AdminApp::handleFormRejected);
     formDetailViewer_->previewPdfClicked().connect(this, &AdminApp::handleFormPdfPreview);
+    formDetailViewer_->printAllFormsClicked().connect(this, &AdminApp::handlePrintAllStudentForms);
     formDetailViewer_->hide();
 
     // Form PDF Preview widget (hidden initially)
@@ -570,6 +571,21 @@ void AdminApp::handleFormPdfPreview(int submissionId) {
     selectedSubmissionId_ = submissionId;
     hideAllViews();
     showFormPdfPreview(submissionId);
+}
+
+void AdminApp::handlePrintAllStudentForms(int studentId) {
+    std::cerr << "[AdminApp] Print all student forms requested: " << studentId << std::endl;
+    hideAllViews();
+
+    // Show the PDF preview widget with all student forms
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Forms);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    formPdfPreviewWidget_->loadStudentForms(studentId);
+    formPdfPreviewWidget_->show();
 }
 
 } // namespace Admin

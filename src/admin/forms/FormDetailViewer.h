@@ -42,6 +42,7 @@ public:
     Wt::Signal<int>& rejectClicked() { return rejectClicked_; }
     Wt::Signal<int>& requestRevisionClicked() { return requestRevisionClicked_; }
     Wt::Signal<int>& previewPdfClicked() { return previewPdfClicked_; }
+    Wt::Signal<int>& printAllFormsClicked() { return printAllFormsClicked_; }
 
 private:
     void setupUI();
@@ -50,12 +51,18 @@ private:
     void handleApprove();
     void handleReject();
     void handleRequestRevision();
+    void loadStudentInfo(int studentId);
+    void loadFormTypeInfo(int formTypeId);
+    void loadFormFieldData(int submissionId);
     std::string getStatusBadgeClass(const std::string& status);
     std::string formatValue(const std::string& value, const std::string& fieldType);
+    std::string formatFieldLabel(const std::string& fieldName);
+    std::string formatDate(const std::string& dateStr);
     std::vector<FormFieldDisplay> parseFormData(const std::string& formType, const nlohmann::json& data);
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     int currentSubmissionId_;
+    int currentStudentId_;
     std::string currentStatus_;
     std::string currentFormType_;
 
@@ -88,6 +95,7 @@ private:
     Wt::WPushButton* rejectBtn_;
     Wt::WPushButton* revisionBtn_;
     Wt::WPushButton* previewPdfBtn_;
+    Wt::WPushButton* printAllFormsBtn_;
 
     // Signals
     Wt::Signal<> backClicked_;
@@ -95,6 +103,7 @@ private:
     Wt::Signal<int> rejectClicked_;
     Wt::Signal<int> requestRevisionClicked_;
     Wt::Signal<int> previewPdfClicked_;
+    Wt::Signal<int> printAllFormsClicked_;  // Emits student_id
 };
 
 } // namespace Admin

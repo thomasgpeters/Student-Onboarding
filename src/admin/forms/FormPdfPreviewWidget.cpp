@@ -255,9 +255,290 @@ void FormPdfPreviewWidget::loadFormSubmission(int submissionId) {
 }
 
 void FormPdfPreviewWidget::loadStudentForms(int studentId) {
-    // Implementation for loading all forms for a student
-    // This could be expanded to show a multi-page PDF with all forms
-    std::cerr << "[FormPdfPreviewWidget] loadStudentForms not yet implemented for student: " << studentId << std::endl;
+    std::cerr << "[FormPdfPreviewWidget] Loading all forms for student: " << studentId << std::endl;
+
+    if (!apiService_) {
+        std::cerr << "[FormPdfPreviewWidget] No API service available" << std::endl;
+        return;
+    }
+
+    clearPreview();
+
+    try {
+        // First, load student information
+        std::string studentName = "Unknown Student";
+        std::string studentEmail = "";
+
+        auto studentResponse = apiService_->getApiClient()->get("/Student/" + std::to_string(studentId));
+        if (studentResponse.success) {
+            auto studentJson = nlohmann::json::parse(studentResponse.body);
+            nlohmann::json studentData = studentJson.contains("data") ? studentJson["data"] : studentJson;
+            nlohmann::json studentAttrs = studentData.contains("attributes") ? studentData["attributes"] : studentData;
+
+            std::string firstName = studentAttrs.value("first_name", "");
+            std::string lastName = studentAttrs.value("last_name", "");
+            studentName = firstName + " " + lastName;
+            studentEmail = studentAttrs.value("email", "");
+        }
+
+        // Load all form submissions for this student
+        auto submissionsResponse = apiService_->getApiClient()->get(
+            "/FormSubmission?filter[student_id]=" + std::to_string(studentId));
+
+        if (!submissionsResponse.success) {
+            std::cerr << "[FormPdfPreviewWidget] Failed to load submissions for student" << std::endl;
+            return;
+        }
+
+        auto submissionsJson = nlohmann::json::parse(submissionsResponse.body);
+        nlohmann::json submissions = submissionsJson.is_array() ? submissionsJson :
+            (submissionsJson.contains("data") ? submissionsJson["data"] : nlohmann::json::array());
+
+        if (submissions.empty()) {
+            // No submissions found
+            auto noDataMsg = documentContent_->addWidget(
+                std::make_unique<Wt::WText>("<p class='text-muted'>No form submissions found for this student.</p>"));
+            noDataMsg->setTextFormat(Wt::TextFormat::XHTML);
+            return;
+        }
+
+        std::cerr << "[FormPdfPreviewWidget] Found " << submissions.size() << " submissions" << std::endl;
+
+        // Form type mapping
+        std::map<int, std::pair<std::string, std::string>> formTypeMap = {
+            {1, {"personal_info", "Personal Information Form"}},
+            {2, {"emergency_contact", "Emergency Contact Form"}},
+            {3, {"medical_info", "Medical Information Form"}},
+            {4, {"academic_history", "Academic History Form"}},
+            {5, {"financial_aid", "Financial Aid Form"}},
+            {6, {"documents", "Document Upload Form"}},
+            {7, {"consent", "Consent Form"}}
+        };
+
+        // Build a combined document for all forms
+        // Document header
+        auto header = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
+        header->addStyleClass("pdf-header");
+
+        auto logoRow = header->addWidget(std::make_unique<Wt::WContainerWidget>());
+        logoRow->addStyleClass("pdf-logo-row");
+
+        // SVG Logo
+        auto logoSvg = logoRow->addWidget(std::make_unique<Wt::WText>(
+            R"SVG(<svg class="pdf-logo-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="scrollGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#1e3a5f;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#2d5a87;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M40 15 L10 30 L40 45 L70 30 Z" fill="url(#scrollGrad)" stroke="#1e3a5f" stroke-width="1"/>
+                <path d="M40 45 L40 55 M25 37 L25 52 C25 58 40 62 40 55" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+                <circle cx="25" cy="52" r="3" fill="#c9a227"/>
+                <rect x="28" y="58" width="24" height="18" rx="2" fill="#f5f0e6" stroke="#1e3a5f" stroke-width="1"/>
+                <line x1="32" y1="63" x2="48" y2="63" stroke="#1e3a5f" stroke-width="1"/>
+                <line x1="32" y1="67" x2="48" y2="67" stroke="#1e3a5f" stroke-width="1"/>
+                <line x1="32" y1="71" x2="44" y2="71" stroke="#1e3a5f" stroke-width="1"/>
+                <path d="M36 76 L40 72 L44 76" fill="none" stroke="#c9a227" stroke-width="2"/>
+            </svg>)SVG"
+        ));
+        logoSvg->setTextFormat(Wt::TextFormat::XHTML);
+
+        auto institutionName = logoRow->addWidget(std::make_unique<Wt::WText>("Student Intake System"));
+        institutionName->addStyleClass("pdf-institution-name");
+
+        // Main title for all forms
+        auto mainTitle = header->addWidget(std::make_unique<Wt::WText>(
+            "<h1 class='pdf-main-title'>Complete Student Intake Forms</h1>"));
+        mainTitle->setTextFormat(Wt::TextFormat::XHTML);
+
+        // Student info banner
+        auto studentInfo = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
+        studentInfo->addStyleClass("pdf-student-info-banner");
+
+        auto studentDetails = studentInfo->addWidget(std::make_unique<Wt::WText>(
+            "<strong>Student:</strong> " + studentName + " &nbsp;|&nbsp; <strong>Email:</strong> " + studentEmail +
+            " &nbsp;|&nbsp; <strong>Forms:</strong> " + std::to_string(submissions.size()) + " submission(s)"));
+        studentDetails->setTextFormat(Wt::TextFormat::XHTML);
+
+        // Process each form submission
+        int formIndex = 0;
+        for (const auto& submission : submissions) {
+            nlohmann::json attrs = submission.contains("attributes") ? submission["attributes"] : submission;
+
+            int formTypeId = attrs.value("form_type_id", 0);
+            std::string submittedAt = attrs.value("submitted_at", "");
+            std::string status = attrs.value("status", "pending");
+
+            auto formIt = formTypeMap.find(formTypeId);
+            std::string formType = formIt != formTypeMap.end() ? formIt->second.first : "unknown";
+            std::string formTitle = formIt != formTypeMap.end() ? formIt->second.second : "Form";
+
+            // Add a page break separator between forms (except first)
+            if (formIndex > 0) {
+                auto pageBreak = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
+                pageBreak->addStyleClass("pdf-page-break");
+            }
+
+            // Form section header
+            auto formSection = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
+            formSection->addStyleClass("pdf-form-section");
+
+            auto formHeader = formSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+            formHeader->addStyleClass("pdf-form-header");
+
+            auto formTitleText = formHeader->addWidget(std::make_unique<Wt::WText>(
+                "<h2>" + formTitle + "</h2>"));
+            formTitleText->setTextFormat(Wt::TextFormat::XHTML);
+
+            // Status badge
+            std::string statusClass = "badge-secondary";
+            if (status == "approved") statusClass = "badge-success";
+            else if (status == "pending") statusClass = "badge-warning";
+            else if (status == "rejected") statusClass = "badge-danger";
+            else if (status == "needs_revision") statusClass = "badge-info";
+
+            std::string statusDisplay = status;
+            if (!statusDisplay.empty()) statusDisplay[0] = std::toupper(statusDisplay[0]);
+
+            auto statusBadge = formHeader->addWidget(std::make_unique<Wt::WText>(
+                "<span class='badge " + statusClass + "'>" + statusDisplay + "</span>"));
+            statusBadge->setTextFormat(Wt::TextFormat::XHTML);
+
+            // Submission date
+            auto dateInfo = formSection->addWidget(std::make_unique<Wt::WText>(
+                "<p class='pdf-date-info'>Submitted: " + formatDate(submittedAt) + "</p>"));
+            dateInfo->setTextFormat(Wt::TextFormat::XHTML);
+
+            // Load form fields for this submission
+            std::vector<FormFieldData> fields;
+
+            // Load data based on form type (similar to loadFormSubmission)
+            if (formType == "personal_info") {
+                // Personal info is in the Student table
+                if (studentResponse.success) {
+                    auto studentJson = nlohmann::json::parse(studentResponse.body);
+                    nlohmann::json studentData = studentJson.contains("data") ? studentJson["data"] : studentJson;
+                    nlohmann::json sAttrs = studentData.contains("attributes") ? studentData["attributes"] : studentData;
+
+                    fields.push_back({"First Name", sAttrs.value("first_name", ""), "text"});
+                    fields.push_back({"Last Name", sAttrs.value("last_name", ""), "text"});
+                    fields.push_back({"Email", sAttrs.value("email", ""), "email"});
+                    fields.push_back({"Date of Birth", sAttrs.value("date_of_birth", ""), "date"});
+                    fields.push_back({"Gender", sAttrs.value("gender", ""), "text"});
+                    fields.push_back({"Citizenship", sAttrs.value("citizenship_status", ""), "text"});
+                }
+            } else if (formType == "emergency_contact") {
+                auto ecResponse = apiService_->getApiClient()->get("/EmergencyContact?filter[student_id]=" + std::to_string(studentId));
+                if (ecResponse.success) {
+                    auto ecJson = nlohmann::json::parse(ecResponse.body);
+                    nlohmann::json ecItems = ecJson.is_array() ? ecJson : (ecJson.contains("data") ? ecJson["data"] : nlohmann::json::array());
+                    for (size_t i = 0; i < ecItems.size() && i < 2; i++) {
+                        nlohmann::json ec = ecItems[i];
+                        nlohmann::json ecAttrs = ec.contains("attributes") ? ec["attributes"] : ec;
+                        std::string prefix = (i == 0) ? "Primary " : "Secondary ";
+                        fields.push_back({prefix + "Contact Name", ecAttrs.value("first_name", "") + " " + ecAttrs.value("last_name", ""), "text"});
+                        fields.push_back({prefix + "Relationship", ecAttrs.value("relationship", ""), "text"});
+                        fields.push_back({prefix + "Phone", ecAttrs.value("phone_number", ""), "phone"});
+                    }
+                }
+            } else if (formType == "medical_info") {
+                auto medResponse = apiService_->getApiClient()->get("/MedicalInfo?filter[student_id]=" + std::to_string(studentId));
+                if (medResponse.success) {
+                    auto medJson = nlohmann::json::parse(medResponse.body);
+                    nlohmann::json medItems = medJson.is_array() ? medJson : (medJson.contains("data") ? medJson["data"] : nlohmann::json::array());
+                    if (!medItems.empty()) {
+                        nlohmann::json med = medItems[0];
+                        nlohmann::json medAttrs = med.contains("attributes") ? med["attributes"] : med;
+                        fields.push_back({"Insurance Provider", medAttrs.value("insurance_provider", ""), "text"});
+                        fields.push_back({"Policy Number", medAttrs.value("policy_number", ""), "text"});
+                        fields.push_back({"Primary Physician", medAttrs.value("primary_physician_name", ""), "text"});
+                        fields.push_back({"Known Allergies", medAttrs.value("allergies", ""), "text"});
+                    }
+                }
+            } else if (formType == "academic_history") {
+                auto ahResponse = apiService_->getApiClient()->get("/AcademicHistory?filter[student_id]=" + std::to_string(studentId));
+                if (ahResponse.success) {
+                    auto ahJson = nlohmann::json::parse(ahResponse.body);
+                    nlohmann::json ahItems = ahJson.is_array() ? ahJson : (ahJson.contains("data") ? ahJson["data"] : nlohmann::json::array());
+                    for (const auto& ah : ahItems) {
+                        nlohmann::json ahAttrs = ah.contains("attributes") ? ah["attributes"] : ah;
+                        fields.push_back({"Institution", ahAttrs.value("institution_name", ""), "text"});
+                        fields.push_back({"Type", ahAttrs.value("institution_type", ""), "text"});
+                        fields.push_back({"Degree", ahAttrs.value("degree_earned", ""), "text"});
+                        fields.push_back({"Graduation Date", ahAttrs.value("graduation_date", ""), "date"});
+                    }
+                }
+            } else if (formType == "financial_aid") {
+                auto faResponse = apiService_->getApiClient()->get("/FinancialAid?filter[student_id]=" + std::to_string(studentId));
+                if (faResponse.success) {
+                    auto faJson = nlohmann::json::parse(faResponse.body);
+                    nlohmann::json faItems = faJson.is_array() ? faJson : (faJson.contains("data") ? faJson["data"] : nlohmann::json::array());
+                    if (!faItems.empty()) {
+                        nlohmann::json fa = faItems[0];
+                        nlohmann::json faAttrs = fa.contains("attributes") ? fa["attributes"] : fa;
+                        fields.push_back({"FAFSA Completed", faAttrs.value("fafsa_completed", false) ? "Yes" : "No", "text"});
+                        fields.push_back({"Employment Status", faAttrs.value("employment_status", ""), "text"});
+                        fields.push_back({"Employer", faAttrs.value("employer_name", ""), "text"});
+                    }
+                }
+            } else if (formType == "consent") {
+                auto cResponse = apiService_->getApiClient()->get("/Consent?filter[student_id]=" + std::to_string(studentId));
+                if (cResponse.success) {
+                    auto cJson = nlohmann::json::parse(cResponse.body);
+                    nlohmann::json cItems = cJson.is_array() ? cJson : (cJson.contains("data") ? cJson["data"] : nlohmann::json::array());
+                    if (!cItems.empty()) {
+                        nlohmann::json c = cItems[0];
+                        nlohmann::json cAttrs = c.contains("attributes") ? c["attributes"] : c;
+                        fields.push_back({"Consent Accepted", cAttrs.value("is_accepted", false) ? "Yes" : "No", "text"});
+                        fields.push_back({"Electronic Signature", cAttrs.value("electronic_signature", ""), "text"});
+                        fields.push_back({"Signature Date", cAttrs.value("signature_date", ""), "date"});
+                    }
+                }
+            }
+
+            // Build form data table
+            if (!fields.empty()) {
+                auto table = formSection->addWidget(std::make_unique<Wt::WTable>());
+                table->addStyleClass("pdf-field-table");
+
+                for (const auto& field : fields) {
+                    if (!field.value.empty()) {
+                        auto row = table->insertRow(table->rowCount());
+                        auto labelCell = row->elementAt(0);
+                        auto valueCell = row->elementAt(1);
+
+                        labelCell->addWidget(std::make_unique<Wt::WText>(field.label));
+                        labelCell->addStyleClass("pdf-field-label");
+
+                        valueCell->addWidget(std::make_unique<Wt::WText>(formatValue(field.value, field.type)));
+                        valueCell->addStyleClass("pdf-field-value");
+                    }
+                }
+            } else {
+                auto noFields = formSection->addWidget(std::make_unique<Wt::WText>(
+                    "<p class='text-muted'>No data available for this form.</p>"));
+                noFields->setTextFormat(Wt::TextFormat::XHTML);
+            }
+
+            formIndex++;
+        }
+
+        // Footer
+        auto footer = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
+        footer->addStyleClass("pdf-footer");
+
+        auto footerText = footer->addWidget(std::make_unique<Wt::WText>(
+            "This document was generated from the Student Intake System. " +
+            std::to_string(submissions.size()) + " form(s) included."));
+        footerText->addStyleClass("pdf-footer-text");
+
+    } catch (const std::exception& e) {
+        std::cerr << "[FormPdfPreviewWidget] Error loading student forms: " << e.what() << std::endl;
+        auto errorMsg = documentContent_->addWidget(std::make_unique<Wt::WText>(
+            "<p class='text-danger'>Error loading forms: " + std::string(e.what()) + "</p>"));
+        errorMsg->setTextFormat(Wt::TextFormat::XHTML);
+    }
 }
 
 void FormPdfPreviewWidget::clearPreview() {
