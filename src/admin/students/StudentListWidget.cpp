@@ -113,7 +113,7 @@ void StudentListWidget::setupFilters() {
 
     // Clear button only - filters apply automatically on change
     auto buttonGroup = filterContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
-    buttonGroup->addStyleClass("admin-filter-buttons");
+    buttonGroup->addStyleClass("admin-filter-buttons admin-filter-buttons-right");
 
     clearButton_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Clear"));
     clearButton_->addStyleClass("btn btn-secondary");
