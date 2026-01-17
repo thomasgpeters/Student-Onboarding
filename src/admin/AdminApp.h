@@ -21,6 +21,7 @@
 #include "admin/curriculum/CurriculumEditorWidget.h"
 #include "admin/forms/FormSubmissionsWidget.h"
 #include "admin/forms/FormDetailViewer.h"
+#include "admin/forms/FormPdfPreviewWidget.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -42,6 +43,7 @@ public:
         StudentForms,
         Forms,
         FormDetail,
+        FormPdfPreview,
         Curriculum,
         CurriculumEdit,
         Settings
@@ -65,6 +67,7 @@ private:
     void showStudentForms(int studentId);
     void showForms();
     void showFormDetail(int submissionId);
+    void showFormPdfPreview(int submissionId);
     void showCurriculum();
     void showCurriculumEdit(const std::string& curriculumId);
     void showSettings();
@@ -83,6 +86,7 @@ private:
     void handleFormSubmissionSelected(int submissionId);
     void handleFormApproved(int submissionId);
     void handleFormRejected(int submissionId);
+    void handleFormPdfPreview(int submissionId);
 
     // Configuration
     App::AppConfig& config_;
@@ -115,6 +119,7 @@ private:
     StudentFormViewer* studentFormViewer_;
     FormSubmissionsWidget* formSubmissionsWidget_;
     FormDetailViewer* formDetailViewer_;
+    FormPdfPreviewWidget* formPdfPreviewWidget_;
     CurriculumListWidget* curriculumListWidget_;
     CurriculumEditorWidget* curriculumEditorWidget_;
     Wt::WContainerWidget* settingsView_;
