@@ -50,7 +50,6 @@ private:
     Wt::WLineEdit* searchInput_;
     Wt::WComboBox* programFilter_;
     Wt::WComboBox* statusFilter_;
-    Wt::WPushButton* searchButton_;
     Wt::WPushButton* clearButton_;
     Wt::WContainerWidget* tableContainer_;
     Wt::WTable* studentTable_;
