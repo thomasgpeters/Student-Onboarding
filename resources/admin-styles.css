@@ -1080,14 +1080,31 @@
     margin-bottom: 1.5rem;
 }
 
+/* 5-column variant for form submissions with Today stat */
+.admin-submission-stats.admin-submission-stats-5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 1200px) {
+    .admin-submission-stats.admin-submission-stats-5 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 @media (max-width: 992px) {
     .admin-submission-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .admin-submission-stats.admin-submission-stats-5 {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (max-width: 576px) {
     .admin-submission-stats {
+        grid-template-columns: 1fr;
+    }
+    .admin-submission-stats.admin-submission-stats-5 {
         grid-template-columns: 1fr;
     }
 }
@@ -1101,6 +1118,10 @@
     gap: 1rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border-left: 4px solid #e2e8f0;
+}
+
+.admin-stat-mini-card.today {
+    border-left-color: #0ea5e9;
 }
 
 .admin-stat-mini-card.pending {
@@ -1326,4 +1347,204 @@ textarea.form-control {
 .btn-outline-primary:hover {
     background: #3b82f6;
     color: white;
+}
+
+/* =====================================================
+   PDF PREVIEW WIDGET
+   ===================================================== */
+
+.form-pdf-preview-widget {
+    padding: 1rem;
+    background: #f1f5f9;
+    min-height: calc(100vh - 120px);
+}
+
+.pdf-preview-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-toolbar-spacer {
+    flex: 1;
+}
+
+.pdf-preview-container {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+    background: #64748b;
+    border-radius: 8px;
+    min-height: 800px;
+}
+
+.pdf-document {
+    width: 8.5in;
+    min-height: 11in;
+    background: white;
+    padding: 1in;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.6;
+    color: #1e293b;
+}
+
+.pdf-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #1e3a5f;
+}
+
+.pdf-logo-container {
+    margin-bottom: 1rem;
+}
+
+.pdf-institution-name {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #1e3a5f;
+    letter-spacing: 0.5px;
+}
+
+.pdf-form-title {
+    display: block;
+    font-size: 16pt;
+    font-weight: bold;
+    color: #334155;
+    margin-top: 0.5rem;
+}
+
+.pdf-info-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.pdf-student-info,
+.pdf-date-info {
+    font-size: 11pt;
+}
+
+.pdf-label {
+    font-weight: bold;
+    color: #475569;
+}
+
+.pdf-value {
+    color: #1e293b;
+}
+
+.pdf-fields-section {
+    margin-bottom: 2rem;
+}
+
+.pdf-section-title {
+    display: block;
+    font-size: 14pt;
+    font-weight: bold;
+    color: #1e3a5f;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.pdf-fields-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pdf-fields-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+}
+
+.pdf-table-header {
+    font-weight: bold;
+    background: #f1f5f9;
+    color: #475569;
+    text-align: left;
+    border-bottom: 2px solid #cbd5e1 !important;
+}
+
+.pdf-field-label {
+    width: 40%;
+    font-weight: 500;
+    color: #475569;
+}
+
+.pdf-field-value {
+    width: 60%;
+    color: #1e293b;
+}
+
+.pdf-footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.pdf-generated-text {
+    display: block;
+    font-size: 9pt;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.pdf-confidential-text {
+    display: block;
+    font-size: 8pt;
+    font-weight: bold;
+    color: #dc2626;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Print styles - hide toolbar, show only document */
+@media print {
+    .form-pdf-preview-widget {
+        padding: 0;
+        background: white;
+    }
+
+    .pdf-preview-toolbar {
+        display: none !important;
+    }
+
+    .pdf-preview-container {
+        background: white;
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .pdf-document {
+        width: 100%;
+        min-height: auto;
+        padding: 0;
+        box-shadow: none;
+    }
+
+    /* Hide other page elements when printing */
+    .admin-navbar,
+    .admin-sidebar,
+    .admin-footer {
+        display: none !important;
+    }
+
+    .admin-content-wrapper {
+        margin-left: 0 !important;
+    }
 }

@@ -61,6 +61,8 @@ private:
     std::string formatDate(const std::string& dateStr);
     std::string getFormDisplayName(const std::string& formType);
     std::string getFormTypeFromId(int formTypeId);
+    bool isToday(const std::string& dateStr);
+    std::string getTodayDateString();
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     std::vector<FormSubmissionRecord> submissions_;
@@ -70,6 +72,7 @@ private:
     Wt::WText* headerTitle_;
     Wt::WText* headerSubtitle_;
     Wt::WContainerWidget* statsContainer_;
+    Wt::WText* todayCountText_;
     Wt::WText* pendingCountText_;
     Wt::WText* approvedCountText_;
     Wt::WText* rejectedCountText_;

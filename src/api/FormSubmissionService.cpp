@@ -1,6 +1,8 @@
 #include "FormSubmissionService.h"
 #include <thread>
 #include <iostream>
+#include <chrono>
+#include <ctime>
 
 namespace StudentIntake {
 namespace Api {
@@ -931,52 +933,67 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
 SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
                                                     const std::string& formId,
                                                     const Models::FormData& data) {
+    SubmissionResult domainResult;
+
     // Route to specialized submission functions for forms that need custom handling
     if (formId == "emergency_contact") {
-        return submitEmergencyContact(studentId, data);
-    }
-    if (formId == "academic_history") {
-        return submitAcademicHistory(studentId, data);
-    }
-    if (formId == "financial_aid") {
-        return submitFinancialAid(studentId, data);
-    }
-    if (formId == "consent") {
-        return submitConsent(studentId, data);
-    }
-
-    std::string endpoint = getEndpointForForm(formId);
-
-    // Map formId to resource type for JSON:API
-    static const std::map<std::string, std::string> resourceTypeMap = {
-        {"personal_info", "Student"},
-        {"emergency_contact", "EmergencyContact"},
-        {"medical_info", "MedicalInfo"},
-        {"academic_history", "AcademicHistory"},
-        {"financial_aid", "FinancialAid"},
-        {"documents", "Document"},
-        {"consent", "Consent"}
-    };
-
-    std::string resourceType = "FormSubmission";
-    auto it = resourceTypeMap.find(formId);
-    if (it != resourceTypeMap.end()) {
-        resourceType = it->second;
-    }
-
-    nlohmann::json payload = prepareFormPayload(studentId, data, resourceType);
-    std::cout << "[FormSubmissionService] submitForm(" << formId << ") payload: " << payload.dump() << std::endl;
-
-    // Personal info uses PATCH on student, others use POST
-    ApiResponse response;
-    if (formId == "personal_info") {
-        payload["data"]["id"] = studentId;
-        response = apiClient_->patch("/Student/" + studentId, payload);
+        domainResult = submitEmergencyContact(studentId, data);
+    } else if (formId == "academic_history") {
+        domainResult = submitAcademicHistory(studentId, data);
+    } else if (formId == "financial_aid") {
+        domainResult = submitFinancialAid(studentId, data);
+    } else if (formId == "consent") {
+        domainResult = submitConsent(studentId, data);
     } else {
-        response = apiClient_->post(endpoint, payload);
+        // Generic submission for other form types
+        std::string endpoint = getEndpointForForm(formId);
+
+        // Map formId to resource type for JSON:API
+        static const std::map<std::string, std::string> resourceTypeMap = {
+            {"personal_info", "Student"},
+            {"emergency_contact", "EmergencyContact"},
+            {"medical_info", "MedicalInfo"},
+            {"academic_history", "AcademicHistory"},
+            {"financial_aid", "FinancialAid"},
+            {"documents", "Document"},
+            {"consent", "Consent"}
+        };
+
+        std::string resourceType = "FormSubmission";
+        auto it = resourceTypeMap.find(formId);
+        if (it != resourceTypeMap.end()) {
+            resourceType = it->second;
+        }
+
+        nlohmann::json payload = prepareFormPayload(studentId, data, resourceType);
+        std::cout << "[FormSubmissionService] submitForm(" << formId << ") payload: " << payload.dump() << std::endl;
+
+        // Personal info uses PATCH on student, others use POST
+        ApiResponse response;
+        if (formId == "personal_info") {
+            payload["data"]["id"] = studentId;
+            response = apiClient_->patch("/Student/" + studentId, payload);
+        } else {
+            response = apiClient_->post(endpoint, payload);
+        }
+
+        domainResult = parseSubmissionResponse(response);
     }
 
-    return parseSubmissionResponse(response);
+    // If domain-specific submission succeeded, also create a FormSubmission record
+    // This ensures the admin can see all submitted forms in the FormSubmissions list
+    if (domainResult.success) {
+        std::cout << "[FormSubmissionService] Domain submission successful, creating FormSubmission record..." << std::endl;
+        SubmissionResult formSubmissionResult = createFormSubmissionRecord(studentId, formId, "pending");
+        if (!formSubmissionResult.success) {
+            std::cerr << "[FormSubmissionService] Warning: Domain data saved but FormSubmission record creation failed: "
+                      << formSubmissionResult.message << std::endl;
+            // Don't fail the overall submission - domain data was saved successfully
+            // Just log the warning
+        }
+    }
+
+    return domainResult;
 }
 
 void FormSubmissionService::submitFormAsync(const std::string& studentId,
@@ -1109,6 +1126,193 @@ SubmissionResult FormSubmissionService::uploadDocument(const std::string& studen
 
     ApiResponse response = apiClient_->uploadFile("/Document/upload", "file", filePath, fields);
     return parseSubmissionResponse(response);
+}
+
+// Load form type cache from API
+void FormSubmissionService::loadFormTypeCache() {
+    if (!formTypeCache_.empty()) {
+        return;  // Already loaded
+    }
+
+    std::cout << "[FormSubmissionService] Loading form type cache..." << std::endl;
+    ApiResponse response = apiClient_->get("/FormType");
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        for (const auto& item : items) {
+            std::string code;
+            int id = 0;
+
+            // Get code
+            if (item.contains("attributes") && item["attributes"].contains("code")) {
+                code = item["attributes"]["code"].get<std::string>();
+            } else if (item.contains("code")) {
+                code = item["code"].get<std::string>();
+            }
+
+            // Get id
+            if (item.contains("id")) {
+                if (item["id"].is_number()) {
+                    id = item["id"].get<int>();
+                } else if (item["id"].is_string()) {
+                    try {
+                        id = std::stoi(item["id"].get<std::string>());
+                    } catch (...) {}
+                }
+            }
+
+            if (!code.empty() && id > 0) {
+                formTypeCache_[code] = id;
+                std::cout << "[FormSubmissionService] Cached form type: " << code << " -> " << id << std::endl;
+            }
+        }
+    }
+    std::cout << "[FormSubmissionService] Form type cache loaded with " << formTypeCache_.size() << " entries" << std::endl;
+    std::cout.flush();
+}
+
+// Get form type ID from code
+int FormSubmissionService::getFormTypeId(const std::string& formCode) {
+    loadFormTypeCache();
+
+    auto it = formTypeCache_.find(formCode);
+    if (it != formTypeCache_.end()) {
+        return it->second;
+    }
+
+    // Fallback: query API directly
+    std::string endpoint = "/FormType?filter[code]=" + formCode;
+    ApiResponse response = apiClient_->get(endpoint);
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        if (!items.empty()) {
+            auto item = items[0];
+            int id = 0;
+            if (item.contains("id")) {
+                if (item["id"].is_number()) {
+                    id = item["id"].get<int>();
+                } else if (item["id"].is_string()) {
+                    try {
+                        id = std::stoi(item["id"].get<std::string>());
+                    } catch (...) {}
+                }
+            }
+            if (id > 0) {
+                formTypeCache_[formCode] = id;
+                return id;
+            }
+        }
+    }
+
+    std::cerr << "[FormSubmissionService] Could not find form type ID for code: " << formCode << std::endl;
+    return 0;
+}
+
+// Create a form submission record in the database
+SubmissionResult FormSubmissionService::createFormSubmissionRecord(const std::string& studentId,
+                                                                     const std::string& formCode,
+                                                                     const std::string& status) {
+    std::cout << "[FormSubmissionService] Creating form submission record for student " << studentId
+              << ", form: " << formCode << ", status: " << status << std::endl;
+
+    int formTypeId = getFormTypeId(formCode);
+    if (formTypeId == 0) {
+        std::cerr << "[FormSubmissionService] Failed to get form type ID for: " << formCode << std::endl;
+        return SubmissionResult{false, "", "Could not find form type: " + formCode, {"Unknown form type"}, {}};
+    }
+
+    // Check if a submission already exists for this student and form type
+    std::string checkEndpoint = "/FormSubmission?filter[student_id]=" + studentId +
+                                 "&filter[form_type_id]=" + std::to_string(formTypeId);
+    ApiResponse checkResponse = apiClient_->get(checkEndpoint);
+
+    nlohmann::json attributes;
+    try {
+        attributes["student_id"] = std::stoi(studentId);
+    } catch (const std::exception&) {
+        attributes["student_id"] = studentId;
+    }
+    attributes["form_type_id"] = formTypeId;
+    attributes["status"] = status;
+
+    // Get current timestamp in ISO format
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm tm_now = *std::gmtime(&time_t_now);
+    char timestamp[32];
+    std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", &tm_now);
+    attributes["submitted_at"] = std::string(timestamp);
+
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "FormSubmission"},
+        {"attributes", attributes}
+    };
+
+    ApiResponse response;
+    bool isUpdate = false;
+
+    // Check if record already exists
+    if (checkResponse.isSuccess()) {
+        auto json = checkResponse.getJson();
+        nlohmann::json items;
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        if (!items.empty()) {
+            // Record exists - update it
+            std::string existingId;
+            if (items[0].contains("id")) {
+                if (items[0]["id"].is_string()) {
+                    existingId = items[0]["id"].get<std::string>();
+                } else if (items[0]["id"].is_number()) {
+                    existingId = std::to_string(items[0]["id"].get<int>());
+                }
+            }
+            if (!existingId.empty()) {
+                payload["data"]["id"] = existingId;
+                std::cout << "[FormSubmissionService] Updating existing FormSubmission record: " << existingId << std::endl;
+                response = apiClient_->patch("/FormSubmission/" + existingId, payload);
+                isUpdate = true;
+            }
+        }
+    }
+
+    // Create new record if not updating
+    if (!isUpdate) {
+        std::cout << "[FormSubmissionService] Creating new FormSubmission record" << std::endl;
+        response = apiClient_->post("/FormSubmission", payload);
+    }
+
+    SubmissionResult result = parseSubmissionResponse(response);
+    if (result.success) {
+        std::cout << "[FormSubmissionService] FormSubmission record " << (isUpdate ? "updated" : "created")
+                  << " successfully, ID: " << result.submissionId << std::endl;
+    } else {
+        std::cerr << "[FormSubmissionService] Failed to " << (isUpdate ? "update" : "create")
+                  << " FormSubmission record: " << result.message << std::endl;
+    }
+    std::cout.flush();
+
+    return result;
 }
 
 } // namespace Api

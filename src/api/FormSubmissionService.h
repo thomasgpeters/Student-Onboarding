@@ -5,6 +5,7 @@
 #include <memory>
 #include <functional>
 #include <vector>
+#include <map>
 #include "ApiClient.h"
 #include "models/FormData.h"
 #include "models/Student.h"
@@ -121,14 +122,22 @@ public:
                                     const std::string& documentType,
                                     const std::string& filePath);
 
+    // Form submission record management
+    SubmissionResult createFormSubmissionRecord(const std::string& studentId,
+                                                 const std::string& formCode,
+                                                 const std::string& status = "pending");
+    int getFormTypeId(const std::string& formCode);
+
 private:
     std::shared_ptr<ApiClient> apiClient_;
+    std::map<std::string, int> formTypeCache_;  // Cache form_type code -> id mapping
 
     // Helper methods
     std::string getEndpointForForm(const std::string& formId) const;
     SubmissionResult parseSubmissionResponse(const ApiResponse& response);
     nlohmann::json prepareFormPayload(const std::string& studentId, const Models::FormData& data,
                                        const std::string& resourceType);
+    void loadFormTypeCache();
 };
 
 } // namespace Api

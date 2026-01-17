@@ -41,6 +41,7 @@ public:
     Wt::Signal<int>& approveClicked() { return approveClicked_; }
     Wt::Signal<int>& rejectClicked() { return rejectClicked_; }
     Wt::Signal<int>& requestRevisionClicked() { return requestRevisionClicked_; }
+    Wt::Signal<int>& previewPdfClicked() { return previewPdfClicked_; }
 
 private:
     void setupUI();
@@ -86,12 +87,14 @@ private:
     Wt::WPushButton* approveBtn_;
     Wt::WPushButton* rejectBtn_;
     Wt::WPushButton* revisionBtn_;
+    Wt::WPushButton* previewPdfBtn_;
 
     // Signals
     Wt::Signal<> backClicked_;
     Wt::Signal<int> approveClicked_;
     Wt::Signal<int> rejectClicked_;
     Wt::Signal<int> requestRevisionClicked_;
+    Wt::Signal<int> previewPdfClicked_;
 };
 
 } // namespace Admin
