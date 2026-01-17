@@ -1137,13 +1137,18 @@ void FormSubmissionService::loadFormTypeCache() {
     std::cout << "[FormSubmissionService] Loading form type cache..." << std::endl;
     ApiResponse response = apiClient_->get("/FormType");
     if (response.isSuccess()) {
+        std::cout << "[FormSubmissionService] FormType API response: " << response.body << std::endl;
         auto json = response.getJson();
         nlohmann::json items;
 
         if (json.is_array()) {
             items = json;
+            std::cout << "[FormSubmissionService] Response is array with " << items.size() << " items" << std::endl;
         } else if (json.contains("data") && json["data"].is_array()) {
             items = json["data"];
+            std::cout << "[FormSubmissionService] Response has data array with " << items.size() << " items" << std::endl;
+        } else {
+            std::cerr << "[FormSubmissionService] Unexpected FormType response format" << std::endl;
         }
 
         for (const auto& item : items) {
@@ -1171,26 +1176,129 @@ void FormSubmissionService::loadFormTypeCache() {
             if (!code.empty() && id > 0) {
                 formTypeCache_[code] = id;
                 std::cout << "[FormSubmissionService] Cached form type: " << code << " -> " << id << std::endl;
+            } else {
+                std::cerr << "[FormSubmissionService] Skipping item - code: '" << code << "', id: " << id << std::endl;
             }
         }
+    } else {
+        std::cerr << "[FormSubmissionService] Failed to load FormType data: " << response.errorMessage
+                  << " (status: " << response.statusCode << ")" << std::endl;
     }
     std::cout << "[FormSubmissionService] Form type cache loaded with " << formTypeCache_.size() << " entries" << std::endl;
     std::cout.flush();
+
+    // If cache is still empty, seed the FormType table
+    if (formTypeCache_.empty()) {
+        std::cout << "[FormSubmissionService] FormType table appears empty, seeding default values..." << std::endl;
+        ensureFormTypesExist();
+    }
+}
+
+// Create a single FormType record
+int FormSubmissionService::createFormType(const std::string& code, const std::string& name,
+                                           const std::string& category, int displayOrder) {
+    nlohmann::json attributes;
+    attributes["code"] = code;
+    attributes["name"] = name;
+    attributes["category"] = category;
+    attributes["display_order"] = displayOrder;
+    attributes["is_required"] = true;
+    attributes["is_active"] = true;
+
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "FormType"},
+        {"attributes", attributes}
+    };
+
+    std::cout << "[FormSubmissionService] Creating FormType: " << code << std::endl;
+    ApiResponse response = apiClient_->post("/FormType", payload);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        int id = 0;
+
+        // Extract ID from response
+        if (json.contains("data") && json["data"].contains("id")) {
+            if (json["data"]["id"].is_number()) {
+                id = json["data"]["id"].get<int>();
+            } else if (json["data"]["id"].is_string()) {
+                try {
+                    id = std::stoi(json["data"]["id"].get<std::string>());
+                } catch (...) {}
+            }
+        } else if (json.contains("id")) {
+            if (json["id"].is_number()) {
+                id = json["id"].get<int>();
+            } else if (json["id"].is_string()) {
+                try {
+                    id = std::stoi(json["id"].get<std::string>());
+                } catch (...) {}
+            }
+        }
+
+        if (id > 0) {
+            formTypeCache_[code] = id;
+            std::cout << "[FormSubmissionService] Created FormType: " << code << " -> " << id << std::endl;
+            return id;
+        }
+    } else {
+        std::cerr << "[FormSubmissionService] Failed to create FormType " << code
+                  << ": " << response.errorMessage << std::endl;
+    }
+
+    return 0;
+}
+
+// Seed all required FormType records if they don't exist
+void FormSubmissionService::ensureFormTypesExist() {
+    // Define the required form types (matching schema.sql seed data)
+    struct FormTypeDef {
+        std::string code;
+        std::string name;
+        std::string category;
+        int displayOrder;
+    };
+
+    std::vector<FormTypeDef> formTypes = {
+        {"personal_info", "Personal Information", "core", 1},
+        {"emergency_contact", "Emergency Contacts", "core", 2},
+        {"medical_info", "Medical Information", "health", 3},
+        {"academic_history", "Academic History", "academic", 4},
+        {"financial_aid", "Financial Aid", "financial", 5},
+        {"documents", "Document Upload", "documents", 6},
+        {"consent", "Terms and Consent", "legal", 7}
+    };
+
+    for (const auto& ft : formTypes) {
+        // Check if already exists in cache
+        if (formTypeCache_.find(ft.code) == formTypeCache_.end()) {
+            createFormType(ft.code, ft.name, ft.category, ft.displayOrder);
+        }
+    }
+
+    std::cout << "[FormSubmissionService] FormType seeding complete. Cache now has "
+              << formTypeCache_.size() << " entries" << std::endl;
 }
 
 // Get form type ID from code
 int FormSubmissionService::getFormTypeId(const std::string& formCode) {
+    std::cout << "[FormSubmissionService] getFormTypeId called for: " << formCode << std::endl;
     loadFormTypeCache();
 
     auto it = formTypeCache_.find(formCode);
     if (it != formTypeCache_.end()) {
+        std::cout << "[FormSubmissionService] Found form type in cache: " << formCode << " -> " << it->second << std::endl;
         return it->second;
     }
+
+    std::cout << "[FormSubmissionService] Form type not in cache, querying API..." << std::endl;
 
     // Fallback: query API directly
     std::string endpoint = "/FormType?filter[code]=" + formCode;
     ApiResponse response = apiClient_->get(endpoint);
     if (response.isSuccess()) {
+        std::cout << "[FormSubmissionService] FormType query response: " << response.body << std::endl;
         auto json = response.getJson();
         nlohmann::json items;
 
@@ -1214,9 +1322,14 @@ int FormSubmissionService::getFormTypeId(const std::string& formCode) {
             }
             if (id > 0) {
                 formTypeCache_[formCode] = id;
+                std::cout << "[FormSubmissionService] Found form type via query: " << formCode << " -> " << id << std::endl;
                 return id;
             }
+        } else {
+            std::cerr << "[FormSubmissionService] FormType query returned empty results for: " << formCode << std::endl;
         }
+    } else {
+        std::cerr << "[FormSubmissionService] FormType query failed: " << response.errorMessage << std::endl;
     }
 
     std::cerr << "[FormSubmissionService] Could not find form type ID for code: " << formCode << std::endl;
@@ -1299,7 +1412,17 @@ SubmissionResult FormSubmissionService::createFormSubmissionRecord(const std::st
     // Create new record if not updating
     if (!isUpdate) {
         std::cout << "[FormSubmissionService] Creating new FormSubmission record" << std::endl;
+        std::cout << "[FormSubmissionService] FormSubmission payload: " << payload.dump() << std::endl;
         response = apiClient_->post("/FormSubmission", payload);
+    }
+
+    std::cout << "[FormSubmissionService] FormSubmission API response - status: " << response.statusCode
+              << ", success: " << response.success << std::endl;
+    if (!response.body.empty()) {
+        std::cout << "[FormSubmissionService] FormSubmission response body: " << response.body << std::endl;
+    }
+    if (!response.errorMessage.empty()) {
+        std::cerr << "[FormSubmissionService] FormSubmission error: " << response.errorMessage << std::endl;
     }
 
     SubmissionResult result = parseSubmissionResponse(response);
@@ -1309,6 +1432,9 @@ SubmissionResult FormSubmissionService::createFormSubmissionRecord(const std::st
     } else {
         std::cerr << "[FormSubmissionService] Failed to " << (isUpdate ? "update" : "create")
                   << " FormSubmission record: " << result.message << std::endl;
+        for (const auto& err : result.errors) {
+            std::cerr << "[FormSubmissionService]   Error: " << err << std::endl;
+        }
     }
     std::cout.flush();
 
