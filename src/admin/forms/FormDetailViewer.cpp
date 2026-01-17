@@ -29,7 +29,8 @@ FormDetailViewer::FormDetailViewer()
     , actionsSection_(nullptr)
     , approveBtn_(nullptr)
     , rejectBtn_(nullptr)
-    , revisionBtn_(nullptr) {
+    , revisionBtn_(nullptr)
+    , previewPdfBtn_(nullptr) {
     setupUI();
 }
 
@@ -151,6 +152,12 @@ void FormDetailViewer::setupUI() {
     // Actions section
     actionsSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     actionsSection_->addStyleClass("admin-form-detail-actions");
+
+    previewPdfBtn_ = actionsSection_->addWidget(std::make_unique<Wt::WPushButton>("📄 Preview PDF"));
+    previewPdfBtn_->addStyleClass("btn btn-outline-primary");
+    previewPdfBtn_->clicked().connect([this]() {
+        previewPdfClicked_.emit(currentSubmissionId_);
+    });
 
     approveBtn_ = actionsSection_->addWidget(std::make_unique<Wt::WPushButton>("Approve Submission"));
     approveBtn_->addStyleClass("btn btn-success");

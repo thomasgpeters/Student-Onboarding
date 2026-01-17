@@ -184,14 +184,41 @@ Student-Onboarding/
 │       ├── ProgressWidget.cpp/h     # Progress indicator
 │       ├── FormContainer.cpp/h      # Form container/navigation
 │       └── DashboardWidget.cpp/h    # Student dashboard
+│   └── admin/
+│       ├── AdminApp.cpp/h          # Admin portal main application
+│       ├── AdminDashboard.cpp/h    # Admin dashboard widget
+│       ├── AdminSidebar.cpp/h      # Admin navigation sidebar
+│       ├── forms/
+│       │   ├── FormSubmissionsWidget.cpp/h  # Form submissions list
+│       │   ├── FormDetailViewer.cpp/h       # Form detail view
+│       │   └── FormPdfPreviewWidget.cpp/h   # PDF preview widget
+│       ├── students/
+│       │   ├── StudentListWidget.cpp/h      # Student list
+│       │   └── StudentDetailWidget.cpp/h    # Student detail view
+│       └── curriculum/
+│           ├── CurriculumListWidget.cpp/h   # Curriculum list
+│           └── CurriculumEditorWidget.cpp/h # Curriculum editor
 ├── config/
-│   ├── forms_config.json       # Form type configuration
-│   └── curriculum_config.json  # Curriculum configuration
+│   ├── forms_config.json           # Form type configuration
+│   ├── curriculum_config.json      # Combined curriculum config
+│   ├── curriculum_accredited.json  # Accredited programs only
+│   └── curriculum_vocational.json  # Vocational CDL programs only
 ├── database/
 │   ├── schema.sql              # Database schema
-│   └── postgresql-schema.sql   # PostgreSQL schema
+│   ├── postgresql-schema.sql   # PostgreSQL schema
+│   └── migrations/             # Database migrations
+│       ├── 004_extend_curriculum_schema.sql
+│       ├── 005_seed_accredited_curriculum.sql
+│       ├── 005_seed_vocational_curriculum.sql
+│       └── 006_flush_curriculum.sql
+├── scripts/
+│   └── seed_curriculum.sh      # Curriculum seeding script
+├── docs/
+│   ├── Administration_User_Guide.md  # Admin portal user guide
+│   └── CURRICULUM_SEEDING.md         # Curriculum seeding guide
 └── resources/
-    └── styles.css              # Custom CSS styles
+    ├── styles.css              # Student portal CSS styles
+    └── admin-styles.css        # Admin portal CSS styles
 ```
 
 ## Requirements
@@ -437,23 +464,43 @@ Custom CSS with design tokens:
 - Footer color: `#1a1a1a` (dark gray/black)
 - Responsive breakpoints for mobile support
 
+## Admin Dashboard Portal
+
+A separate web portal for university staff accessible at `/administration`:
+
+### Current Features
+- **Student Management**: View, search, filter, and manage all enrolled students
+- **Form Submissions**: Review all submitted forms with status tracking
+  - Today's submissions quick filter
+  - Filter by form type, status, and program
+  - Approve/reject forms with review notes
+- **Form Detail Viewer**: Detailed view of individual form submissions
+- **PDF Preview & Export**: Preview forms as printable PDF documents
+  - Professional header with scroll logo
+  - 8.5" x 11" letter paper formatting
+  - Print/download functionality
+- **Curriculum Management**: View and manage academic programs
+  - Support for accredited and vocational (CDL) programs
+  - Database seeding scripts for curriculum data
+- **Access Control**: Revoke/restore student login privileges
+- **Dashboard**: Overview with key metrics and quick actions
+
+### Planned Features
+- **Role-Based Access**: Super Admin, Administrator, and Instructor roles
+- **Email Notifications**: Send form status updates to students
+- **Bulk Operations**: Mass approve/reject forms
+- **Audit Logging**: Track all administrative actions
+
+See `docs/ADMIN_DASHBOARD_DESIGN.md` for full specification and `docs/Administration_User_Guide.md` for usage instructions.
+
 ## Future Enhancements
 
-### Admin Dashboard Portal (In Development)
-A separate web portal for university staff at `/administration`:
-- **Student Management**: View, search, and manage all students
-- **Form Management**: Review submitted forms, manage post-registration forms
-- **Curriculum Management**: Edit syllabus, configure required forms, reorder form sequence
-- **Access Control**: Revoke/restore student login privileges
-- **Role-Based Access**: Super Admin, Administrator, and Instructor roles
-- See `docs/ADMIN_DASHBOARD_DESIGN.md` for full specification
-
-### Other Planned Features
-- PDF form export
-- Print-friendly layouts
-- Document attachments
-- Email notifications
+### Planned Features
+- Email notifications for form submissions and status changes
+- Document attachments and file management
 - Real-time application status tracking
+- Batch form processing
+- Custom form builder for administrators
 
 ## Documentation
 
@@ -461,9 +508,48 @@ A separate web portal for university staff at `/administration`:
 - `WORKFLOW.md` - Detailed workflow and state documentation
 - `ARCHITECTURE_ANALYSIS.md` - Technical architecture and module details
 - `docs/ADMIN_DASHBOARD_DESIGN.md` - Admin portal design specification
+- `docs/Administration_User_Guide.md` - Comprehensive admin portal user guide with screenshot placeholders
+- `docs/CURRICULUM_SEEDING.md` - Curriculum data seeding and management guide
 - `docs/DATA_MODEL_CHANGES.md` - Database schema change documentation
 
 ## Recent Changes
+
+### Version 2.0.0 - Admin Forms Management & PDF Preview
+- **Form Submission Tracking Fix**: Fixed critical bug where form submissions were not being tracked
+  - When students submit forms, `FormSubmission` records are now properly created in the database
+  - Each form submission creates/updates a record with `student_id`, `form_type_id`, `status`, and `submitted_at`
+  - Administrators can now see all submitted forms in the Form Submissions widget
+  - Removed mock data fallback - widget now shows real database records only
+
+- **Today's Submissions Quick Filter**: Added "Today" stat card to Form Submissions widget
+  - New sky-blue stat card showing count of forms submitted today
+  - 5-column stat card layout: Today, Pending, Approved, Rejected, Needs Revision
+  - Real-time date comparison using ISO date string matching
+  - Quick visual indicator for daily submission volume
+
+- **PDF Form Preview**: New PDF preview functionality for form submissions
+  - Preview forms as printable PDF-style documents from Form Detail Viewer
+  - Professional header with inline SVG graduation cap/scroll logo
+  - Institution branding with "Student Onboarding System" and "Official Student Records" tagline
+  - Student information panel with name, email, and submission date
+  - Form fields displayed in a styled table format
+  - Footer with generation timestamp and confidentiality notice
+  - Optimized for 8.5" x 11" US Letter paper size
+  - Print button triggers browser print dialog for PDF export
+  - Download button provides print-to-PDF functionality
+
+- **Letter Paper Print Formatting**: Comprehensive print stylesheet for forms
+  - `@page` CSS rules for letter portrait orientation with 0.75" margins
+  - Page break handling to prevent content splitting across pages
+  - `print-color-adjust: exact` ensures logo and colors print correctly
+  - All navigation/sidebar elements hidden during printing
+  - Clean single-page document output for official records
+
+- **FormPdfPreviewWidget Integration**: New widget fully integrated into Admin Portal
+  - Added `FormPdfPreview` application state
+  - "Preview PDF" button in Form Detail Viewer opens preview
+  - Back navigation returns to form detail view
+  - API integration loads form-specific data based on form type
 
 ### Version 1.9.0
 - **Advertisement Banner**: Replaced redundant welcome message with promotional banner

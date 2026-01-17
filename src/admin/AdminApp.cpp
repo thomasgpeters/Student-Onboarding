@@ -29,6 +29,7 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , studentFormViewer_(nullptr)
     , formSubmissionsWidget_(nullptr)
     , formDetailViewer_(nullptr)
+    , formPdfPreviewWidget_(nullptr)
     , curriculumListWidget_(nullptr)
     , curriculumEditorWidget_(nullptr)
     , settingsView_(nullptr) {
@@ -156,7 +157,17 @@ void AdminApp::setupUI() {
     });
     formDetailViewer_->approveClicked().connect(this, &AdminApp::handleFormApproved);
     formDetailViewer_->rejectClicked().connect(this, &AdminApp::handleFormRejected);
+    formDetailViewer_->previewPdfClicked().connect(this, &AdminApp::handleFormPdfPreview);
     formDetailViewer_->hide();
+
+    // Form PDF Preview widget (hidden initially)
+    formPdfPreviewWidget_ = contentContainer_->addWidget(std::make_unique<FormPdfPreviewWidget>());
+    formPdfPreviewWidget_->setApiService(apiService_);
+    formPdfPreviewWidget_->backClicked().connect([this]() {
+        // Go back to form detail view
+        showFormDetail(selectedSubmissionId_);
+    });
+    formPdfPreviewWidget_->hide();
 
     // Curriculum List widget (hidden initially)
     curriculumListWidget_ = contentContainer_->addWidget(std::make_unique<CurriculumListWidget>());
@@ -222,6 +233,9 @@ void AdminApp::setState(AppState state) {
         case AppState::FormDetail:
             showFormDetail(selectedSubmissionId_);
             break;
+        case AppState::FormPdfPreview:
+            showFormPdfPreview(selectedSubmissionId_);
+            break;
         case AppState::Curriculum:
             showCurriculum();
             break;
@@ -243,6 +257,7 @@ void AdminApp::hideAllViews() {
     studentFormViewer_->hide();
     formSubmissionsWidget_->hide();
     formDetailViewer_->hide();
+    formPdfPreviewWidget_->hide();
     curriculumListWidget_->hide();
     curriculumEditorWidget_->hide();
     settingsView_->hide();
@@ -346,6 +361,21 @@ void AdminApp::showFormDetail(int submissionId) {
     selectedSubmissionId_ = submissionId;
     formDetailViewer_->loadSubmission(submissionId);
     formDetailViewer_->show();
+}
+
+void AdminApp::showFormPdfPreview(int submissionId) {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Forms);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    currentState_ = AppState::FormPdfPreview;
+    selectedSubmissionId_ = submissionId;
+    formPdfPreviewWidget_->loadFormSubmission(submissionId);
+    formPdfPreviewWidget_->show();
 }
 
 void AdminApp::showCurriculum() {
@@ -533,6 +563,13 @@ void AdminApp::handleFormRejected(int submissionId) {
     if (currentState_ == AppState::Forms) {
         formSubmissionsWidget_->loadData();
     }
+}
+
+void AdminApp::handleFormPdfPreview(int submissionId) {
+    std::cerr << "[AdminApp] Form PDF preview requested: " << submissionId << std::endl;
+    selectedSubmissionId_ = submissionId;
+    hideAllViews();
+    showFormPdfPreview(submissionId);
 }
 
 } // namespace Admin

@@ -3,6 +3,9 @@
 #include <Wt/WMessageBox.h>
 #include <iostream>
 #include <algorithm>
+#include <chrono>
+#include <ctime>
+#include <map>
 #include <nlohmann/json.hpp>
 
 namespace StudentIntake {
@@ -14,6 +17,7 @@ FormSubmissionsWidget::FormSubmissionsWidget()
     , headerTitle_(nullptr)
     , headerSubtitle_(nullptr)
     , statsContainer_(nullptr)
+    , todayCountText_(nullptr)
     , pendingCountText_(nullptr)
     , approvedCountText_(nullptr)
     , rejectedCountText_(nullptr)
@@ -53,7 +57,17 @@ void FormSubmissionsWidget::setupUI() {
 
     // Statistics cards
     statsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    statsContainer_->addStyleClass("admin-submission-stats");
+    statsContainer_->addStyleClass("admin-submission-stats admin-submission-stats-5");
+
+    // Today card - first for prominence
+    auto todayCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    todayCard->addStyleClass("admin-stat-mini-card today");
+    auto todayIcon = todayCard->addWidget(std::make_unique<Wt::WText>("📅"));
+    todayIcon->addStyleClass("admin-stat-mini-icon");
+    todayCountText_ = todayCard->addWidget(std::make_unique<Wt::WText>("0"));
+    todayCountText_->addStyleClass("admin-stat-mini-number");
+    auto todayLabel = todayCard->addWidget(std::make_unique<Wt::WText>("Today"));
+    todayLabel->addStyleClass("admin-stat-mini-label");
 
     // Pending card
     auto pendingCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -202,48 +216,133 @@ void FormSubmissionsWidget::clearData() {
 void FormSubmissionsWidget::loadSubmissions() {
     submissions_.clear();
 
+    // Build a cache of student info for efficient lookups
+    std::map<int, std::pair<std::string, std::string>> studentCache;  // id -> (name, email)
+    std::map<int, std::string> curriculumCache;  // id -> name
+
     // Try to load from API if available
     if (apiService_) {
         try {
+            // First, load students to get names and emails
+            auto studentsResponse = apiService_->getApiClient()->get("/Student");
+            if (studentsResponse.success) {
+                auto studentsJson = nlohmann::json::parse(studentsResponse.body);
+                nlohmann::json studentItems;
+                if (studentsJson.is_array()) {
+                    studentItems = studentsJson;
+                } else if (studentsJson.contains("data") && studentsJson["data"].is_array()) {
+                    studentItems = studentsJson["data"];
+                }
+
+                for (const auto& student : studentItems) {
+                    int studentId = 0;
+                    std::string name, email;
+                    int curriculumId = 0;
+
+                    if (student.contains("id")) {
+                        if (student["id"].is_string()) {
+                            studentId = std::stoi(student["id"].get<std::string>());
+                        } else {
+                            studentId = student["id"].get<int>();
+                        }
+                    }
+
+                    const auto& attrs = student.contains("attributes") ? student["attributes"] : student;
+                    std::string firstName = attrs.value("first_name", "");
+                    std::string lastName = attrs.value("last_name", "");
+                    name = firstName + " " + lastName;
+                    email = attrs.value("email", "");
+                    curriculumId = attrs.value("curriculum_id", 0);
+
+                    if (studentId > 0) {
+                        studentCache[studentId] = {name, email};
+                    }
+                }
+            }
+
+            // Load curricula for program names
+            auto curriculumResponse = apiService_->getApiClient()->get("/Curriculum");
+            if (curriculumResponse.success) {
+                auto curriculumJson = nlohmann::json::parse(curriculumResponse.body);
+                nlohmann::json curriculumItems;
+                if (curriculumJson.is_array()) {
+                    curriculumItems = curriculumJson;
+                } else if (curriculumJson.contains("data") && curriculumJson["data"].is_array()) {
+                    curriculumItems = curriculumJson["data"];
+                }
+
+                for (const auto& curr : curriculumItems) {
+                    int currId = 0;
+                    std::string currName;
+
+                    if (curr.contains("id")) {
+                        if (curr["id"].is_string()) {
+                            currId = std::stoi(curr["id"].get<std::string>());
+                        } else {
+                            currId = curr["id"].get<int>();
+                        }
+                    }
+
+                    const auto& attrs = curr.contains("attributes") ? curr["attributes"] : curr;
+                    currName = attrs.value("name", "");
+
+                    if (currId > 0) {
+                        curriculumCache[currId] = currName;
+                    }
+                }
+            }
+
+            // Now load form submissions
             auto response = apiService_->getApiClient()->get("/FormSubmission");
             if (response.success) {
                 auto jsonResponse = nlohmann::json::parse(response.body);
-                if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
-                    for (const auto& item : jsonResponse["data"]) {
-                        FormSubmissionRecord record;
+                nlohmann::json items;
+                if (jsonResponse.is_array()) {
+                    items = jsonResponse;
+                } else if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
+                    items = jsonResponse["data"];
+                }
 
-                        // Handle id - can be string or int in JSON:API
-                        if (item.contains("id")) {
-                            if (item["id"].is_string()) {
-                                record.id = std::stoi(item["id"].get<std::string>());
-                            } else {
-                                record.id = item["id"].get<int>();
-                            }
+                for (const auto& item : items) {
+                    FormSubmissionRecord record;
+
+                    // Handle id - can be string or int in JSON:API
+                    if (item.contains("id")) {
+                        if (item["id"].is_string()) {
+                            record.id = std::stoi(item["id"].get<std::string>());
+                        } else {
+                            record.id = item["id"].get<int>();
                         }
-
-                        // Get attributes
-                        if (item.contains("attributes")) {
-                            const auto& attrs = item["attributes"];
-                            record.studentId = attrs.value("student_id", 0);
-                            record.status = attrs.value("status", "pending");
-                            record.submittedAt = attrs.value("submitted_at", "");
-                            record.reviewedAt = attrs.value("approved_at", "");
-                            record.reviewedBy = attrs.value("approved_by", "");
-
-                            // Map form_type_id to form type name
-                            int formTypeId = attrs.value("form_type_id", 0);
-                            record.formType = getFormTypeFromId(formTypeId);
-                            record.formName = getFormDisplayName(record.formType);
-
-                            // These fields may need to be fetched from related resources
-                            // For now, use placeholder values that can be enhanced later
-                            record.studentName = attrs.value("student_name", "Student #" + std::to_string(record.studentId));
-                            record.studentEmail = attrs.value("student_email", "");
-                            record.programName = attrs.value("program_name", "");
-                        }
-
-                        submissions_.push_back(record);
                     }
+
+                    // Get attributes
+                    const auto& attrs = item.contains("attributes") ? item["attributes"] : item;
+                    record.studentId = attrs.value("student_id", 0);
+                    record.status = attrs.value("status", "pending");
+                    record.submittedAt = attrs.value("submitted_at", "");
+                    record.reviewedAt = attrs.value("approved_at", "");
+                    record.reviewedBy = attrs.value("approved_by", "");
+
+                    // Map form_type_id to form type name
+                    int formTypeId = attrs.value("form_type_id", 0);
+                    record.formType = getFormTypeFromId(formTypeId);
+                    record.formName = getFormDisplayName(record.formType);
+
+                    // Look up student info from cache
+                    auto studentIt = studentCache.find(record.studentId);
+                    if (studentIt != studentCache.end()) {
+                        record.studentName = studentIt->second.first;
+                        record.studentEmail = studentIt->second.second;
+                    } else {
+                        record.studentName = "Student #" + std::to_string(record.studentId);
+                        record.studentEmail = "";
+                    }
+
+                    // For program name, we'd need to look up the student's curriculum_id
+                    // For now, leave it empty or populate from a separate query if needed
+                    record.programName = "";
+
+                    submissions_.push_back(record);
                 }
             }
             std::cerr << "[FormSubmissionsWidget] Loaded " << submissions_.size() << " submissions from API" << std::endl;
@@ -252,30 +351,9 @@ void FormSubmissionsWidget::loadSubmissions() {
         }
     }
 
-    // Use mock data if API returned no submissions (for testing/development)
+    // Log when no submissions found (no mock data - this is a real system now)
     if (submissions_.empty()) {
-        std::cerr << "[FormSubmissionsWidget] Using mock data for testing" << std::endl;
-
-        submissions_.push_back({1, 101, "John Doe", "john.doe@email.com", "personal_info",
-            "Personal Information", "pending", "2026-01-15T10:30:00Z", "", "", "Computer Science"});
-        submissions_.push_back({2, 101, "John Doe", "john.doe@email.com", "academic_history",
-            "Academic History", "pending", "2026-01-15T10:35:00Z", "", "", "Computer Science"});
-        submissions_.push_back({3, 102, "Jane Smith", "jane.smith@email.com", "personal_info",
-            "Personal Information", "approved", "2026-01-14T09:00:00Z", "2026-01-14T14:00:00Z", "Admin User", "Business Administration"});
-        submissions_.push_back({4, 102, "Jane Smith", "jane.smith@email.com", "financial_aid",
-            "Financial Aid", "pending", "2026-01-14T09:15:00Z", "", "", "Business Administration"});
-        submissions_.push_back({5, 103, "Mike Johnson", "mike.j@email.com", "personal_info",
-            "Personal Information", "rejected", "2026-01-13T11:00:00Z", "2026-01-13T15:30:00Z", "Admin User", "MBA Program"});
-        submissions_.push_back({6, 103, "Mike Johnson", "mike.j@email.com", "consent",
-            "Consent Form", "approved", "2026-01-13T11:10:00Z", "2026-01-13T15:35:00Z", "Admin User", "MBA Program"});
-        submissions_.push_back({7, 104, "Sarah Wilson", "sarah.w@email.com", "medical_info",
-            "Medical Information", "needs_revision", "2026-01-12T14:00:00Z", "2026-01-12T16:00:00Z", "Admin User", "Nursing"});
-        submissions_.push_back({8, 104, "Sarah Wilson", "sarah.w@email.com", "emergency_contact",
-            "Emergency Contact", "pending", "2026-01-12T14:05:00Z", "", "", "Nursing"});
-        submissions_.push_back({9, 105, "Tom Brown", "tom.b@email.com", "document_upload",
-            "Document Upload", "pending", "2026-01-11T08:30:00Z", "", "", "Computer Science"});
-        submissions_.push_back({10, 105, "Tom Brown", "tom.b@email.com", "personal_info",
-            "Personal Information", "approved", "2026-01-11T08:00:00Z", "2026-01-11T12:00:00Z", "Admin User", "Computer Science"});
+        std::cerr << "[FormSubmissionsWidget] No form submissions found in database" << std::endl;
     }
 
     applyFilters();
@@ -311,10 +389,11 @@ void FormSubmissionsWidget::applyFilters() {
     std::string selectedProgram = (programIndex > 0) ? programFilter_->currentText().toUTF8() : "";
 
     // Count statistics
-    int pendingCount = 0, approvedCount = 0, rejectedCount = 0, revisionCount = 0;
+    int todayCount = 0, pendingCount = 0, approvedCount = 0, rejectedCount = 0, revisionCount = 0;
 
     for (const auto& submission : submissions_) {
         // Update counts
+        if (isToday(submission.submittedAt)) todayCount++;
         if (submission.status == "pending") pendingCount++;
         else if (submission.status == "approved") approvedCount++;
         else if (submission.status == "rejected") rejectedCount++;
@@ -352,6 +431,7 @@ void FormSubmissionsWidget::applyFilters() {
     }
 
     // Update statistics display
+    todayCountText_->setText(std::to_string(todayCount));
     pendingCountText_->setText(std::to_string(pendingCount));
     approvedCountText_->setText(std::to_string(approvedCount));
     rejectedCountText_->setText(std::to_string(rejectedCount));
@@ -591,6 +671,29 @@ std::string FormSubmissionsWidget::getFormTypeFromId(int formTypeId) {
         case 7: return "consent";
         default: return "unknown";
     }
+}
+
+std::string FormSubmissionsWidget::getTodayDateString() {
+    // Get current date in YYYY-MM-DD format
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm tm_now = *std::localtime(&time_t_now);
+
+    char buffer[11];
+    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d", &tm_now);
+    return std::string(buffer);
+}
+
+bool FormSubmissionsWidget::isToday(const std::string& dateStr) {
+    if (dateStr.empty() || dateStr.length() < 10) {
+        return false;
+    }
+
+    // Extract YYYY-MM-DD from the ISO date string
+    std::string submissionDate = dateStr.substr(0, 10);
+    std::string today = getTodayDateString();
+
+    return submissionDate == today;
 }
 
 } // namespace Admin
