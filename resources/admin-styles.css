@@ -1389,7 +1389,7 @@ textarea.form-control {
     background: white;
     padding: 1in;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    font-family: 'Times New Roman', Times, serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 12pt;
     line-height: 1.6;
     color: #1e293b;
@@ -1414,6 +1414,14 @@ textarea.form-control {
     width: 60px;
     height: 60px;
     flex-shrink: 0;
+}
+
+.pdf-logo-img {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    object-fit: contain;
 }
 
 .pdf-institution-info {
@@ -1538,6 +1546,85 @@ textarea.form-control {
     letter-spacing: 1px;
 }
 
+/* Multi-form print styles */
+.pdf-student-info-banner {
+    background: #f1f5f9;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+    border-left: 4px solid #1e3a5f;
+}
+
+.pdf-main-title {
+    color: #1e3a5f;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.pdf-form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+}
+
+.pdf-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.pdf-form-header h2 {
+    margin: 0;
+    color: #1e3a5f;
+    font-size: 1.25rem;
+}
+
+.pdf-date-info {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0.5rem 0;
+}
+
+.pdf-page-break {
+    page-break-before: always;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    border-top: 2px dashed #cbd5e1;
+    padding-top: 1rem;
+}
+
+.pdf-field-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+}
+
+.pdf-field-table td {
+    padding: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+}
+
+.pdf-field-table .pdf-field-label {
+    width: 35%;
+    font-weight: 500;
+    color: #475569;
+    background: #f8fafc;
+}
+
+.pdf-field-table .pdf-field-value {
+    width: 65%;
+    color: #1e293b;
+}
+
+.pdf-footer-text {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-align: center;
+}
+
 /* Print styles - 8.5 x 11 inch letter paper */
 @media print {
     /* Page setup for letter size */
@@ -1653,6 +1740,31 @@ textarea.form-control {
     .pdf-form-title,
     .pdf-section-title,
     .pdf-confidential-text {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Multi-form print styles */
+    .pdf-student-info-banner {
+        background: #f1f5f9 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .pdf-form-section {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .pdf-page-break {
+        page-break-before: always;
+        border-top: none;
+        margin-top: 0;
+        padding-top: 0;
+    }
+
+    .pdf-field-table .pdf-field-label {
+        background: #f8fafc !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }

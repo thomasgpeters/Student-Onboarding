@@ -87,6 +87,7 @@ private:
     void handleFormApproved(int submissionId);
     void handleFormRejected(int submissionId);
     void handleFormPdfPreview(int submissionId);
+    void handlePrintAllStudentForms(int studentId);
 
     // Configuration
     App::AppConfig& config_;

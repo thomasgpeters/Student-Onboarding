@@ -2,15 +2,51 @@
 #include <Wt/WBreak.h>
 #include <iostream>
 #include <algorithm>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 #include <nlohmann/json.hpp>
 
 namespace StudentIntake {
 namespace Admin {
 
+// Helper to get current ISO timestamp
+static std::string getCurrentIsoTimestamp() {
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm tm_now = *std::gmtime(&time_t_now);
+    std::ostringstream oss;
+    oss << std::put_time(&tm_now, "%Y-%m-%dT%H:%M:%SZ");
+    return oss.str();
+}
+
+// Helper for safe JSON string extraction
+static std::string safeGetString(const nlohmann::json& obj, const std::string& key, const std::string& defaultVal = "") {
+    if (obj.contains(key) && !obj[key].is_null() && obj[key].is_string()) {
+        return obj[key].get<std::string>();
+    }
+    return defaultVal;
+}
+
+// Helper for safe JSON int extraction
+static int safeGetInt(const nlohmann::json& obj, const std::string& key, int defaultVal = 0) {
+    if (obj.contains(key) && !obj[key].is_null()) {
+        if (obj[key].is_number()) {
+            return obj[key].get<int>();
+        } else if (obj[key].is_string()) {
+            try {
+                return std::stoi(obj[key].get<std::string>());
+            } catch (...) {}
+        }
+    }
+    return defaultVal;
+}
+
 FormDetailViewer::FormDetailViewer()
     : WContainerWidget()
     , apiService_(nullptr)
     , currentSubmissionId_(0)
+    , currentStudentId_(0)
     , headerSection_(nullptr)
     , backBtn_(nullptr)
     , formTitle_(nullptr)
@@ -30,7 +66,8 @@ FormDetailViewer::FormDetailViewer()
     , approveBtn_(nullptr)
     , rejectBtn_(nullptr)
     , revisionBtn_(nullptr)
-    , previewPdfBtn_(nullptr) {
+    , previewPdfBtn_(nullptr)
+    , printAllFormsBtn_(nullptr) {
     setupUI();
 }
 
@@ -153,10 +190,18 @@ void FormDetailViewer::setupUI() {
     actionsSection_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     actionsSection_->addStyleClass("admin-form-detail-actions");
 
-    previewPdfBtn_ = actionsSection_->addWidget(std::make_unique<Wt::WPushButton>("📄 Preview PDF"));
+    previewPdfBtn_ = actionsSection_->addWidget(std::make_unique<Wt::WPushButton>("Preview PDF"));
     previewPdfBtn_->addStyleClass("btn btn-outline-primary");
     previewPdfBtn_->clicked().connect([this]() {
         previewPdfClicked_.emit(currentSubmissionId_);
+    });
+
+    printAllFormsBtn_ = actionsSection_->addWidget(std::make_unique<Wt::WPushButton>("Print All Student Forms"));
+    printAllFormsBtn_->addStyleClass("btn btn-outline-secondary");
+    printAllFormsBtn_->clicked().connect([this]() {
+        if (currentStudentId_ > 0) {
+            printAllFormsClicked_.emit(currentStudentId_);
+        }
     });
 
     approveBtn_ = actionsSection_->addWidget(std::make_unique<Wt::WPushButton>("Approve Submission"));
@@ -174,6 +219,7 @@ void FormDetailViewer::setupUI() {
 
 void FormDetailViewer::loadSubmission(int submissionId) {
     currentSubmissionId_ = submissionId;
+    currentStudentId_ = 0;
     fieldsContainer_->clear();
 
     std::cerr << "[FormDetailViewer] Loading submission: " << submissionId << std::endl;
@@ -182,65 +228,270 @@ void FormDetailViewer::loadSubmission(int submissionId) {
     if (apiService_) {
         try {
             auto response = apiService_->getApiClient()->get("/FormSubmission/" + std::to_string(submissionId));
+            std::cerr << "[FormDetailViewer] FormSubmission response - success: " << response.success << std::endl;
+
             if (response.success) {
                 auto jsonResponse = nlohmann::json::parse(response.body);
+                nlohmann::json attrs;
+
+                // Handle JSON:API format or plain format
                 if (jsonResponse.contains("data")) {
                     auto& data = jsonResponse["data"];
-                    auto& attrs = data["attributes"];
-
-                    studentName_->setText(attrs.value("student_name", "-"));
-                    studentEmail_->setText(attrs.value("student_email", "-"));
-                    studentProgram_->setText(attrs.value("program_name", "-"));
-                    submittedDate_->setText(attrs.value("submitted_at", "-"));
-
-                    currentStatus_ = attrs.value("status", "pending");
-                    currentFormType_ = attrs.value("form_type", "");
-                    updateStatusDisplay(currentStatus_);
-
-                    if (!attrs.value("reviewed_by", "").empty()) {
-                        reviewedByText_->setText(attrs.value("reviewed_by", ""));
-                        reviewedAtText_->setText(attrs.value("reviewed_at", "-"));
-                    }
-
-                    if (attrs.contains("form_data") && attrs["form_data"].is_object()) {
-                        auto fields = parseFormData(currentFormType_, attrs["form_data"]);
-                        displayFormData(fields);
-                    }
-
-                    return;
+                    attrs = data.contains("attributes") ? data["attributes"] : data;
+                } else {
+                    attrs = jsonResponse;
                 }
+
+                // Extract student_id and form_type_id
+                int studentId = safeGetInt(attrs, "student_id", 0);
+                int formTypeId = safeGetInt(attrs, "form_type_id", 0);
+                currentStudentId_ = studentId;
+
+                std::cerr << "[FormDetailViewer] student_id: " << studentId
+                          << ", form_type_id: " << formTypeId << std::endl;
+
+                // Get submission details
+                currentStatus_ = safeGetString(attrs, "status", "pending");
+                std::string submittedAt = safeGetString(attrs, "submitted_at", "");
+                std::string approvedBy = safeGetString(attrs, "approved_by", "");
+                std::string approvedAt = safeGetString(attrs, "approved_at", "");
+
+                submittedDate_->setText(submittedAt.empty() ? "-" : formatDate(submittedAt));
+                updateStatusDisplay(currentStatus_);
+
+                if (!approvedBy.empty()) {
+                    reviewedByText_->setText(approvedBy);
+                    reviewedAtText_->setText(approvedAt.empty() ? "-" : formatDate(approvedAt));
+                } else {
+                    reviewedByText_->setText("Not yet reviewed");
+                    reviewedAtText_->setText("-");
+                }
+
+                // Fetch student information separately
+                if (studentId > 0) {
+                    loadStudentInfo(studentId);
+                } else {
+                    studentName_->setText("-");
+                    studentEmail_->setText("-");
+                    studentProgram_->setText("-");
+                }
+
+                // Fetch form type information
+                if (formTypeId > 0) {
+                    loadFormTypeInfo(formTypeId);
+                }
+
+                // Load form field data
+                loadFormFieldData(submissionId);
+
+                return;
             }
         } catch (const std::exception& e) {
             std::cerr << "[FormDetailViewer] Error loading submission: " << e.what() << std::endl;
         }
     }
 
-    // Mock data for testing
-    studentName_->setText("John Doe");
-    studentEmail_->setText("john.doe@email.com");
-    studentProgram_->setText("Computer Science");
-    submittedDate_->setText("Jan 15, 2026");
+    // Fallback - display empty
+    studentName_->setText("-");
+    studentEmail_->setText("-");
+    studentProgram_->setText("-");
+    submittedDate_->setText("-");
     currentStatus_ = "pending";
-    currentFormType_ = "personal_info";
+    currentFormType_ = "";
     updateStatusDisplay(currentStatus_);
+}
 
-    // Mock form fields
-    std::vector<FormFieldDisplay> mockFields = {
-        {"First Name", "John", "text"},
-        {"Last Name", "Doe", "text"},
-        {"Date of Birth", "1998-05-15", "date"},
-        {"Email Address", "john.doe@email.com", "email"},
-        {"Phone Number", "(555) 123-4567", "phone"},
-        {"Street Address", "123 Main Street", "text"},
-        {"City", "Springfield", "text"},
-        {"State", "IL", "text"},
-        {"ZIP Code", "62701", "text"},
-        {"Gender", "Male", "select"},
-        {"Preferred Pronouns", "He/Him", "select"},
-        {"Citizenship Status", "US Citizen", "select"}
-    };
+void FormDetailViewer::loadStudentInfo(int studentId) {
+    if (!apiService_) return;
 
-    displayFormData(mockFields);
+    try {
+        auto response = apiService_->getApiClient()->get("/Student/" + std::to_string(studentId));
+        if (response.success) {
+            auto json = nlohmann::json::parse(response.body);
+            nlohmann::json attrs;
+
+            if (json.contains("data")) {
+                auto& data = json["data"];
+                attrs = data.contains("attributes") ? data["attributes"] : data;
+            } else {
+                attrs = json;
+            }
+
+            std::string firstName = safeGetString(attrs, "first_name", "");
+            std::string lastName = safeGetString(attrs, "last_name", "");
+            std::string email = safeGetString(attrs, "email", "");
+            int curriculumId = safeGetInt(attrs, "curriculum_id", 0);
+
+            std::string fullName = firstName + " " + lastName;
+            studentName_->setText(fullName.empty() || fullName == " " ? "-" : fullName);
+            studentEmail_->setText(email.empty() ? "-" : email);
+
+            // Fetch program name from curriculum
+            if (curriculumId > 0) {
+                auto currResponse = apiService_->getApiClient()->get("/Curriculum/" + std::to_string(curriculumId));
+                if (currResponse.success) {
+                    auto currJson = nlohmann::json::parse(currResponse.body);
+                    nlohmann::json currAttrs;
+
+                    if (currJson.contains("data")) {
+                        auto& currData = currJson["data"];
+                        currAttrs = currData.contains("attributes") ? currData["attributes"] : currData;
+                    } else {
+                        currAttrs = currJson;
+                    }
+
+                    std::string programName = safeGetString(currAttrs, "name", "");
+                    studentProgram_->setText(programName.empty() ? "-" : programName);
+                } else {
+                    studentProgram_->setText("-");
+                }
+            } else {
+                studentProgram_->setText("-");
+            }
+
+            std::cerr << "[FormDetailViewer] Loaded student: " << fullName << ", " << email << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[FormDetailViewer] Error loading student info: " << e.what() << std::endl;
+        studentName_->setText("-");
+        studentEmail_->setText("-");
+        studentProgram_->setText("-");
+    }
+}
+
+void FormDetailViewer::loadFormTypeInfo(int formTypeId) {
+    if (!apiService_) return;
+
+    try {
+        auto response = apiService_->getApiClient()->get("/FormType/" + std::to_string(formTypeId));
+        if (response.success) {
+            auto json = nlohmann::json::parse(response.body);
+            nlohmann::json attrs;
+
+            if (json.contains("data")) {
+                auto& data = json["data"];
+                attrs = data.contains("attributes") ? data["attributes"] : data;
+            } else {
+                attrs = json;
+            }
+
+            currentFormType_ = safeGetString(attrs, "code", "");
+            std::string formName = safeGetString(attrs, "name", currentFormType_);
+
+            formTitle_->setText("<h2>" + formName + " Submission</h2>");
+            std::cerr << "[FormDetailViewer] Form type: " << currentFormType_ << " (" << formName << ")" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[FormDetailViewer] Error loading form type: " << e.what() << std::endl;
+    }
+}
+
+void FormDetailViewer::loadFormFieldData(int submissionId) {
+    if (!apiService_) return;
+
+    std::vector<FormFieldDisplay> fields;
+
+    try {
+        // Query FormField records for this submission
+        auto response = apiService_->getApiClient()->get(
+            "/FormField?filter[form_submission_id]=" + std::to_string(submissionId));
+
+        if (response.success) {
+            auto json = nlohmann::json::parse(response.body);
+            nlohmann::json items;
+
+            if (json.is_array()) {
+                items = json;
+            } else if (json.contains("data") && json["data"].is_array()) {
+                items = json["data"];
+            }
+
+            std::cerr << "[FormDetailViewer] Found " << items.size() << " form fields" << std::endl;
+
+            for (const auto& item : items) {
+                nlohmann::json attrs = item.contains("attributes") ? item["attributes"] : item;
+
+                FormFieldDisplay field;
+                field.label = safeGetString(attrs, "field_name", "Unknown");
+                field.fieldType = safeGetString(attrs, "field_type", "string");
+
+                // Get value based on field type
+                if (field.fieldType == "boolean" || field.fieldType == "bool") {
+                    bool boolVal = false;
+                    if (attrs.contains("bool_value") && !attrs["bool_value"].is_null()) {
+                        boolVal = attrs["bool_value"].get<bool>();
+                    }
+                    field.value = boolVal ? "Yes" : "No";
+                } else if (field.fieldType == "integer" || field.fieldType == "int") {
+                    field.value = std::to_string(safeGetInt(attrs, "int_value", 0));
+                } else if (field.fieldType == "double" || field.fieldType == "number") {
+                    if (attrs.contains("double_value") && !attrs["double_value"].is_null()) {
+                        field.value = std::to_string(attrs["double_value"].get<double>());
+                    } else {
+                        field.value = "0";
+                    }
+                } else {
+                    field.value = safeGetString(attrs, "string_value", "");
+                }
+
+                // Format field label for display
+                field.label = formatFieldLabel(field.label);
+
+                fields.push_back(field);
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[FormDetailViewer] Error loading form fields: " << e.what() << std::endl;
+    }
+
+    if (fields.empty()) {
+        // No form field data - show message
+        auto noDataText = fieldsContainer_->addWidget(
+            std::make_unique<Wt::WText>("No form data available for this submission."));
+        noDataText->addStyleClass("text-muted");
+    } else {
+        displayFormData(fields);
+    }
+}
+
+std::string FormDetailViewer::formatFieldLabel(const std::string& fieldName) {
+    // Convert snake_case to Title Case
+    std::string result;
+    bool capitalizeNext = true;
+
+    for (char c : fieldName) {
+        if (c == '_') {
+            result += ' ';
+            capitalizeNext = true;
+        } else if (capitalizeNext) {
+            result += std::toupper(c);
+            capitalizeNext = false;
+        } else {
+            result += c;
+        }
+    }
+
+    return result;
+}
+
+std::string FormDetailViewer::formatDate(const std::string& dateStr) {
+    if (dateStr.empty() || dateStr.length() < 10) return dateStr;
+
+    try {
+        std::string year = dateStr.substr(0, 4);
+        std::string month = dateStr.substr(5, 2);
+        std::string day = dateStr.substr(8, 2);
+
+        std::vector<std::string> months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
+        int monthIdx = std::stoi(month) - 1;
+        if (monthIdx >= 0 && monthIdx < 12) {
+            return months[monthIdx] + " " + std::to_string(std::stoi(day)) + ", " + year;
+        }
+    } catch (...) {}
+
+    return dateStr;
 }
 
 void FormDetailViewer::displayFormData(const std::vector<FormFieldDisplay>& fields) {
@@ -290,83 +541,132 @@ void FormDetailViewer::updateStatusDisplay(const std::string& status) {
 void FormDetailViewer::handleApprove() {
     std::cerr << "[FormDetailViewer] Approving submission: " << currentSubmissionId_ << std::endl;
 
+    bool success = false;
     if (apiService_) {
         try {
             nlohmann::json payload;
-            payload["data"]["type"] = "form_submission";
+            payload["data"]["type"] = "FormSubmission";
             payload["data"]["id"] = std::to_string(currentSubmissionId_);
             payload["data"]["attributes"]["status"] = "approved";
-            payload["data"]["attributes"]["review_notes"] = reviewNotes_->text().toUTF8();
+            payload["data"]["attributes"]["approved_at"] = getCurrentIsoTimestamp();
+            payload["data"]["attributes"]["approved_by"] = "Admin";  // TODO: Use actual admin user name
+
+            std::string notes = reviewNotes_->text().toUTF8();
+            if (!notes.empty()) {
+                payload["data"]["attributes"]["rejection_reason"] = notes;  // Using rejection_reason field for notes
+            }
+
+            std::cerr << "[FormDetailViewer] PATCH payload: " << payload.dump() << std::endl;
 
             auto response = apiService_->getApiClient()->patch(
-                "/FormSubmission/" + std::to_string(currentSubmissionId_), payload.dump());
+                "/FormSubmission/" + std::to_string(currentSubmissionId_), payload);
 
             if (response.success) {
                 std::cerr << "[FormDetailViewer] Submission approved successfully" << std::endl;
+                success = true;
+            } else {
+                std::cerr << "[FormDetailViewer] Failed to approve: " << response.errorMessage << std::endl;
             }
         } catch (const std::exception& e) {
             std::cerr << "[FormDetailViewer] Error approving submission: " << e.what() << std::endl;
         }
     }
 
-    updateStatusDisplay("approved");
+    if (success) {
+        updateStatusDisplay("approved");
+        reviewedByText_->setText("Admin");
+        reviewedAtText_->setText(formatDate(getCurrentIsoTimestamp()));
+    }
     approveClicked_.emit(currentSubmissionId_);
 }
 
 void FormDetailViewer::handleReject() {
     std::cerr << "[FormDetailViewer] Rejecting submission: " << currentSubmissionId_ << std::endl;
 
+    bool success = false;
     if (apiService_) {
         try {
             nlohmann::json payload;
-            payload["data"]["type"] = "form_submission";
+            payload["data"]["type"] = "FormSubmission";
             payload["data"]["id"] = std::to_string(currentSubmissionId_);
             payload["data"]["attributes"]["status"] = "rejected";
-            payload["data"]["attributes"]["review_notes"] = reviewNotes_->text().toUTF8();
+            payload["data"]["attributes"]["approved_at"] = getCurrentIsoTimestamp();
+            payload["data"]["attributes"]["approved_by"] = "Admin";
+
+            std::string notes = reviewNotes_->text().toUTF8();
+            if (!notes.empty()) {
+                payload["data"]["attributes"]["rejection_reason"] = notes;
+            }
+
+            std::cerr << "[FormDetailViewer] PATCH payload: " << payload.dump() << std::endl;
 
             auto response = apiService_->getApiClient()->patch(
-                "/FormSubmission/" + std::to_string(currentSubmissionId_), payload.dump());
+                "/FormSubmission/" + std::to_string(currentSubmissionId_), payload);
 
             if (response.success) {
                 std::cerr << "[FormDetailViewer] Submission rejected successfully" << std::endl;
+                success = true;
+            } else {
+                std::cerr << "[FormDetailViewer] Failed to reject: " << response.errorMessage << std::endl;
             }
         } catch (const std::exception& e) {
             std::cerr << "[FormDetailViewer] Error rejecting submission: " << e.what() << std::endl;
         }
     }
 
-    updateStatusDisplay("rejected");
+    if (success) {
+        updateStatusDisplay("rejected");
+        reviewedByText_->setText("Admin");
+        reviewedAtText_->setText(formatDate(getCurrentIsoTimestamp()));
+    }
     rejectClicked_.emit(currentSubmissionId_);
 }
 
 void FormDetailViewer::handleRequestRevision() {
     std::cerr << "[FormDetailViewer] Requesting revision for submission: " << currentSubmissionId_ << std::endl;
 
+    bool success = false;
     if (apiService_) {
         try {
             nlohmann::json payload;
-            payload["data"]["type"] = "form_submission";
+            payload["data"]["type"] = "FormSubmission";
             payload["data"]["id"] = std::to_string(currentSubmissionId_);
             payload["data"]["attributes"]["status"] = "needs_revision";
-            payload["data"]["attributes"]["review_notes"] = reviewNotes_->text().toUTF8();
+            payload["data"]["attributes"]["approved_at"] = getCurrentIsoTimestamp();
+            payload["data"]["attributes"]["approved_by"] = "Admin";
+
+            std::string notes = reviewNotes_->text().toUTF8();
+            if (!notes.empty()) {
+                payload["data"]["attributes"]["rejection_reason"] = notes;
+            }
+
+            std::cerr << "[FormDetailViewer] PATCH payload: " << payload.dump() << std::endl;
 
             auto response = apiService_->getApiClient()->patch(
-                "/FormSubmission/" + std::to_string(currentSubmissionId_), payload.dump());
+                "/FormSubmission/" + std::to_string(currentSubmissionId_), payload);
 
             if (response.success) {
                 std::cerr << "[FormDetailViewer] Revision requested successfully" << std::endl;
+                success = true;
+            } else {
+                std::cerr << "[FormDetailViewer] Failed to request revision: " << response.errorMessage << std::endl;
             }
         } catch (const std::exception& e) {
             std::cerr << "[FormDetailViewer] Error requesting revision: " << e.what() << std::endl;
         }
     }
 
-    updateStatusDisplay("needs_revision");
+    if (success) {
+        updateStatusDisplay("needs_revision");
+        reviewedByText_->setText("Admin");
+        reviewedAtText_->setText(formatDate(getCurrentIsoTimestamp()));
+    }
     requestRevisionClicked_.emit(currentSubmissionId_);
 }
 
 void FormDetailViewer::clearForm() {
     currentSubmissionId_ = 0;
+    currentStudentId_ = 0;
     currentStatus_ = "";
     currentFormType_ = "";
     studentName_->setText("-");
@@ -377,6 +677,7 @@ void FormDetailViewer::clearForm() {
     reviewNotes_->setText("");
     reviewedByText_->setText("Not yet reviewed");
     reviewedAtText_->setText("-");
+    formTitle_->setText("<h2>Form Submission Details</h2>");
 }
 
 std::string FormDetailViewer::getStatusBadgeClass(const std::string& status) {
