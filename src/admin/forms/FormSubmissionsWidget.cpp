@@ -202,6 +202,9 @@ void FormSubmissionsWidget::setupUI() {
 }
 
 void FormSubmissionsWidget::loadData() {
+    // Load form types and programs first (for dropdowns and ID mapping)
+    loadFormTypes();
+    loadPrograms();
     loadSubmissions();
 }
 
@@ -210,6 +213,117 @@ void FormSubmissionsWidget::clearData() {
     filteredSubmissions_.clear();
     if (submissionsTable_) {
         submissionsTable_->clear();
+    }
+}
+
+void FormSubmissionsWidget::loadFormTypes() {
+    formTypeIdToCode_.clear();
+    formTypeCodeToName_.clear();
+
+    if (!apiService_) return;
+
+    try {
+        auto response = apiService_->getApiClient()->get("/FormType");
+        if (response.success) {
+            auto json = nlohmann::json::parse(response.body);
+            nlohmann::json items;
+
+            if (json.is_array()) {
+                items = json;
+            } else if (json.contains("data") && json["data"].is_array()) {
+                items = json["data"];
+            }
+
+            std::cerr << "[FormSubmissionsWidget] Loading " << items.size() << " form types" << std::endl;
+
+            for (const auto& item : items) {
+                int id = 0;
+                std::string code, name;
+
+                // Get ID
+                if (item.contains("id")) {
+                    if (item["id"].is_string()) {
+                        id = std::stoi(item["id"].get<std::string>());
+                    } else {
+                        id = item["id"].get<int>();
+                    }
+                }
+
+                // Get attributes
+                const auto& attrs = item.contains("attributes") ? item["attributes"] : item;
+                code = attrs.value("code", "");
+                name = attrs.value("name", code);  // Use code as fallback for name
+
+                if (id > 0 && !code.empty()) {
+                    formTypeIdToCode_[id] = code;
+                    formTypeCodeToName_[code] = name;
+                    std::cerr << "[FormSubmissionsWidget] FormType: id=" << id << ", code=" << code << ", name=" << name << std::endl;
+                }
+            }
+
+            // Update the form type filter dropdown
+            formTypeFilter_->clear();
+            formTypeFilter_->addItem("All Forms");
+            for (const auto& pair : formTypeCodeToName_) {
+                formTypeFilter_->addItem(pair.second);  // Add display name
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[FormSubmissionsWidget] Error loading form types: " << e.what() << std::endl;
+    }
+}
+
+void FormSubmissionsWidget::loadPrograms() {
+    programs_.clear();
+
+    if (!apiService_) return;
+
+    try {
+        auto response = apiService_->getApiClient()->get("/Curriculum");
+        if (response.success) {
+            auto json = nlohmann::json::parse(response.body);
+            nlohmann::json items;
+
+            if (json.is_array()) {
+                items = json;
+            } else if (json.contains("data") && json["data"].is_array()) {
+                items = json["data"];
+            }
+
+            std::cerr << "[FormSubmissionsWidget] Loading " << items.size() << " programs" << std::endl;
+
+            for (const auto& item : items) {
+                int id = 0;
+                std::string name;
+
+                // Get ID
+                if (item.contains("id")) {
+                    if (item["id"].is_string()) {
+                        id = std::stoi(item["id"].get<std::string>());
+                    } else {
+                        id = item["id"].get<int>();
+                    }
+                }
+
+                // Get attributes
+                const auto& attrs = item.contains("attributes") ? item["attributes"] : item;
+                name = attrs.value("name", "");
+
+                if (id > 0 && !name.empty()) {
+                    programs_.push_back({id, name});
+                    std::cerr << "[FormSubmissionsWidget] Program: id=" << id << ", name=" << name << std::endl;
+                }
+            }
+
+            // Update the program filter dropdown
+            programFilter_->clear();
+            programFilter_->addItem("All Programs");
+            for (const auto& program : programs_) {
+                programFilter_->addItem(program.second);  // Add program name
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[FormSubmissionsWidget] Error loading programs: " << e.what() << std::endl;
     }
 }
 
@@ -368,11 +482,14 @@ void FormSubmissionsWidget::applyFilters() {
     int formIndex = formTypeFilter_->currentIndex();
     std::string selectedForm = "";
     if (formIndex > 0) {
-        // Map display names to form types
-        std::vector<std::string> formTypes = {"personal_info", "emergency_contact", "medical_info",
-            "academic_history", "financial_aid", "document_upload", "consent"};
-        if (formIndex - 1 < static_cast<int>(formTypes.size())) {
-            selectedForm = formTypes[formIndex - 1];
+        // Get the display name from the dropdown
+        std::string displayName = formTypeFilter_->currentText().toUTF8();
+        // Find the code that matches this display name
+        for (const auto& pair : formTypeCodeToName_) {
+            if (pair.second == displayName) {
+                selectedForm = pair.first;  // Use the code
+                break;
+            }
         }
     }
 
@@ -649,28 +766,29 @@ std::string FormSubmissionsWidget::formatDate(const std::string& dateStr) {
 }
 
 std::string FormSubmissionsWidget::getFormDisplayName(const std::string& formType) {
+    // Use dynamic map loaded from API
+    auto it = formTypeCodeToName_.find(formType);
+    if (it != formTypeCodeToName_.end()) {
+        return it->second;
+    }
+    // Fallback to hardcoded values for backwards compatibility
     if (formType == "personal_info") return "Personal Information";
-    if (formType == "emergency_contact") return "Emergency Contact";
+    if (formType == "emergency_contact") return "Emergency Contacts";
     if (formType == "medical_info") return "Medical Information";
     if (formType == "academic_history") return "Academic History";
     if (formType == "financial_aid") return "Financial Aid";
-    if (formType == "document_upload") return "Document Upload";
-    if (formType == "consent") return "Consent Form";
+    if (formType == "documents") return "Document Upload";
+    if (formType == "consent") return "Terms and Consent";
     return formType;
 }
 
 std::string FormSubmissionsWidget::getFormTypeFromId(int formTypeId) {
-    // Map form_type_id from API to internal form type strings
-    switch (formTypeId) {
-        case 1: return "personal_info";
-        case 2: return "emergency_contact";
-        case 3: return "medical_info";
-        case 4: return "academic_history";
-        case 5: return "financial_aid";
-        case 6: return "document_upload";
-        case 7: return "consent";
-        default: return "unknown";
+    // Use dynamic map loaded from API
+    auto it = formTypeIdToCode_.find(formTypeId);
+    if (it != formTypeIdToCode_.end()) {
+        return it->second;
     }
+    return "unknown";
 }
 
 std::string FormSubmissionsWidget::getTodayDateString() {
