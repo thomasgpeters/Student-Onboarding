@@ -564,6 +564,10 @@
     align-items: flex-end;
 }
 
+.admin-filter-buttons-right {
+    margin-left: auto;
+}
+
 .admin-result-count {
     font-size: 0.875rem;
     color: #64748b;

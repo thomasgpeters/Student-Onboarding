@@ -151,11 +151,11 @@ void FormSubmissionsWidget::setupUI() {
     programFilter_->addItem("Nursing");
     programFilter_->changed().connect(this, &FormSubmissionsWidget::applyFilters);
 
-    // Reset button only - filters apply automatically on change
+    // Clear button only - filters apply automatically on change
     auto buttonGroup = filterContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    buttonGroup->addStyleClass("admin-filter-buttons");
+    buttonGroup->addStyleClass("admin-filter-buttons admin-filter-buttons-right");
 
-    resetBtn_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Reset"));
+    resetBtn_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Clear"));
     resetBtn_->addStyleClass("btn btn-secondary");
     resetBtn_->clicked().connect(this, &FormSubmissionsWidget::resetFilters);
 
