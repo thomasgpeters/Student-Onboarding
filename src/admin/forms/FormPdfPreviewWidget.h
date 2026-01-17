@@ -1,6 +1,7 @@
 #ifndef FORM_PDF_PREVIEW_WIDGET_H
 #define FORM_PDF_PREVIEW_WIDGET_H
 
+#include <Wt/WDialog.h>
 #include <Wt/WContainerWidget.h>
 #include <Wt/WText.h>
 #include <Wt/WPushButton.h>
@@ -24,18 +25,18 @@ struct FormFieldData {
 };
 
 /**
- * @brief Widget for previewing form submissions as printable PDF-style documents
+ * @brief Modal dialog for previewing form submissions as printable PDF-style documents
  */
-class FormPdfPreviewWidget : public Wt::WContainerWidget {
+class FormPdfPreviewWidget : public Wt::WDialog {
 public:
     FormPdfPreviewWidget();
     ~FormPdfPreviewWidget() override;
 
     void setApiService(std::shared_ptr<Api::FormSubmissionService> apiService);
 
-    // Load form data for preview
-    void loadFormSubmission(int submissionId);
-    void loadStudentForms(int studentId);
+    // Load form data for preview and show dialog
+    void showFormSubmission(int submissionId);
+    void showStudentForms(int studentId);
 
     // Set form data directly
     void setFormData(const std::string& formType,
@@ -46,7 +47,6 @@ public:
                      const std::vector<FormFieldData>& fields);
 
     // Signals
-    Wt::Signal<>& backClicked() { return backClicked_; }
     Wt::Signal<>& printClicked() { return printClicked_; }
     Wt::Signal<>& downloadClicked() { return downloadClicked_; }
 
@@ -54,6 +54,8 @@ private:
     void setupUI();
     void buildPreview();
     void clearPreview();
+    void loadFormSubmissionData(int submissionId);
+    void loadStudentFormsData(int studentId);
     std::string formatDate(const std::string& dateStr);
     std::string formatValue(const std::string& value, const std::string& type);
 
@@ -69,14 +71,13 @@ private:
 
     // UI Elements
     Wt::WContainerWidget* toolbar_;
-    Wt::WPushButton* backBtn_;
     Wt::WPushButton* printBtn_;
     Wt::WPushButton* downloadBtn_;
+    Wt::WPushButton* closeBtn_;
     Wt::WContainerWidget* previewContainer_;
     Wt::WContainerWidget* documentContent_;
 
     // Signals
-    Wt::Signal<> backClicked_;
     Wt::Signal<> printClicked_;
     Wt::Signal<> downloadClicked_;
 };

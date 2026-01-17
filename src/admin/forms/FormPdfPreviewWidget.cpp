@@ -13,12 +13,12 @@ namespace StudentIntake {
 namespace Admin {
 
 FormPdfPreviewWidget::FormPdfPreviewWidget()
-    : WContainerWidget()
+    : WDialog("Form Preview")
     , apiService_(nullptr)
     , toolbar_(nullptr)
-    , backBtn_(nullptr)
     , printBtn_(nullptr)
     , downloadBtn_(nullptr)
+    , closeBtn_(nullptr)
     , previewContainer_(nullptr)
     , documentContent_(nullptr) {
     setupUI();
@@ -32,44 +32,76 @@ void FormPdfPreviewWidget::setApiService(std::shared_ptr<Api::FormSubmissionServ
 }
 
 void FormPdfPreviewWidget::setupUI() {
-    addStyleClass("form-pdf-preview-widget");
+    // Configure dialog properties
+    setModal(true);
+    setClosable(true);
+    setResizable(true);
+    setMovable(true);
+    rejectWhenEscapePressed();
 
-    // Toolbar
-    toolbar_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    // Add custom style class for sizing
+    addStyleClass("pdf-preview-dialog");
+
+    // Contents container
+    auto content = contents();
+    content->addStyleClass("pdf-preview-dialog-content");
+
+    // Toolbar with action buttons
+    toolbar_ = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     toolbar_->addStyleClass("pdf-preview-toolbar");
 
-    backBtn_ = toolbar_->addWidget(std::make_unique<Wt::WPushButton>("← Back"));
-    backBtn_->addStyleClass("btn btn-secondary");
-    backBtn_->clicked().connect([this]() {
-        backClicked_.emit();
-    });
-
-    auto spacer = toolbar_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    spacer->addStyleClass("pdf-toolbar-spacer");
-
-    printBtn_ = toolbar_->addWidget(std::make_unique<Wt::WPushButton>("🖨️ Print"));
+    printBtn_ = toolbar_->addWidget(std::make_unique<Wt::WPushButton>("Print"));
     printBtn_->addStyleClass("btn btn-primary");
     printBtn_->clicked().connect([this]() {
-        // Trigger browser print dialog
+        // Trigger browser print dialog for the preview container
         Wt::WApplication::instance()->doJavaScript(
-            "window.print();"
+            "var content = document.querySelector('.pdf-preview-container');"
+            "if (content) {"
+            "  var printWindow = window.open('', '_blank');"
+            "  printWindow.document.write('<html><head><title>Print Preview</title>');"
+            "  printWindow.document.write('<link rel=\"stylesheet\" href=\"admin-styles.css\">');"
+            "  printWindow.document.write('</head><body>');"
+            "  printWindow.document.write(content.innerHTML);"
+            "  printWindow.document.write('</body></html>');"
+            "  printWindow.document.close();"
+            "  printWindow.onload = function() { printWindow.print(); printWindow.close(); };"
+            "}"
         );
         printClicked_.emit();
     });
 
-    downloadBtn_ = toolbar_->addWidget(std::make_unique<Wt::WPushButton>("⬇️ Download PDF"));
+    downloadBtn_ = toolbar_->addWidget(std::make_unique<Wt::WPushButton>("Download PDF"));
     downloadBtn_->addStyleClass("btn btn-success");
     downloadBtn_->clicked().connect([this]() {
-        // For now, print to PDF is the download mechanism
-        // In the future, this could use a server-side PDF generation library
+        // Same as print for now - uses browser's save as PDF
         Wt::WApplication::instance()->doJavaScript(
-            "window.print();"
+            "var content = document.querySelector('.pdf-preview-container');"
+            "if (content) {"
+            "  var printWindow = window.open('', '_blank');"
+            "  printWindow.document.write('<html><head><title>Download Preview</title>');"
+            "  printWindow.document.write('<link rel=\"stylesheet\" href=\"admin-styles.css\">');"
+            "  printWindow.document.write('</head><body>');"
+            "  printWindow.document.write(content.innerHTML);"
+            "  printWindow.document.write('</body></html>');"
+            "  printWindow.document.close();"
+            "  printWindow.onload = function() { printWindow.print(); };"
+            "}"
         );
         downloadClicked_.emit();
     });
 
+    // Spacer
+    auto spacer = toolbar_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    spacer->addStyleClass("pdf-toolbar-spacer");
+
+    closeBtn_ = toolbar_->addWidget(std::make_unique<Wt::WPushButton>("Close"));
+    closeBtn_->addStyleClass("btn btn-secondary");
+    closeBtn_->clicked().connect([this]() {
+        reject();
+    });
+
     // Preview container with paper styling
-    previewContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    previewContainer_ = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     previewContainer_->addStyleClass("pdf-preview-container");
 
     // The document content (styled to look like a paper document)
@@ -93,7 +125,19 @@ void FormPdfPreviewWidget::setFormData(const std::string& formType,
     buildPreview();
 }
 
-void FormPdfPreviewWidget::loadFormSubmission(int submissionId) {
+void FormPdfPreviewWidget::showFormSubmission(int submissionId) {
+    setWindowTitle("Form Preview");
+    loadFormSubmissionData(submissionId);
+    show();
+}
+
+void FormPdfPreviewWidget::showStudentForms(int studentId) {
+    setWindowTitle("All Student Forms");
+    loadStudentFormsData(studentId);
+    show();
+}
+
+void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
     if (!apiService_) {
         std::cerr << "[FormPdfPreviewWidget] No API service available" << std::endl;
         return;
@@ -254,7 +298,7 @@ void FormPdfPreviewWidget::loadFormSubmission(int submissionId) {
     }
 }
 
-void FormPdfPreviewWidget::loadStudentForms(int studentId) {
+void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
     std::cerr << "[FormPdfPreviewWidget] Loading all forms for student: " << studentId << std::endl;
 
     if (!apiService_) {
@@ -397,7 +441,7 @@ void FormPdfPreviewWidget::loadStudentForms(int studentId) {
             // Load form fields for this submission
             std::vector<FormFieldData> fields;
 
-            // Load data based on form type (similar to loadFormSubmission)
+            // Load data based on form type (similar to loadFormSubmissionData)
             if (formType == "personal_info") {
                 // Personal info is in the Student table
                 if (studentResponse.success) {
