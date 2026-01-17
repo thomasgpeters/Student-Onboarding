@@ -78,7 +78,6 @@ private:
     Wt::WComboBox* formTypeFilter_;
     Wt::WComboBox* statusFilter_;
     Wt::WComboBox* programFilter_;
-    Wt::WPushButton* searchBtn_;
     Wt::WPushButton* resetBtn_;
     Wt::WText* resultCount_;
     Wt::WContainerWidget* tableContainer_;

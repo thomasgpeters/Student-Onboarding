@@ -22,7 +22,6 @@ FormSubmissionsWidget::FormSubmissionsWidget()
     , formTypeFilter_(nullptr)
     , statusFilter_(nullptr)
     , programFilter_(nullptr)
-    , searchBtn_(nullptr)
     , resetBtn_(nullptr)
     , resultCount_(nullptr)
     , tableContainer_(nullptr)
@@ -99,7 +98,7 @@ void FormSubmissionsWidget::setupUI() {
     searchInput_ = searchGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     searchInput_->setPlaceholderText("Search by student name or email...");
     searchInput_->addStyleClass("admin-filter-input");
-    searchInput_->enterPressed().connect(this, &FormSubmissionsWidget::applyFilters);
+    searchInput_->textInput().connect(this, &FormSubmissionsWidget::applyFilters);
 
     // Form type filter
     auto formGroup = filterContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -152,13 +151,9 @@ void FormSubmissionsWidget::setupUI() {
     programFilter_->addItem("Nursing");
     programFilter_->changed().connect(this, &FormSubmissionsWidget::applyFilters);
 
-    // Filter buttons
+    // Reset button only - filters apply automatically on change
     auto buttonGroup = filterContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     buttonGroup->addStyleClass("admin-filter-buttons");
-
-    searchBtn_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Search"));
-    searchBtn_->addStyleClass("btn btn-primary");
-    searchBtn_->clicked().connect(this, &FormSubmissionsWidget::applyFilters);
 
     resetBtn_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Reset"));
     resetBtn_->addStyleClass("btn btn-secondary");
