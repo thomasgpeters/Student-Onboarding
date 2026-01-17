@@ -161,14 +161,9 @@ void AdminApp::setupUI() {
     formDetailViewer_->printAllFormsClicked().connect(this, &AdminApp::handlePrintAllStudentForms);
     formDetailViewer_->hide();
 
-    // Form PDF Preview widget (hidden initially)
-    formPdfPreviewWidget_ = contentContainer_->addWidget(std::make_unique<FormPdfPreviewWidget>());
+    // Form PDF Preview widget (modal dialog - not added to content container)
+    formPdfPreviewWidget_ = addChild(std::make_unique<FormPdfPreviewWidget>());
     formPdfPreviewWidget_->setApiService(apiService_);
-    formPdfPreviewWidget_->backClicked().connect([this]() {
-        // Go back to form detail view
-        showFormDetail(selectedSubmissionId_);
-    });
-    formPdfPreviewWidget_->hide();
 
     // Curriculum List widget (hidden initially)
     curriculumListWidget_ = contentContainer_->addWidget(std::make_unique<CurriculumListWidget>());
@@ -235,7 +230,7 @@ void AdminApp::setState(AppState state) {
             showFormDetail(selectedSubmissionId_);
             break;
         case AppState::FormPdfPreview:
-            showFormPdfPreview(selectedSubmissionId_);
+            // PDF preview is now a modal dialog, shown via handleFormPdfPreview
             break;
         case AppState::Curriculum:
             showCurriculum();
@@ -258,7 +253,7 @@ void AdminApp::hideAllViews() {
     studentFormViewer_->hide();
     formSubmissionsWidget_->hide();
     formDetailViewer_->hide();
-    formPdfPreviewWidget_->hide();
+    // formPdfPreviewWidget_ is a WDialog - it manages its own visibility
     curriculumListWidget_->hide();
     curriculumEditorWidget_->hide();
     settingsView_->hide();
@@ -362,21 +357,6 @@ void AdminApp::showFormDetail(int submissionId) {
     selectedSubmissionId_ = submissionId;
     formDetailViewer_->loadSubmission(submissionId);
     formDetailViewer_->show();
-}
-
-void AdminApp::showFormPdfPreview(int submissionId) {
-    // hideAllViews() already called by setState()
-
-    sidebarWidget_->show();
-    sidebarWidget_->setActiveSection(AdminSection::Forms);
-    navigationWidget_->refresh();
-    contentWrapper_->removeStyleClass("login-state");
-    contentWrapper_->addStyleClass("with-sidebar");
-
-    currentState_ = AppState::FormPdfPreview;
-    selectedSubmissionId_ = submissionId;
-    formPdfPreviewWidget_->loadFormSubmission(submissionId);
-    formPdfPreviewWidget_->show();
 }
 
 void AdminApp::showCurriculum() {
@@ -568,24 +548,14 @@ void AdminApp::handleFormRejected(int submissionId) {
 
 void AdminApp::handleFormPdfPreview(int submissionId) {
     std::cerr << "[AdminApp] Form PDF preview requested: " << submissionId << std::endl;
-    selectedSubmissionId_ = submissionId;
-    hideAllViews();
-    showFormPdfPreview(submissionId);
+    // Show the PDF preview as a modal dialog - no state change needed
+    formPdfPreviewWidget_->showFormSubmission(submissionId);
 }
 
 void AdminApp::handlePrintAllStudentForms(int studentId) {
     std::cerr << "[AdminApp] Print all student forms requested: " << studentId << std::endl;
-    hideAllViews();
-
-    // Show the PDF preview widget with all student forms
-    sidebarWidget_->show();
-    sidebarWidget_->setActiveSection(AdminSection::Forms);
-    navigationWidget_->refresh();
-    contentWrapper_->removeStyleClass("login-state");
-    contentWrapper_->addStyleClass("with-sidebar");
-
-    formPdfPreviewWidget_->loadStudentForms(studentId);
-    formPdfPreviewWidget_->show();
+    // Show the PDF preview as a modal dialog - no state change needed
+    formPdfPreviewWidget_->showStudentForms(studentId);
 }
 
 } // namespace Admin

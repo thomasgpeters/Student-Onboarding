@@ -67,7 +67,7 @@ private:
     void showStudentForms(int studentId);
     void showForms();
     void showFormDetail(int submissionId);
-    void showFormPdfPreview(int submissionId);
+    // showFormPdfPreview removed - PDF preview is now a modal dialog
     void showCurriculum();
     void showCurriculumEdit(const std::string& curriculumId);
     void showSettings();
