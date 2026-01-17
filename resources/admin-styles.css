@@ -1353,24 +1353,41 @@ textarea.form-control {
    PDF PREVIEW WIDGET (Modal Dialog)
    ===================================================== */
 
-/* Modal dialog styling */
+/* Modal overlay/backdrop - dims the background */
+.Wt-dialogcover {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Modal dialog styling - smaller size */
 .pdf-preview-dialog {
-    width: 90vw !important;
-    max-width: 1200px !important;
-    height: 90vh !important;
-    max-height: 90vh !important;
+    width: 550px !important;
+    max-width: 90vw !important;
+    height: 70vh !important;
+    max-height: 600px !important;
+    background: #f1f5f9 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.pdf-preview-dialog .Wt-dialog-titlebar {
+    background: #1e3a5f !important;
+    color: white !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 8px 8px 0 0 !important;
+    font-weight: 600 !important;
+}
+
+.pdf-preview-dialog .Wt-dialog-titlebar .closeicon {
+    color: white !important;
 }
 
 .pdf-preview-dialog .Wt-dialog-body {
     background: #f1f5f9 !important;
     padding: 0 !important;
-}
-
-.pdf-preview-dialog .Wt-dialog-content {
-    height: calc(100% - 40px);
-    display: flex;
-    flex-direction: column;
-    background: #f1f5f9;
+    height: calc(100% - 45px) !important;
+    overflow: hidden !important;
+    border-radius: 0 0 8px 8px !important;
 }
 
 .pdf-preview-dialog-content {
@@ -1379,6 +1396,7 @@ textarea.form-control {
     height: 100%;
     overflow: hidden;
     background: #f1f5f9;
+    padding: 0.75rem;
 }
 
 /* Legacy standalone widget styling (kept for compatibility) */
@@ -1391,12 +1409,18 @@ textarea.form-control {
 .pdf-preview-toolbar {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
     background: white;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.pdf-preview-toolbar .btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
 }
 
 .pdf-toolbar-spacer {
@@ -1407,9 +1431,9 @@ textarea.form-control {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 2rem;
+    padding: 1rem;
     background: #64748b;
-    border-radius: 8px;
+    border-radius: 6px;
     flex: 1;
     overflow: auto;
     min-height: 0;
