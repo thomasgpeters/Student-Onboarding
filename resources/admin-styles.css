@@ -829,6 +829,15 @@
     background: #16a34a;
 }
 
+.btn-info {
+    background: #06b6d4;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #0891b2;
+}
+
 .btn-link {
     background: transparent;
     color: #3b82f6;
