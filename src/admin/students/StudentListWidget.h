@@ -30,11 +30,13 @@ public:
 
 private:
     void setupUI();
+    void setupStats();
     void setupFilters();
     void setupTable();
     void loadStudents();
     void loadCurriculum();
     void applyFilters();
+    void updateStats();
     std::string getProgramName(const std::string& curriculumId) const;
     void clearFilters();
     void updateTable(const std::vector<::StudentIntake::Models::Student>& students);
@@ -46,7 +48,14 @@ private:
     std::vector<::StudentIntake::Models::Student> allStudents_;
     std::map<std::string, std::string> curriculumMap_;  // curriculum_id -> program_name
 
-    // UI Elements
+    // UI Elements - Stats
+    Wt::WContainerWidget* statsContainer_;
+    Wt::WText* activeCountText_;
+    Wt::WText* pendingCountText_;
+    Wt::WText* completedCountText_;
+    Wt::WText* revokedCountText_;
+
+    // UI Elements - Filters
     Wt::WLineEdit* searchInput_;
     Wt::WComboBox* programFilter_;
     Wt::WComboBox* statusFilter_;

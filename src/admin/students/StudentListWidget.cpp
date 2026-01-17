@@ -12,6 +12,11 @@ namespace Admin {
 StudentListWidget::StudentListWidget()
     : WContainerWidget()
     , apiService_(nullptr)
+    , statsContainer_(nullptr)
+    , activeCountText_(nullptr)
+    , pendingCountText_(nullptr)
+    , completedCountText_(nullptr)
+    , revokedCountText_(nullptr)
     , searchInput_(nullptr)
     , programFilter_(nullptr)
     , statusFilter_(nullptr)
@@ -43,6 +48,9 @@ void StudentListWidget::setupUI() {
         "View and manage all enrolled students"));
     subtitle->addStyleClass("admin-section-subtitle");
 
+    // Statistics cards
+    setupStats();
+
     // Filters section
     setupFilters();
 
@@ -55,6 +63,51 @@ void StudentListWidget::setupUI() {
     tableContainer_->addStyleClass("admin-table-container");
 
     setupTable();
+}
+
+void StudentListWidget::setupStats() {
+    statsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    statsContainer_->addStyleClass("admin-submission-stats");
+
+    // Active card
+    auto activeCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    activeCard->addStyleClass("admin-stat-mini-card active");
+    auto activeIcon = activeCard->addWidget(std::make_unique<Wt::WText>("✓"));
+    activeIcon->addStyleClass("admin-stat-mini-icon");
+    activeCountText_ = activeCard->addWidget(std::make_unique<Wt::WText>("0"));
+    activeCountText_->addStyleClass("admin-stat-mini-number");
+    auto activeLabel = activeCard->addWidget(std::make_unique<Wt::WText>("Active"));
+    activeLabel->addStyleClass("admin-stat-mini-label");
+
+    // Pending card
+    auto pendingCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    pendingCard->addStyleClass("admin-stat-mini-card pending");
+    auto pendingIcon = pendingCard->addWidget(std::make_unique<Wt::WText>("⏳"));
+    pendingIcon->addStyleClass("admin-stat-mini-icon");
+    pendingCountText_ = pendingCard->addWidget(std::make_unique<Wt::WText>("0"));
+    pendingCountText_->addStyleClass("admin-stat-mini-number");
+    auto pendingLabel = pendingCard->addWidget(std::make_unique<Wt::WText>("Pending"));
+    pendingLabel->addStyleClass("admin-stat-mini-label");
+
+    // Completed card
+    auto completedCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    completedCard->addStyleClass("admin-stat-mini-card approved");
+    auto completedIcon = completedCard->addWidget(std::make_unique<Wt::WText>("★"));
+    completedIcon->addStyleClass("admin-stat-mini-icon");
+    completedCountText_ = completedCard->addWidget(std::make_unique<Wt::WText>("0"));
+    completedCountText_->addStyleClass("admin-stat-mini-number");
+    auto completedLabel = completedCard->addWidget(std::make_unique<Wt::WText>("Completed"));
+    completedLabel->addStyleClass("admin-stat-mini-label");
+
+    // Revoked card
+    auto revokedCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    revokedCard->addStyleClass("admin-stat-mini-card rejected");
+    auto revokedIcon = revokedCard->addWidget(std::make_unique<Wt::WText>("✗"));
+    revokedIcon->addStyleClass("admin-stat-mini-icon");
+    revokedCountText_ = revokedCard->addWidget(std::make_unique<Wt::WText>("0"));
+    revokedCountText_->addStyleClass("admin-stat-mini-number");
+    auto revokedLabel = revokedCard->addWidget(std::make_unique<Wt::WText>("Revoked"));
+    revokedLabel->addStyleClass("admin-stat-mini-label");
 }
 
 void StudentListWidget::setupFilters() {
@@ -335,6 +388,27 @@ void StudentListWidget::applyFilters() {
     }
 
     updateTable(filtered);
+    updateStats();
+}
+
+void StudentListWidget::updateStats() {
+    int activeCount = 0, pendingCount = 0, completedCount = 0, revokedCount = 0;
+
+    for (const auto& student : allStudents_) {
+        std::string status = student.getStatus();
+        // Convert to lowercase for comparison
+        std::transform(status.begin(), status.end(), status.begin(), ::tolower);
+
+        if (status == "active") activeCount++;
+        else if (status == "pending") pendingCount++;
+        else if (status == "completed") completedCount++;
+        else if (status == "revoked") revokedCount++;
+    }
+
+    activeCountText_->setText(std::to_string(activeCount));
+    pendingCountText_->setText(std::to_string(pendingCount));
+    completedCountText_->setText(std::to_string(completedCount));
+    revokedCountText_->setText(std::to_string(revokedCount));
 }
 
 void StudentListWidget::clearFilters() {
