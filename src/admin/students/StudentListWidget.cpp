@@ -15,7 +15,6 @@ StudentListWidget::StudentListWidget()
     , searchInput_(nullptr)
     , programFilter_(nullptr)
     , statusFilter_(nullptr)
-    , searchButton_(nullptr)
     , clearButton_(nullptr)
     , tableContainer_(nullptr)
     , studentTable_(nullptr)
@@ -72,7 +71,7 @@ void StudentListWidget::setupFilters() {
     searchInput_ = searchGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     searchInput_->setPlaceholderText("Search by name or email...");
     searchInput_->addStyleClass("admin-filter-input");
-    searchInput_->enterPressed().connect([this]() {
+    searchInput_->textInput().connect([this]() {
         applyFilters();
     });
 
@@ -90,6 +89,9 @@ void StudentListWidget::setupFilters() {
     programFilter_->addItem("Information Technology - BS");
     programFilter_->addItem("Software Engineering - BS");
     programFilter_->addItem("Data Science - MS");
+    programFilter_->changed().connect([this]() {
+        applyFilters();
+    });
 
     // Status filter
     auto statusGroup = filterContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -105,16 +107,13 @@ void StudentListWidget::setupFilters() {
     statusFilter_->addItem("Pending");
     statusFilter_->addItem("Completed");
     statusFilter_->addItem("Revoked");
-
-    // Buttons
-    auto buttonGroup = filterContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
-    buttonGroup->addStyleClass("admin-filter-buttons");
-
-    searchButton_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Search"));
-    searchButton_->addStyleClass("btn btn-primary");
-    searchButton_->clicked().connect([this]() {
+    statusFilter_->changed().connect([this]() {
         applyFilters();
     });
+
+    // Clear button only - filters apply automatically on change
+    auto buttonGroup = filterContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    buttonGroup->addStyleClass("admin-filter-buttons");
 
     clearButton_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Clear"));
     clearButton_->addStyleClass("btn btn-secondary");
