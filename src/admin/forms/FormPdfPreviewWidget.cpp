@@ -407,22 +407,33 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
             std::string formType = formIt != formTypeMap.end() ? formIt->second.first : "unknown";
             std::string formTitle = formIt != formTypeMap.end() ? formIt->second.second : "Form";
 
-            // Add a page break separator between forms (except first)
-            if (formIndex > 0) {
-                auto pageBreak = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
-                pageBreak->addStyleClass("pdf-page-break");
-            }
-
-            // Form section header
+            // Form section container (each form is a separate page)
             auto formSection = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
             formSection->addStyleClass("pdf-form-section");
+            if (formIndex > 0) {
+                formSection->addStyleClass("pdf-page-break");
+            }
 
-            auto formHeader = formSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-            formHeader->addStyleClass("pdf-form-header");
+            // Add logo and header to each form section
+            auto formPageHeader = formSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+            formPageHeader->addStyleClass("pdf-header");
 
-            auto formTitleText = formHeader->addWidget(std::make_unique<Wt::WText>(
-                "<h2>" + formTitle + "</h2>"));
-            formTitleText->setTextFormat(Wt::TextFormat::XHTML);
+            auto logoRow = formPageHeader->addWidget(std::make_unique<Wt::WContainerWidget>());
+            logoRow->addStyleClass("pdf-logo-row");
+
+            auto formLogo = logoRow->addWidget(std::make_unique<Wt::WImage>(
+                "https://media.licdn.com/dms/image/v2/D4E0BAQFNqqJ59i1lgQ/company-logo_200_200/company-logo_200_200/0/1733939002925/imagery_business_systems_llc_logo?e=2147483647&v=beta&t=s_hATe0kqIDc64S79VJYXNS4N_UwrcnUA1x7VCb3sFA"));
+            formLogo->addStyleClass("pdf-logo-img");
+
+            auto formInstitutionName = logoRow->addWidget(std::make_unique<Wt::WText>("Student Intake System"));
+            formInstitutionName->addStyleClass("pdf-institution-name");
+
+            // Form title
+            auto formTitleContainer = formPageHeader->addWidget(std::make_unique<Wt::WContainerWidget>());
+            formTitleContainer->addStyleClass("pdf-form-title-row");
+
+            auto formTitleText = formTitleContainer->addWidget(std::make_unique<Wt::WText>(formTitle));
+            formTitleText->addStyleClass("pdf-form-title");
 
             // Status badge
             std::string statusClass = "badge-secondary";
@@ -434,14 +445,18 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
             std::string statusDisplay = status;
             if (!statusDisplay.empty()) statusDisplay[0] = std::toupper(statusDisplay[0]);
 
-            auto statusBadge = formHeader->addWidget(std::make_unique<Wt::WText>(
+            auto statusBadge = formTitleContainer->addWidget(std::make_unique<Wt::WText>(
                 "<span class='badge " + statusClass + "'>" + statusDisplay + "</span>"));
             statusBadge->setTextFormat(Wt::TextFormat::XHTML);
 
-            // Submission date
-            auto dateInfo = formSection->addWidget(std::make_unique<Wt::WText>(
-                "<p class='pdf-date-info'>Submitted: " + formatDate(submittedAt) + "</p>"));
-            dateInfo->setTextFormat(Wt::TextFormat::XHTML);
+            // Student info for this form
+            auto formStudentInfo = formSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+            formStudentInfo->addStyleClass("pdf-info-bar");
+
+            auto formStudentDetails = formStudentInfo->addWidget(std::make_unique<Wt::WText>(
+                "<strong>Student:</strong> " + studentName + " &nbsp;|&nbsp; <strong>Email:</strong> " + studentEmail +
+                " &nbsp;|&nbsp; <strong>Submitted:</strong> " + formatDate(submittedAt)));
+            formStudentDetails->setTextFormat(Wt::TextFormat::XHTML);
 
             // Load form fields for this submission
             std::vector<FormFieldData> fields;
