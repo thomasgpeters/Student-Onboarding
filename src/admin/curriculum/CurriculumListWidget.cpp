@@ -103,6 +103,7 @@ void CurriculumListWidget::setupUI() {
     departmentFilter_->addItem("Business");
     departmentFilter_->addItem("Arts & Sciences");
     departmentFilter_->addItem("Health Sciences");
+    departmentFilter_->addItem("Adult Education");
     departmentFilter_->changed().connect(this, &CurriculumListWidget::applyFilters);
 
     // Degree type filter
