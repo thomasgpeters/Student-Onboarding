@@ -191,10 +191,15 @@ void FormSubmissionsWidget::setupUI() {
 }
 
 void FormSubmissionsWidget::loadData() {
+    std::cerr << "[FormSubmissionsWidget] loadData() called" << std::endl;
+    std::cerr << "[FormSubmissionsWidget] apiService_ is " << (apiService_ ? "SET" : "NULL") << std::endl;
+
     // Load form types and programs first (for dropdowns and ID mapping)
     loadFormTypes();
     loadPrograms();
     loadSubmissions();
+
+    std::cerr << "[FormSubmissionsWidget] loadData() complete - loaded " << submissions_.size() << " submissions" << std::endl;
 }
 
 void FormSubmissionsWidget::clearData() {
@@ -206,13 +211,20 @@ void FormSubmissionsWidget::clearData() {
 }
 
 void FormSubmissionsWidget::loadFormTypes() {
+    std::cerr << "[FormSubmissionsWidget] loadFormTypes() called" << std::endl;
     formTypeIdToCode_.clear();
     formTypeCodeToName_.clear();
 
-    if (!apiService_) return;
+    if (!apiService_) {
+        std::cerr << "[FormSubmissionsWidget] loadFormTypes() - apiService_ is NULL, returning early" << std::endl;
+        return;
+    }
 
     try {
+        std::cerr << "[FormSubmissionsWidget] Fetching /FormType from API..." << std::endl;
         auto response = apiService_->getApiClient()->get("/FormType");
+        std::cerr << "[FormSubmissionsWidget] FormType API response - success: " << response.success
+                  << ", status: " << response.statusCode << std::endl;
         if (response.success) {
             auto json = nlohmann::json::parse(response.body);
             nlohmann::json items;
@@ -317,6 +329,7 @@ void FormSubmissionsWidget::loadPrograms() {
 }
 
 void FormSubmissionsWidget::loadSubmissions() {
+    std::cerr << "[FormSubmissionsWidget] loadSubmissions() called" << std::endl;
     submissions_.clear();
 
     // Build a cache of student info for efficient lookups
@@ -325,6 +338,7 @@ void FormSubmissionsWidget::loadSubmissions() {
 
     // Try to load from API if available
     if (apiService_) {
+        std::cerr << "[FormSubmissionsWidget] apiService_ is set, loading from API" << std::endl;
         try {
             // First, load students to get names and emails
             auto studentsResponse = apiService_->getApiClient()->get("/Student");
