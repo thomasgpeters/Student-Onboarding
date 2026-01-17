@@ -34,9 +34,11 @@ public:
 
 private:
     void setupUI();
+    void setupStats();
     void loadCurriculums();
     void updateTable();
     void applyFilters();
+    void updateStats();
     void resetFilters();
     std::string getStatusBadgeClass(bool isActive);
     std::string getDegreeTypeBadgeClass(const std::string& degreeType);
@@ -44,6 +46,13 @@ private:
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     std::vector<StudentIntake::Models::Curriculum> curriculums_;
     std::vector<StudentIntake::Models::Curriculum> filteredCurriculums_;
+
+    // UI Elements - Stats
+    Wt::WContainerWidget* statsContainer_;
+    Wt::WText* activeCountText_;
+    Wt::WText* inactiveCountText_;
+    Wt::WText* onlineCountText_;
+    Wt::WText* onCampusCountText_;
 
     // UI Elements
     Wt::WText* headerTitle_;

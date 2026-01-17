@@ -1119,6 +1119,18 @@
     border-left-color: #3b82f6;
 }
 
+.admin-stat-mini-card.revision {
+    border-left-color: #8b5cf6;
+}
+
+.admin-stat-mini-card.inactive {
+    border-left-color: #6b7280;
+}
+
+.admin-stat-mini-card.online {
+    border-left-color: #06b6d4;
+}
+
 .admin-stat-mini-icon {
     font-size: 1.5rem;
 }
