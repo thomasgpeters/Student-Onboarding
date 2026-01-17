@@ -53,7 +53,6 @@ private:
     Wt::WComboBox* departmentFilter_;
     Wt::WComboBox* degreeTypeFilter_;
     Wt::WComboBox* statusFilter_;
-    Wt::WPushButton* searchBtn_;
     Wt::WPushButton* resetBtn_;
     Wt::WPushButton* addBtn_;
     Wt::WText* resultCount_;

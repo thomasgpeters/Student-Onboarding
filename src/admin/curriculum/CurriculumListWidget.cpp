@@ -20,7 +20,6 @@ CurriculumListWidget::CurriculumListWidget()
     , departmentFilter_(nullptr)
     , degreeTypeFilter_(nullptr)
     , statusFilter_(nullptr)
-    , searchBtn_(nullptr)
     , resetBtn_(nullptr)
     , addBtn_(nullptr)
     , resultCount_(nullptr)
@@ -79,7 +78,7 @@ void CurriculumListWidget::setupUI() {
     searchInput_ = searchGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     searchInput_->setPlaceholderText("Search by name or code...");
     searchInput_->addStyleClass("admin-filter-input");
-    searchInput_->enterPressed().connect(this, &CurriculumListWidget::applyFilters);
+    searchInput_->textInput().connect(this, &CurriculumListWidget::applyFilters);
 
     // Department filter
     auto deptGroup = filterContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -129,15 +128,11 @@ void CurriculumListWidget::setupUI() {
     statusFilter_->addItem("Inactive");
     statusFilter_->changed().connect(this, &CurriculumListWidget::applyFilters);
 
-    // Filter buttons
+    // Clear button only - filters apply automatically on change
     auto buttonGroup = filterContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    buttonGroup->addStyleClass("admin-filter-buttons");
+    buttonGroup->addStyleClass("admin-filter-buttons admin-filter-buttons-right");
 
-    searchBtn_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Search"));
-    searchBtn_->addStyleClass("btn btn-primary");
-    searchBtn_->clicked().connect(this, &CurriculumListWidget::applyFilters);
-
-    resetBtn_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Reset"));
+    resetBtn_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Clear"));
     resetBtn_->addStyleClass("btn btn-secondary");
     resetBtn_->clicked().connect(this, &CurriculumListWidget::resetFilters);
 
