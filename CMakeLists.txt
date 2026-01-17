@@ -100,6 +100,7 @@ set(ADMIN_SOURCES
     src/admin/curriculum/CurriculumEditorWidget.cpp
     src/admin/forms/FormSubmissionsWidget.cpp
     src/admin/forms/FormDetailViewer.cpp
+    src/admin/forms/FormPdfPreviewWidget.cpp
 )
 
 set(APP_SOURCES
