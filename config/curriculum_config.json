@@ -39,6 +39,14 @@
       "dean": "Dr. Michael Davis",
       "contactEmail": "artsci@university.edu",
       "curriculumIds": ["art_ba"]
+    },
+    {
+      "id": "adult_education",
+      "name": "Adult Education - Professional Driver Training",
+      "code": "CDL",
+      "dean": "James Thompson",
+      "contactEmail": "cdl@university.edu",
+      "curriculumIds": ["cdl_class_a", "cdl_class_a_combo", "cdl_class_a_tanker", "cdl_class_b", "cdl_class_b_passenger"]
     }
   ],
   "curriculums": [
@@ -171,6 +179,81 @@
       "prerequisites": [],
       "isActive": true,
       "isOnline": true
+    },
+    {
+      "id": "cdl_class_a",
+      "name": "Class A CDL Training Program",
+      "description": "Non-accredited vocational training for Class A Commercial Driver's License. Prepares students to operate combination vehicles (tractor-trailers) with a GVWR over 26,001 lbs. Includes classroom instruction, range training, and road practice.",
+      "department": "adult_education",
+      "degreeType": "certificate",
+      "creditHours": 160,
+      "durationSemesters": 1,
+      "requiredForms": ["personal_info", "emergency_contact", "medical_info", "documents", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false,
+      "isAccredited": false,
+      "programType": "vocational"
+    },
+    {
+      "id": "cdl_class_a_combo",
+      "name": "Class A CDL with Combination Vehicle Endorsement",
+      "description": "Non-accredited vocational training for Class A CDL with Doubles/Triples (T) endorsement. Prepares students to operate combination vehicles including double and triple trailers. Includes all Class A training plus specialized combination vehicle instruction.",
+      "department": "adult_education",
+      "degreeType": "certificate",
+      "creditHours": 200,
+      "durationSemesters": 1,
+      "requiredForms": ["personal_info", "emergency_contact", "medical_info", "documents", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false,
+      "isAccredited": false,
+      "programType": "vocational"
+    },
+    {
+      "id": "cdl_class_a_tanker",
+      "name": "Class A CDL with Tanker Endorsement",
+      "description": "Non-accredited vocational training for Class A CDL with Tanker (N) endorsement. Prepares students to transport liquid or gaseous materials in bulk tanks. Includes all Class A training plus tanker safety, loading/unloading procedures, and hazmat awareness.",
+      "department": "adult_education",
+      "degreeType": "certificate",
+      "creditHours": 200,
+      "durationSemesters": 1,
+      "requiredForms": ["personal_info", "emergency_contact", "medical_info", "documents", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false,
+      "isAccredited": false,
+      "programType": "vocational"
+    },
+    {
+      "id": "cdl_class_b",
+      "name": "Class B CDL Training Program",
+      "description": "Non-accredited vocational training for Class B Commercial Driver's License. Prepares students to operate single vehicles with a GVWR over 26,001 lbs, or tow vehicles under 10,000 lbs. Includes straight trucks, buses, and delivery vehicles.",
+      "department": "adult_education",
+      "degreeType": "certificate",
+      "creditHours": 120,
+      "durationSemesters": 1,
+      "requiredForms": ["personal_info", "emergency_contact", "medical_info", "documents", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false,
+      "isAccredited": false,
+      "programType": "vocational"
+    },
+    {
+      "id": "cdl_class_b_passenger",
+      "name": "Class B CDL with Passenger Endorsement",
+      "description": "Non-accredited vocational training for Class B CDL with Passenger (P) endorsement. Prepares students to operate buses and passenger vehicles carrying 16 or more passengers. Includes all Class B training plus passenger safety, ADA compliance, and emergency procedures.",
+      "department": "adult_education",
+      "degreeType": "certificate",
+      "creditHours": 160,
+      "durationSemesters": 1,
+      "requiredForms": ["personal_info", "emergency_contact", "medical_info", "documents", "consent"],
+      "prerequisites": [],
+      "isActive": true,
+      "isOnline": false,
+      "isAccredited": false,
+      "programType": "vocational"
     }
   ]
 }
