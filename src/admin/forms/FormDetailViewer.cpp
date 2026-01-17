@@ -191,13 +191,13 @@ void FormDetailViewer::setupUI() {
     actionsSection_->addStyleClass("admin-form-detail-actions");
 
     previewPdfBtn_ = actionsSection_->addWidget(std::make_unique<Wt::WPushButton>("Preview PDF"));
-    previewPdfBtn_->addStyleClass("btn btn-outline-primary");
+    previewPdfBtn_->addStyleClass("btn btn-primary");
     previewPdfBtn_->clicked().connect([this]() {
         previewPdfClicked_.emit(currentSubmissionId_);
     });
 
     printAllFormsBtn_ = actionsSection_->addWidget(std::make_unique<Wt::WPushButton>("Print All Student Forms"));
-    printAllFormsBtn_->addStyleClass("btn btn-outline-secondary");
+    printAllFormsBtn_->addStyleClass("btn btn-info");
     printAllFormsBtn_->clicked().connect([this]() {
         if (currentStudentId_ > 0) {
             printAllFormsClicked_.emit(currentStudentId_);

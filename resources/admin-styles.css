@@ -829,6 +829,15 @@
     background: #16a34a;
 }
 
+.btn-info {
+    background: #06b6d4;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #0891b2;
+}
+
 .btn-link {
     background: transparent;
     color: #3b82f6;
@@ -1721,8 +1730,22 @@ textarea.form-control {
 }
 
 .pdf-form-section {
-    margin-bottom: 2rem;
+    /* Each form section is a complete page */
+    min-height: 10in;
     padding-bottom: 1rem;
+    box-sizing: border-box;
+}
+
+.pdf-form-section.pdf-page-break {
+    page-break-before: always;
+    break-before: page;
+}
+
+.pdf-form-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
 }
 
 .pdf-form-header {
@@ -1748,10 +1771,7 @@ textarea.form-control {
 
 .pdf-page-break {
     page-break-before: always;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    border-top: 2px dashed #cbd5e1;
-    padding-top: 1rem;
+    break-before: page;
 }
 
 .pdf-field-table {
@@ -1911,12 +1931,19 @@ textarea.form-control {
     }
 
     .pdf-form-section {
+        min-height: auto;
         page-break-inside: avoid;
         break-inside: avoid;
     }
 
+    .pdf-form-section.pdf-page-break {
+        page-break-before: always;
+        break-before: page;
+    }
+
     .pdf-page-break {
         page-break-before: always;
+        break-before: page;
         border-top: none;
         margin-top: 0;
         padding-top: 0;
