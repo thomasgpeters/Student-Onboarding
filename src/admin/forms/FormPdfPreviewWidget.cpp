@@ -273,11 +273,41 @@ void FormPdfPreviewWidget::buildPreview() {
     auto header = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
     header->addStyleClass("pdf-header");
 
-    auto logoContainer = header->addWidget(std::make_unique<Wt::WContainerWidget>());
-    logoContainer->addStyleClass("pdf-logo-container");
+    auto logoRow = header->addWidget(std::make_unique<Wt::WContainerWidget>());
+    logoRow->addStyleClass("pdf-logo-row");
 
-    auto institutionName = logoContainer->addWidget(std::make_unique<Wt::WText>("University Student Onboarding System"));
+    // SVG Scroll/Diploma Logo - inline for print compatibility
+    auto logoSvg = logoRow->addWidget(std::make_unique<Wt::WText>(
+        R"(<svg class="pdf-logo-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="scrollGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#1e3a5f;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#2d5a87;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <!-- Graduation Cap -->
+            <path d="M40 15 L10 30 L40 45 L70 30 Z" fill="url(#scrollGrad)" stroke="#1e3a5f" stroke-width="1"/>
+            <path d="M40 45 L40 55 M25 37 L25 52 C25 58 40 62 40 55" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+            <circle cx="25" cy="52" r="3" fill="#c9a227"/>
+            <!-- Scroll/Diploma -->
+            <rect x="28" y="58" width="24" height="18" rx="2" fill="#f5f0e6" stroke="#1e3a5f" stroke-width="1"/>
+            <line x1="32" y1="63" x2="48" y2="63" stroke="#1e3a5f" stroke-width="1"/>
+            <line x1="32" y1="67" x2="48" y2="67" stroke="#1e3a5f" stroke-width="1"/>
+            <line x1="32" y1="71" x2="44" y2="71" stroke="#1e3a5f" stroke-width="1"/>
+            <!-- Ribbon -->
+            <path d="M36 76 L40 72 L44 76" fill="none" stroke="#c9a227" stroke-width="2"/>
+        </svg>)"
+    ));
+    logoSvg->setTextFormat(Wt::TextFormat::XHTML);
+
+    auto institutionInfo = logoRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    institutionInfo->addStyleClass("pdf-institution-info");
+
+    auto institutionName = institutionInfo->addWidget(std::make_unique<Wt::WText>("Student Onboarding System"));
     institutionName->addStyleClass("pdf-institution-name");
+
+    auto institutionTagline = institutionInfo->addWidget(std::make_unique<Wt::WText>("Official Student Records"));
+    institutionTagline->addStyleClass("pdf-institution-tagline");
 
     auto formTitleText = header->addWidget(std::make_unique<Wt::WText>(formTitle_));
     formTitleText->addStyleClass("pdf-form-title");
