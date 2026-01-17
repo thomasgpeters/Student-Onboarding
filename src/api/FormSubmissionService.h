@@ -138,6 +138,9 @@ private:
     nlohmann::json prepareFormPayload(const std::string& studentId, const Models::FormData& data,
                                        const std::string& resourceType);
     void loadFormTypeCache();
+    void ensureFormTypesExist();  // Seed FormType table if empty
+    int createFormType(const std::string& code, const std::string& name,
+                       const std::string& category, int displayOrder);
 };
 
 } // namespace Api
