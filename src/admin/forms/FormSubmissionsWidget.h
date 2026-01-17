@@ -73,6 +73,7 @@ private:
     Wt::WText* pendingCountText_;
     Wt::WText* approvedCountText_;
     Wt::WText* rejectedCountText_;
+    Wt::WText* revisionCountText_;
     Wt::WContainerWidget* filterContainer_;
     Wt::WLineEdit* searchInput_;
     Wt::WComboBox* formTypeFilter_;

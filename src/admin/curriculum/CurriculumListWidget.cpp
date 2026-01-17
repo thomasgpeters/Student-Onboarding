@@ -13,6 +13,11 @@ using StudentIntake::Models::Curriculum;
 CurriculumListWidget::CurriculumListWidget()
     : WContainerWidget()
     , apiService_(nullptr)
+    , statsContainer_(nullptr)
+    , activeCountText_(nullptr)
+    , inactiveCountText_(nullptr)
+    , onlineCountText_(nullptr)
+    , onCampusCountText_(nullptr)
     , headerTitle_(nullptr)
     , headerSubtitle_(nullptr)
     , filterContainer_(nullptr)
@@ -63,6 +68,9 @@ void CurriculumListWidget::setupUI() {
     addBtn_->clicked().connect([this]() {
         addCurriculumClicked_.emit();
     });
+
+    // Statistics cards
+    setupStats();
 
     // Filter section
     filterContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -151,6 +159,51 @@ void CurriculumListWidget::setupUI() {
     noDataMessage_ = addWidget(std::make_unique<Wt::WText>("No programs found matching your criteria."));
     noDataMessage_->addStyleClass("admin-no-data-message");
     noDataMessage_->hide();
+}
+
+void CurriculumListWidget::setupStats() {
+    statsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    statsContainer_->addStyleClass("admin-submission-stats");
+
+    // Active card
+    auto activeCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    activeCard->addStyleClass("admin-stat-mini-card active");
+    auto activeIcon = activeCard->addWidget(std::make_unique<Wt::WText>("✓"));
+    activeIcon->addStyleClass("admin-stat-mini-icon");
+    activeCountText_ = activeCard->addWidget(std::make_unique<Wt::WText>("0"));
+    activeCountText_->addStyleClass("admin-stat-mini-number");
+    auto activeLabel = activeCard->addWidget(std::make_unique<Wt::WText>("Active"));
+    activeLabel->addStyleClass("admin-stat-mini-label");
+
+    // Inactive card
+    auto inactiveCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    inactiveCard->addStyleClass("admin-stat-mini-card inactive");
+    auto inactiveIcon = inactiveCard->addWidget(std::make_unique<Wt::WText>("○"));
+    inactiveIcon->addStyleClass("admin-stat-mini-icon");
+    inactiveCountText_ = inactiveCard->addWidget(std::make_unique<Wt::WText>("0"));
+    inactiveCountText_->addStyleClass("admin-stat-mini-number");
+    auto inactiveLabel = inactiveCard->addWidget(std::make_unique<Wt::WText>("Inactive"));
+    inactiveLabel->addStyleClass("admin-stat-mini-label");
+
+    // Online card
+    auto onlineCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    onlineCard->addStyleClass("admin-stat-mini-card online");
+    auto onlineIcon = onlineCard->addWidget(std::make_unique<Wt::WText>("🌐"));
+    onlineIcon->addStyleClass("admin-stat-mini-icon");
+    onlineCountText_ = onlineCard->addWidget(std::make_unique<Wt::WText>("0"));
+    onlineCountText_->addStyleClass("admin-stat-mini-number");
+    auto onlineLabel = onlineCard->addWidget(std::make_unique<Wt::WText>("Online"));
+    onlineLabel->addStyleClass("admin-stat-mini-label");
+
+    // On-Campus card
+    auto onCampusCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    onCampusCard->addStyleClass("admin-stat-mini-card approved");
+    auto onCampusIcon = onCampusCard->addWidget(std::make_unique<Wt::WText>("🏛"));
+    onCampusIcon->addStyleClass("admin-stat-mini-icon");
+    onCampusCountText_ = onCampusCard->addWidget(std::make_unique<Wt::WText>("0"));
+    onCampusCountText_->addStyleClass("admin-stat-mini-number");
+    auto onCampusLabel = onCampusCard->addWidget(std::make_unique<Wt::WText>("On-Campus"));
+    onCampusLabel->addStyleClass("admin-stat-mini-label");
 }
 
 void CurriculumListWidget::loadData() {
@@ -329,6 +382,30 @@ void CurriculumListWidget::applyFilters() {
     }
 
     updateTable();
+    updateStats();
+}
+
+void CurriculumListWidget::updateStats() {
+    int activeCount = 0, inactiveCount = 0, onlineCount = 0, onCampusCount = 0;
+
+    for (const auto& curriculum : curriculums_) {
+        if (curriculum.isActive()) {
+            activeCount++;
+        } else {
+            inactiveCount++;
+        }
+
+        if (curriculum.isOnline()) {
+            onlineCount++;
+        } else {
+            onCampusCount++;
+        }
+    }
+
+    activeCountText_->setText(std::to_string(activeCount));
+    inactiveCountText_->setText(std::to_string(inactiveCount));
+    onlineCountText_->setText(std::to_string(onlineCount));
+    onCampusCountText_->setText(std::to_string(onCampusCount));
 }
 
 void CurriculumListWidget::resetFilters() {

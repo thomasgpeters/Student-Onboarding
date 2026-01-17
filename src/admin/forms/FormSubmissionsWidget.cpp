@@ -17,6 +17,7 @@ FormSubmissionsWidget::FormSubmissionsWidget()
     , pendingCountText_(nullptr)
     , approvedCountText_(nullptr)
     , rejectedCountText_(nullptr)
+    , revisionCountText_(nullptr)
     , filterContainer_(nullptr)
     , searchInput_(nullptr)
     , formTypeFilter_(nullptr)
@@ -83,6 +84,16 @@ void FormSubmissionsWidget::setupUI() {
     rejectedCountText_->addStyleClass("admin-stat-mini-number");
     auto rejectedLabel = rejectedCard->addWidget(std::make_unique<Wt::WText>("Rejected"));
     rejectedLabel->addStyleClass("admin-stat-mini-label");
+
+    // Needs Revision card
+    auto revisionCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    revisionCard->addStyleClass("admin-stat-mini-card revision");
+    auto revisionIcon = revisionCard->addWidget(std::make_unique<Wt::WText>("✎"));
+    revisionIcon->addStyleClass("admin-stat-mini-icon");
+    revisionCountText_ = revisionCard->addWidget(std::make_unique<Wt::WText>("0"));
+    revisionCountText_->addStyleClass("admin-stat-mini-number");
+    auto revisionLabel = revisionCard->addWidget(std::make_unique<Wt::WText>("Needs Revision"));
+    revisionLabel->addStyleClass("admin-stat-mini-label");
 
     // Filter section
     filterContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -300,13 +311,14 @@ void FormSubmissionsWidget::applyFilters() {
     std::string selectedProgram = (programIndex > 0) ? programFilter_->currentText().toUTF8() : "";
 
     // Count statistics
-    int pendingCount = 0, approvedCount = 0, rejectedCount = 0;
+    int pendingCount = 0, approvedCount = 0, rejectedCount = 0, revisionCount = 0;
 
     for (const auto& submission : submissions_) {
         // Update counts
         if (submission.status == "pending") pendingCount++;
         else if (submission.status == "approved") approvedCount++;
-        else if (submission.status == "rejected" || submission.status == "needs_revision") rejectedCount++;
+        else if (submission.status == "rejected") rejectedCount++;
+        else if (submission.status == "needs_revision") revisionCount++;
 
         // Search filter
         if (!searchText.empty()) {
@@ -343,6 +355,7 @@ void FormSubmissionsWidget::applyFilters() {
     pendingCountText_->setText(std::to_string(pendingCount));
     approvedCountText_->setText(std::to_string(approvedCount));
     rejectedCountText_->setText(std::to_string(rejectedCount));
+    revisionCountText_->setText(std::to_string(revisionCount));
 
     updateTable();
 }
