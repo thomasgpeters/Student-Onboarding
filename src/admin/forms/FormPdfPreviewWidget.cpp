@@ -35,12 +35,17 @@ void FormPdfPreviewWidget::setupUI() {
     // Configure dialog properties
     setModal(true);
     setClosable(true);
-    setResizable(true);
+    setResizable(false);
     setMovable(true);
     rejectWhenEscapePressed();
 
+    // Set title with document icon
+    setWindowTitle("Form Preview");
+
     // Add custom style class for sizing
     addStyleClass("pdf-preview-dialog");
+
+    // Style the title bar with icon via CSS (icon added via ::before pseudo-element)
 
     // Contents container
     auto content = contents();
