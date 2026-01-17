@@ -332,6 +332,27 @@ void FormSubmissionsWidget::loadSubmissions() {
     std::cerr << "[FormSubmissionsWidget] loadSubmissions() called" << std::endl;
     submissions_.clear();
 
+    // Helper lambdas for safe JSON value extraction (handles null values)
+    auto safeGetInt = [](const nlohmann::json& obj, const std::string& key, int defaultVal) -> int {
+        if (obj.contains(key) && !obj[key].is_null()) {
+            if (obj[key].is_number()) {
+                return obj[key].get<int>();
+            } else if (obj[key].is_string()) {
+                try {
+                    return std::stoi(obj[key].get<std::string>());
+                } catch (...) {}
+            }
+        }
+        return defaultVal;
+    };
+
+    auto safeGetString = [](const nlohmann::json& obj, const std::string& key, const std::string& defaultVal) -> std::string {
+        if (obj.contains(key) && !obj[key].is_null() && obj[key].is_string()) {
+            return obj[key].get<std::string>();
+        }
+        return defaultVal;
+    };
+
     // Build a cache of student info for efficient lookups
     std::map<int, std::pair<std::string, std::string>> studentCache;  // id -> (name, email)
     std::map<int, std::string> curriculumCache;  // id -> name
@@ -354,27 +375,27 @@ void FormSubmissionsWidget::loadSubmissions() {
                 for (const auto& student : studentItems) {
                     int studentId = 0;
                     std::string name, email;
-                    int curriculumId = 0;
 
-                    if (student.contains("id")) {
+                    // Safe ID extraction
+                    if (student.contains("id") && !student["id"].is_null()) {
                         if (student["id"].is_string()) {
-                            studentId = std::stoi(student["id"].get<std::string>());
-                        } else {
+                            try { studentId = std::stoi(student["id"].get<std::string>()); } catch (...) {}
+                        } else if (student["id"].is_number()) {
                             studentId = student["id"].get<int>();
                         }
                     }
 
                     const auto& attrs = student.contains("attributes") ? student["attributes"] : student;
-                    std::string firstName = attrs.value("first_name", "");
-                    std::string lastName = attrs.value("last_name", "");
+                    std::string firstName = safeGetString(attrs, "first_name", "");
+                    std::string lastName = safeGetString(attrs, "last_name", "");
                     name = firstName + " " + lastName;
-                    email = attrs.value("email", "");
-                    curriculumId = attrs.value("curriculum_id", 0);
+                    email = safeGetString(attrs, "email", "");
 
                     if (studentId > 0) {
                         studentCache[studentId] = {name, email};
                     }
                 }
+                std::cerr << "[FormSubmissionsWidget] Loaded " << studentCache.size() << " students into cache" << std::endl;
             }
 
             // Load curricula for program names
@@ -392,25 +413,28 @@ void FormSubmissionsWidget::loadSubmissions() {
                     int currId = 0;
                     std::string currName;
 
-                    if (curr.contains("id")) {
+                    // Safe ID extraction
+                    if (curr.contains("id") && !curr["id"].is_null()) {
                         if (curr["id"].is_string()) {
-                            currId = std::stoi(curr["id"].get<std::string>());
-                        } else {
+                            try { currId = std::stoi(curr["id"].get<std::string>()); } catch (...) {}
+                        } else if (curr["id"].is_number()) {
                             currId = curr["id"].get<int>();
                         }
                     }
 
                     const auto& attrs = curr.contains("attributes") ? curr["attributes"] : curr;
-                    currName = attrs.value("name", "");
+                    currName = safeGetString(attrs, "name", "");
 
                     if (currId > 0) {
                         curriculumCache[currId] = currName;
                     }
                 }
+                std::cerr << "[FormSubmissionsWidget] Loaded " << curriculumCache.size() << " curricula into cache" << std::endl;
             }
 
             // Now load form submissions
             auto response = apiService_->getApiClient()->get("/FormSubmission");
+            std::cerr << "[FormSubmissionsWidget] FormSubmission API response - success: " << response.success << std::endl;
             if (response.success) {
                 auto jsonResponse = nlohmann::json::parse(response.body);
                 nlohmann::json items;
@@ -419,29 +443,30 @@ void FormSubmissionsWidget::loadSubmissions() {
                 } else if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
                     items = jsonResponse["data"];
                 }
+                std::cerr << "[FormSubmissionsWidget] Found " << items.size() << " form submission items" << std::endl;
 
                 for (const auto& item : items) {
                     FormSubmissionRecord record;
 
-                    // Handle id - can be string or int in JSON:API
-                    if (item.contains("id")) {
+                    // Safe ID extraction
+                    if (item.contains("id") && !item["id"].is_null()) {
                         if (item["id"].is_string()) {
-                            record.id = std::stoi(item["id"].get<std::string>());
-                        } else {
+                            try { record.id = std::stoi(item["id"].get<std::string>()); } catch (...) {}
+                        } else if (item["id"].is_number()) {
                             record.id = item["id"].get<int>();
                         }
                     }
 
-                    // Get attributes
+                    // Get attributes with null-safe extraction
                     const auto& attrs = item.contains("attributes") ? item["attributes"] : item;
-                    record.studentId = attrs.value("student_id", 0);
-                    record.status = attrs.value("status", "pending");
-                    record.submittedAt = attrs.value("submitted_at", "");
-                    record.reviewedAt = attrs.value("approved_at", "");
-                    record.reviewedBy = attrs.value("approved_by", "");
+                    record.studentId = safeGetInt(attrs, "student_id", 0);
+                    record.status = safeGetString(attrs, "status", "pending");
+                    record.submittedAt = safeGetString(attrs, "submitted_at", "");
+                    record.reviewedAt = safeGetString(attrs, "approved_at", "");
+                    record.reviewedBy = safeGetString(attrs, "approved_by", "");
 
                     // Map form_type_id to form type name
-                    int formTypeId = attrs.value("form_type_id", 0);
+                    int formTypeId = safeGetInt(attrs, "form_type_id", 0);
                     record.formType = getFormTypeFromId(formTypeId);
                     record.formName = getFormDisplayName(record.formType);
 
@@ -460,6 +485,8 @@ void FormSubmissionsWidget::loadSubmissions() {
                     record.programName = "";
 
                     submissions_.push_back(record);
+                    std::cerr << "[FormSubmissionsWidget] Added submission: id=" << record.id
+                              << ", student=" << record.studentName << ", form=" << record.formName << std::endl;
                 }
             }
             std::cerr << "[FormSubmissionsWidget] Loaded " << submissions_.size() << " submissions from API" << std::endl;
