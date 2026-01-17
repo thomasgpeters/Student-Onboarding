@@ -137,11 +137,7 @@ void StudentListWidget::setupFilters() {
 
     programFilter_ = programGroup->addWidget(std::make_unique<Wt::WComboBox>());
     programFilter_->addStyleClass("admin-filter-select");
-    programFilter_->addItem("All Programs");
-    programFilter_->addItem("Computer Science - BS");
-    programFilter_->addItem("Information Technology - BS");
-    programFilter_->addItem("Software Engineering - BS");
-    programFilter_->addItem("Data Science - MS");
+    programFilter_->addItem("All Programs");  // Will be repopulated by loadCurriculum()
     programFilter_->changed().connect([this]() {
         applyFilters();
     });
@@ -217,33 +213,52 @@ void StudentListWidget::loadCurriculum() {
         auto jsonResponse = nlohmann::json::parse(response.body);
         curriculumMap_.clear();
 
-        if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
-            for (const auto& currData : jsonResponse["data"]) {
-                std::string id;
-                std::string programName;
+        // Collect unique program names for the filter dropdown
+        std::vector<std::string> programNames;
 
-                if (currData.contains("id")) {
-                    if (currData["id"].is_string()) {
-                        id = currData["id"].get<std::string>();
-                    } else {
-                        id = std::to_string(currData["id"].get<int>());
-                    }
-                }
+        nlohmann::json items;
+        if (jsonResponse.is_array()) {
+            items = jsonResponse;
+        } else if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
+            items = jsonResponse["data"];
+        }
 
-                if (currData.contains("attributes")) {
-                    auto& attrs = currData["attributes"];
-                    if (attrs.contains("program_name") && !attrs["program_name"].is_null()) {
-                        programName = attrs["program_name"].get<std::string>();
-                    }
-                }
+        for (const auto& currData : items) {
+            std::string id;
+            std::string programName;
 
-                if (!id.empty() && !programName.empty()) {
-                    curriculumMap_[id] = programName;
+            if (currData.contains("id")) {
+                if (currData["id"].is_string()) {
+                    id = currData["id"].get<std::string>();
+                } else {
+                    id = std::to_string(currData["id"].get<int>());
                 }
+            }
+
+            // Get attributes - check both JSON:API format and flat format
+            const auto& attrs = currData.contains("attributes") ? currData["attributes"] : currData;
+
+            // Try different field names for program name
+            if (attrs.contains("name") && !attrs["name"].is_null()) {
+                programName = attrs["name"].get<std::string>();
+            } else if (attrs.contains("program_name") && !attrs["program_name"].is_null()) {
+                programName = attrs["program_name"].get<std::string>();
+            }
+
+            if (!id.empty() && !programName.empty()) {
+                curriculumMap_[id] = programName;
+                programNames.push_back(programName);
             }
         }
 
         std::cerr << "[StudentList] Loaded " << curriculumMap_.size() << " curriculum entries" << std::endl;
+
+        // Update the program filter dropdown
+        programFilter_->clear();
+        programFilter_->addItem("All Programs");
+        for (const auto& name : programNames) {
+            programFilter_->addItem(name);
+        }
 
     } catch (const std::exception& e) {
         std::cerr << "[StudentList] Exception loading curriculum: " << e.what() << std::endl;

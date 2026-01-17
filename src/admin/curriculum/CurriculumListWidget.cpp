@@ -2,6 +2,7 @@
 #include <Wt/WBreak.h>
 #include <iostream>
 #include <algorithm>
+#include <set>
 #include <nlohmann/json.hpp>
 
 namespace StudentIntake {
@@ -97,13 +98,7 @@ void CurriculumListWidget::setupUI() {
 
     departmentFilter_ = deptGroup->addWidget(std::make_unique<Wt::WComboBox>());
     departmentFilter_->addStyleClass("admin-filter-select");
-    departmentFilter_->addItem("All Departments");
-    departmentFilter_->addItem("Computer Science");
-    departmentFilter_->addItem("Engineering");
-    departmentFilter_->addItem("Business");
-    departmentFilter_->addItem("Arts & Sciences");
-    departmentFilter_->addItem("Health Sciences");
-    departmentFilter_->addItem("Adult Education");
+    departmentFilter_->addItem("All Departments");  // Will be repopulated by loadData()
     departmentFilter_->changed().connect(this, &CurriculumListWidget::applyFilters);
 
     // Degree type filter
@@ -311,15 +306,32 @@ void CurriculumListWidget::loadCurriculums() {
         auto response = apiService_->getApiClient()->get("/Curriculum");
         if (response.success) {
             auto jsonResponse = nlohmann::json::parse(response.body);
-            if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
-                for (const auto& item : jsonResponse["data"]) {
-                    curriculums_.push_back(Curriculum::fromJson(item));
-                }
+            nlohmann::json items;
+            if (jsonResponse.is_array()) {
+                items = jsonResponse;
+            } else if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
+                items = jsonResponse["data"];
+            }
+            for (const auto& item : items) {
+                curriculums_.push_back(Curriculum::fromJson(item));
             }
         }
         std::cerr << "[CurriculumListWidget] Loaded " << curriculums_.size() << " curriculums" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[CurriculumListWidget] Error loading curriculums: " << e.what() << std::endl;
+    }
+
+    // Populate department filter with distinct departments from loaded curricula
+    std::set<std::string> departments;
+    for (const auto& curriculum : curriculums_) {
+        if (!curriculum.getDepartment().empty()) {
+            departments.insert(curriculum.getDepartment());
+        }
+    }
+    departmentFilter_->clear();
+    departmentFilter_->addItem("All Departments");
+    for (const auto& dept : departments) {
+        departmentFilter_->addItem(dept);
     }
 
     applyFilters();

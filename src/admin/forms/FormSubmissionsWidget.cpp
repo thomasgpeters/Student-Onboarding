@@ -134,14 +134,7 @@ void FormSubmissionsWidget::setupUI() {
 
     formTypeFilter_ = formGroup->addWidget(std::make_unique<Wt::WComboBox>());
     formTypeFilter_->addStyleClass("admin-filter-select");
-    formTypeFilter_->addItem("All Forms");
-    formTypeFilter_->addItem("Personal Information");
-    formTypeFilter_->addItem("Emergency Contact");
-    formTypeFilter_->addItem("Medical Information");
-    formTypeFilter_->addItem("Academic History");
-    formTypeFilter_->addItem("Financial Aid");
-    formTypeFilter_->addItem("Document Upload");
-    formTypeFilter_->addItem("Consent Form");
+    formTypeFilter_->addItem("All Forms");  // Will be repopulated by loadFormTypes()
     formTypeFilter_->changed().connect(this, &FormSubmissionsWidget::applyFilters);
 
     // Status filter
@@ -169,11 +162,7 @@ void FormSubmissionsWidget::setupUI() {
 
     programFilter_ = programGroup->addWidget(std::make_unique<Wt::WComboBox>());
     programFilter_->addStyleClass("admin-filter-select");
-    programFilter_->addItem("All Programs");
-    programFilter_->addItem("Computer Science");
-    programFilter_->addItem("Business Administration");
-    programFilter_->addItem("MBA Program");
-    programFilter_->addItem("Nursing");
+    programFilter_->addItem("All Programs");  // Will be repopulated by loadPrograms()
     programFilter_->changed().connect(this, &FormSubmissionsWidget::applyFilters);
 
     // Clear button only - filters apply automatically on change
