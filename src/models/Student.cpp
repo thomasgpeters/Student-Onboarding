@@ -27,6 +27,7 @@ Student::Student()
     , zipCode_("")
     , ssn_("")
     , citizenshipStatus_("")
+    , status_("pending")
     , isInternational_(false)
     , isTransferStudent_(false)
     , isVeteran_(false)
@@ -55,6 +56,7 @@ Student::Student(const std::string& id, const std::string& email)
     , zipCode_("")
     , ssn_("")
     , citizenshipStatus_("")
+    , status_("pending")
     , isInternational_(false)
     , isTransferStudent_(false)
     , isVeteran_(false)
@@ -131,6 +133,7 @@ nlohmann::json Student::toJson() const {
     }
 
     j["student_type"] = studentType_;
+    j["status"] = status_;
     j["is_international"] = isInternational_;
     j["is_transfer_student"] = isTransferStudent_;
     j["is_veteran"] = isVeteran_;
@@ -306,6 +309,11 @@ Student Student::fromJson(const nlohmann::json& json) {
         student.studentType_ = attrs["studentType"].get<std::string>();
     } else if (attrs.contains("student_type") && attrs["student_type"].is_string()) {
         student.studentType_ = attrs["student_type"].get<std::string>();
+    }
+
+    // Handle status
+    if (attrs.contains("status") && attrs["status"].is_string()) {
+        student.status_ = attrs["status"].get<std::string>();
     }
 
     // Handle boolean fields with snake_case alternatives

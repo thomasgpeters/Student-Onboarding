@@ -10,6 +10,7 @@
 #include <Wt/WSignal.h>
 #include <vector>
 #include <memory>
+#include <map>
 #include "../../models/Student.h"
 #include "../../api/FormSubmissionService.h"
 
@@ -32,7 +33,9 @@ private:
     void setupFilters();
     void setupTable();
     void loadStudents();
+    void loadCurriculum();
     void applyFilters();
+    std::string getProgramName(const std::string& curriculumId) const;
     void clearFilters();
     void updateTable(const std::vector<::StudentIntake::Models::Student>& students);
     void onStudentRowClicked(int studentId);
@@ -41,6 +44,7 @@ private:
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     std::vector<::StudentIntake::Models::Student> allStudents_;
+    std::map<std::string, std::string> curriculumMap_;  // curriculum_id -> program_name
 
     // UI Elements
     Wt::WLineEdit* searchInput_;

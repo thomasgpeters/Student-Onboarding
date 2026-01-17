@@ -145,7 +145,65 @@ void StudentListWidget::setupTable() {
 }
 
 void StudentListWidget::refresh() {
+    loadCurriculum();
     loadStudents();
+}
+
+void StudentListWidget::loadCurriculum() {
+    if (!apiService_) {
+        return;
+    }
+
+    try {
+        auto response = apiService_->getApiClient()->get("/Curriculum");
+
+        if (!response.success) {
+            std::cerr << "[StudentList] Failed to load curriculum: " << response.errorMessage << std::endl;
+            return;
+        }
+
+        auto jsonResponse = nlohmann::json::parse(response.body);
+        curriculumMap_.clear();
+
+        if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
+            for (const auto& currData : jsonResponse["data"]) {
+                std::string id;
+                std::string programName;
+
+                if (currData.contains("id")) {
+                    if (currData["id"].is_string()) {
+                        id = currData["id"].get<std::string>();
+                    } else {
+                        id = std::to_string(currData["id"].get<int>());
+                    }
+                }
+
+                if (currData.contains("attributes")) {
+                    auto& attrs = currData["attributes"];
+                    if (attrs.contains("program_name") && !attrs["program_name"].is_null()) {
+                        programName = attrs["program_name"].get<std::string>();
+                    }
+                }
+
+                if (!id.empty() && !programName.empty()) {
+                    curriculumMap_[id] = programName;
+                }
+            }
+        }
+
+        std::cerr << "[StudentList] Loaded " << curriculumMap_.size() << " curriculum entries" << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[StudentList] Exception loading curriculum: " << e.what() << std::endl;
+    }
+}
+
+std::string StudentListWidget::getProgramName(const std::string& curriculumId) const {
+    auto it = curriculumMap_.find(curriculumId);
+    if (it != curriculumMap_.end()) {
+        return it->second;
+    }
+    return "Unknown Program";
 }
 
 void StudentListWidget::loadStudents() {
@@ -194,6 +252,20 @@ void StudentListWidget::loadStudents() {
                     if (attrs.contains("created_at") && !attrs["created_at"].is_null()) {
                         student.setCreatedAt(attrs["created_at"].get<std::string>());
                     }
+                    // Load curriculum_id
+                    if (attrs.contains("curriculum_id") && !attrs["curriculum_id"].is_null()) {
+                        if (attrs["curriculum_id"].is_string()) {
+                            student.setCurriculumId(attrs["curriculum_id"].get<std::string>());
+                        } else {
+                            student.setCurriculumId(std::to_string(attrs["curriculum_id"].get<int>()));
+                        }
+                    }
+                    // Load status
+                    if (attrs.contains("status") && !attrs["status"].is_null()) {
+                        student.setStatus(attrs["status"].get<std::string>());
+                    } else {
+                        student.setStatus("active");  // Default to active if not specified
+                    }
                 }
 
                 allStudents_.push_back(student);
@@ -237,14 +309,25 @@ void StudentListWidget::applyFilters() {
 
         // Program filter (index 0 is "All Programs")
         if (programIndex > 0 && matches) {
-            // In a real implementation, check student's curriculum
-            // For now, we'll skip this filter
+            std::string selectedProgram = programFilter_->currentText().toUTF8();
+            std::string studentProgram = getProgramName(student.getCurriculumId());
+            if (studentProgram != selectedProgram) {
+                matches = false;
+            }
         }
 
         // Status filter (index 0 is "All Status")
         if (statusIndex > 0 && matches) {
-            // In a real implementation, check student's status
-            // For now, we'll skip this filter
+            std::string selectedStatus = statusFilter_->currentText().toUTF8();
+            std::string studentStatus = student.getStatus();
+
+            // Case-insensitive comparison
+            std::transform(selectedStatus.begin(), selectedStatus.end(), selectedStatus.begin(), ::tolower);
+            std::transform(studentStatus.begin(), studentStatus.end(), studentStatus.begin(), ::tolower);
+
+            if (studentStatus != selectedStatus) {
+                matches = false;
+            }
         }
 
         if (matches) {
@@ -288,14 +371,22 @@ void StudentListWidget::updateTable(const std::vector<::StudentIntake::Models::S
         studentTable_->elementAt(row, 3)->addWidget(
             std::make_unique<Wt::WText>(student.getEmail()));
 
-        // Program (placeholder for now)
+        // Program - use actual curriculum data
+        std::string programName = getProgramName(student.getCurriculumId());
         studentTable_->elementAt(row, 4)->addWidget(
-            std::make_unique<Wt::WText>("Computer Science - BS"));
+            std::make_unique<Wt::WText>(programName));
 
-        // Status badge
+        // Status badge - use actual student status
+        std::string status = student.getStatus();
+        if (status.empty()) {
+            status = "Active";
+        } else {
+            // Capitalize first letter for display
+            status[0] = std::toupper(status[0]);
+        }
         auto statusBadge = studentTable_->elementAt(row, 5)->addWidget(
-            std::make_unique<Wt::WText>("Active"));
-        statusBadge->addStyleClass("badge badge-success");
+            std::make_unique<Wt::WText>(status));
+        statusBadge->addStyleClass(getStatusBadgeClass(student.getStatus()));
 
         // Enrolled date
         studentTable_->elementAt(row, 6)->addWidget(

@@ -41,6 +41,7 @@ public:
     std::chrono::system_clock::time_point getEnrollmentDate() const { return enrollmentDate_; }
     std::chrono::system_clock::time_point getDateOfBirth() const { return dateOfBirth_; }
     std::string getCreatedAt() const { return createdAt_; }
+    std::string getStatus() const { return status_; }
     bool isInternational() const { return isInternational_; }
     bool isTransferStudent() const { return isTransferStudent_; }
     bool isVeteran() const { return isVeteran_; }
@@ -70,6 +71,7 @@ public:
     void setEnrollmentDate(const std::chrono::system_clock::time_point& date) { enrollmentDate_ = date; }
     void setDateOfBirth(const std::chrono::system_clock::time_point& date) { dateOfBirth_ = date; }
     void setCreatedAt(const std::string& createdAt) { createdAt_ = createdAt; }
+    void setStatus(const std::string& status) { status_ = status; }
     void setInternational(bool isInternational) { isInternational_ = isInternational; }
     void setTransferStudent(bool isTransfer) { isTransferStudent_ = isTransfer; }
     void setVeteran(bool isVeteran) { isVeteran_ = isVeteran; }
@@ -110,6 +112,7 @@ private:
     std::chrono::system_clock::time_point enrollmentDate_;
     std::chrono::system_clock::time_point dateOfBirth_;
     std::string createdAt_;
+    std::string status_;  // "active", "pending", "completed", "revoked"
     bool isInternational_;
     bool isTransferStudent_;
     bool isVeteran_;
