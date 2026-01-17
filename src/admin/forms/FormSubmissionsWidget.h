@@ -10,6 +10,7 @@
 #include <Wt/WSignal.h>
 #include <memory>
 #include <vector>
+#include <map>
 #include "../../api/FormSubmissionService.h"
 
 namespace StudentIntake {
@@ -52,6 +53,8 @@ public:
 private:
     void setupUI();
     void loadSubmissions();
+    void loadFormTypes();     // Load form types from API
+    void loadPrograms();      // Load programs from API
     void updateTable();
     void applyFilters();
     void resetFilters();
@@ -67,6 +70,11 @@ private:
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     std::vector<FormSubmissionRecord> submissions_;
     std::vector<FormSubmissionRecord> filteredSubmissions_;
+
+    // Form type and program caches loaded from API
+    std::map<int, std::string> formTypeIdToCode_;    // form_type_id -> code
+    std::map<std::string, std::string> formTypeCodeToName_;  // code -> display name
+    std::vector<std::pair<int, std::string>> programs_;  // (curriculum_id, name)
 
     // UI Elements
     Wt::WText* headerTitle_;
