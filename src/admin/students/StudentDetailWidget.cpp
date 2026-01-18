@@ -1,6 +1,7 @@
 #include "StudentDetailWidget.h"
 #include <Wt/WBreak.h>
 #include <iostream>
+#include <map>
 #include <nlohmann/json.hpp>
 
 namespace StudentIntake {
@@ -10,6 +11,7 @@ StudentDetailWidget::StudentDetailWidget()
     : WContainerWidget()
     , apiService_(nullptr)
     , isRevoked_(false)
+    , currentStudentId_(0)
     , headerContainer_(nullptr)
     , studentName_(nullptr)
     , studentEmail_(nullptr)
@@ -20,10 +22,16 @@ StudentDetailWidget::StudentDetailWidget()
     , phoneText_(nullptr)
     , addressText_(nullptr)
     , actionsContainer_(nullptr)
-    , viewFormsBtn_(nullptr)
     , revokeBtn_(nullptr)
     , restoreBtn_(nullptr)
-    , backBtn_(nullptr) {
+    , backBtn_(nullptr)
+    , submissionsContainer_(nullptr)
+    , submissionsHeader_(nullptr)
+    , submissionsTitle_(nullptr)
+    , previewPdfBtn_(nullptr)
+    , printAllBtn_(nullptr)
+    , submissionsTable_(nullptr)
+    , noSubmissionsText_(nullptr) {
     setupUI();
 }
 
@@ -99,21 +107,15 @@ void StudentDetailWidget::setupUI() {
     addressText_ = addressCard->addWidget(std::make_unique<Wt::WText>("-"));
     addressText_->addStyleClass("admin-info-value");
 
-    // Actions section
+    // Actions section (Revoke/Restore access)
     actionsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     actionsContainer_->addStyleClass("admin-detail-actions");
 
-    auto actionsTitle = actionsContainer_->addWidget(std::make_unique<Wt::WText>("Actions"));
+    auto actionsTitle = actionsContainer_->addWidget(std::make_unique<Wt::WText>("Account Actions"));
     actionsTitle->addStyleClass("admin-actions-title");
 
     auto buttonsContainer = actionsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     buttonsContainer->addStyleClass("admin-action-buttons");
-
-    viewFormsBtn_ = buttonsContainer->addWidget(std::make_unique<Wt::WPushButton>("View Submitted Forms"));
-    viewFormsBtn_->addStyleClass("btn btn-primary");
-    viewFormsBtn_->clicked().connect([this]() {
-        viewFormsClicked_.emit(std::stoi(currentStudent_.getId()));
-    });
 
     revokeBtn_ = buttonsContainer->addWidget(std::make_unique<Wt::WPushButton>("Revoke Access"));
     revokeBtn_->addStyleClass("btn btn-danger");
@@ -126,7 +128,39 @@ void StudentDetailWidget::setupUI() {
     restoreBtn_->clicked().connect([this]() {
         onRestoreAccess();
     });
-    restoreBtn_->hide(); // Hidden by default
+    restoreBtn_->hide();
+
+    // Form Submissions section
+    submissionsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    submissionsContainer_->addStyleClass("admin-submissions-section");
+
+    // Submissions header with title and PDF buttons
+    submissionsHeader_ = submissionsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    submissionsHeader_->addStyleClass("admin-submissions-header");
+
+    submissionsTitle_ = submissionsHeader_->addWidget(std::make_unique<Wt::WText>("Form Submissions"));
+    submissionsTitle_->addStyleClass("admin-section-title");
+
+    auto pdfButtonsContainer = submissionsHeader_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    pdfButtonsContainer->addStyleClass("admin-pdf-buttons");
+
+    printAllBtn_ = pdfButtonsContainer->addWidget(std::make_unique<Wt::WPushButton>("Print All Forms"));
+    printAllBtn_->addStyleClass("btn btn-info");
+    printAllBtn_->clicked().connect([this]() {
+        if (currentStudentId_ > 0) {
+            printAllFormsClicked_.emit(currentStudentId_);
+        }
+    });
+
+    // Submissions table
+    submissionsTable_ = submissionsContainer_->addWidget(std::make_unique<Wt::WTable>());
+    submissionsTable_->addStyleClass("admin-table");
+
+    // No submissions message
+    noSubmissionsText_ = submissionsContainer_->addWidget(std::make_unique<Wt::WText>(
+        "No form submissions found for this student."));
+    noSubmissionsText_->addStyleClass("text-muted admin-no-data");
+    noSubmissionsText_->hide();
 }
 
 void StudentDetailWidget::loadStudent(int studentId) {
@@ -134,6 +168,8 @@ void StudentDetailWidget::loadStudent(int studentId) {
         std::cerr << "[StudentDetail] API service not available" << std::endl;
         return;
     }
+
+    currentStudentId_ = studentId;
 
     try {
         std::cerr << "[StudentDetail] Loading student: " << studentId << std::endl;
@@ -186,10 +222,213 @@ void StudentDetailWidget::loadStudent(int studentId) {
         }
 
         updateDisplay();
+        loadFormSubmissions();
         std::cerr << "[StudentDetail] Loaded student: " << currentStudent_.getFullName() << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "[StudentDetail] Exception loading student: " << e.what() << std::endl;
+    }
+}
+
+void StudentDetailWidget::loadFormSubmissions() {
+    formSubmissions_.clear();
+
+    if (!apiService_ || currentStudentId_ <= 0) {
+        updateFormSubmissionsTable();
+        return;
+    }
+
+    try {
+        // Form type mapping
+        std::map<int, std::pair<std::string, std::string>> formTypeMap = {
+            {1, {"personal_info", "Personal Information"}},
+            {2, {"emergency_contact", "Emergency Contacts"}},
+            {3, {"medical_info", "Medical Information"}},
+            {4, {"academic_history", "Academic History"}},
+            {5, {"financial_aid", "Financial Aid"}},
+            {6, {"documents", "Document Upload"}},
+            {7, {"consent", "Terms and Consent"}}
+        };
+
+        auto response = apiService_->getApiClient()->get(
+            "/FormSubmission?filter[student_id]=" + std::to_string(currentStudentId_));
+
+        if (response.success) {
+            auto json = nlohmann::json::parse(response.body);
+            nlohmann::json submissions = json.is_array() ? json :
+                (json.contains("data") ? json["data"] : nlohmann::json::array());
+
+            for (const auto& sub : submissions) {
+                nlohmann::json attrs = sub.contains("attributes") ? sub["attributes"] : sub;
+
+                StudentFormRecord record;
+                record.id = sub.contains("id") ?
+                    (sub["id"].is_string() ? std::stoi(sub["id"].get<std::string>()) : sub["id"].get<int>()) : 0;
+                record.formTypeId = attrs.value("form_type_id", 0);
+
+                auto formIt = formTypeMap.find(record.formTypeId);
+                record.formType = formIt != formTypeMap.end() ? formIt->second.first : "unknown";
+                record.formName = formIt != formTypeMap.end() ? formIt->second.second : "Unknown Form";
+
+                record.status = attrs.value("status", "pending");
+                record.submittedAt = attrs.value("submitted_at", "");
+                record.reviewedAt = attrs.value("reviewed_at", "");
+                record.reviewedBy = attrs.value("reviewed_by", "");
+
+                formSubmissions_.push_back(record);
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[StudentDetail] Error loading submissions: " << e.what() << std::endl;
+    }
+
+    updateFormSubmissionsTable();
+}
+
+void StudentDetailWidget::updateFormSubmissionsTable() {
+    submissionsTable_->clear();
+
+    if (formSubmissions_.empty()) {
+        submissionsTable_->hide();
+        noSubmissionsText_->show();
+        printAllBtn_->hide();
+        return;
+    }
+
+    submissionsTable_->show();
+    noSubmissionsText_->hide();
+    printAllBtn_->show();
+
+    // Header row
+    submissionsTable_->setHeaderCount(1);
+    int col = 0;
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>(""));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Form"));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Submitted"));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Status"));
+    submissionsTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Actions"));
+
+    for (int i = 0; i < col; i++) {
+        submissionsTable_->elementAt(0, i)->addStyleClass("admin-table-header");
+    }
+
+    int row = 1;
+    for (const auto& sub : formSubmissions_) {
+        col = 0;
+
+        // Form icon
+        auto iconCell = submissionsTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>("📋"));
+        iconCell->addStyleClass("admin-row-icon form-icon");
+        submissionsTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // Form name
+        submissionsTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>(sub.formName));
+        submissionsTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // Submitted date
+        submissionsTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>(formatDate(sub.submittedAt)));
+        submissionsTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // Status
+        std::string statusDisplay = sub.status;
+        if (statusDisplay == "needs_revision") statusDisplay = "Needs Revision";
+        else if (!statusDisplay.empty()) {
+            statusDisplay[0] = std::toupper(statusDisplay[0]);
+        }
+        auto statusBadge = submissionsTable_->elementAt(row, col)->addWidget(
+            std::make_unique<Wt::WText>(statusDisplay));
+        statusBadge->addStyleClass("badge " + getStatusBadgeClass(sub.status));
+        submissionsTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // Actions
+        auto actionsContainer = submissionsTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WContainerWidget>());
+        actionsContainer->addStyleClass("admin-table-actions");
+
+        // Preview PDF button
+        auto previewBtn = actionsContainer->addWidget(std::make_unique<Wt::WPushButton>("Preview"));
+        previewBtn->addStyleClass("btn btn-sm btn-primary");
+        int submissionId = sub.id;
+        previewBtn->clicked().connect([this, submissionId]() {
+            previewFormClicked_.emit(submissionId);
+        });
+
+        // Approve/Reject buttons for pending or needs_revision status
+        if (sub.status == "pending" || sub.status == "needs_revision") {
+            auto approveBtn = actionsContainer->addWidget(std::make_unique<Wt::WPushButton>("Approve"));
+            approveBtn->addStyleClass("btn btn-sm btn-success");
+            approveBtn->clicked().connect([this, submissionId]() {
+                approveSubmission(submissionId);
+            });
+
+            auto rejectBtn = actionsContainer->addWidget(std::make_unique<Wt::WPushButton>("Reject"));
+            rejectBtn->addStyleClass("btn btn-sm btn-danger");
+            rejectBtn->clicked().connect([this, submissionId]() {
+                rejectSubmission(submissionId);
+            });
+        }
+
+        submissionsTable_->elementAt(row, col)->addStyleClass("admin-table-cell");
+        row++;
+    }
+}
+
+void StudentDetailWidget::approveSubmission(int submissionId) {
+    std::cerr << "[StudentDetail] Approving submission: " << submissionId << std::endl;
+
+    if (apiService_) {
+        try {
+            nlohmann::json payload;
+            payload["data"]["type"] = "form_submission";
+            payload["data"]["id"] = std::to_string(submissionId);
+            payload["data"]["attributes"]["status"] = "approved";
+
+            auto response = apiService_->getApiClient()->patch(
+                "/FormSubmission/" + std::to_string(submissionId), payload.dump());
+
+            if (response.success) {
+                std::cerr << "[StudentDetail] Submission approved successfully" << std::endl;
+                // Update local state
+                for (auto& sub : formSubmissions_) {
+                    if (sub.id == submissionId) {
+                        sub.status = "approved";
+                        break;
+                    }
+                }
+                updateFormSubmissionsTable();
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[StudentDetail] Error approving submission: " << e.what() << std::endl;
+        }
+    }
+}
+
+void StudentDetailWidget::rejectSubmission(int submissionId) {
+    std::cerr << "[StudentDetail] Rejecting submission: " << submissionId << std::endl;
+
+    if (apiService_) {
+        try {
+            nlohmann::json payload;
+            payload["data"]["type"] = "form_submission";
+            payload["data"]["id"] = std::to_string(submissionId);
+            payload["data"]["attributes"]["status"] = "rejected";
+
+            auto response = apiService_->getApiClient()->patch(
+                "/FormSubmission/" + std::to_string(submissionId), payload.dump());
+
+            if (response.success) {
+                std::cerr << "[StudentDetail] Submission rejected successfully" << std::endl;
+                // Update local state
+                for (auto& sub : formSubmissions_) {
+                    if (sub.id == submissionId) {
+                        sub.status = "rejected";
+                        break;
+                    }
+                }
+                updateFormSubmissionsTable();
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[StudentDetail] Error rejecting submission: " << e.what() << std::endl;
+        }
     }
 }
 
@@ -221,14 +460,13 @@ void StudentDetailWidget::updateDisplay() {
     std::string phone = currentStudent_.getPhoneNumber();
     phoneText_->setText(phone.empty() ? "Not provided" : phone);
 
-    addressText_->setText("Not provided"); // Address needs to be loaded separately
+    addressText_->setText("Not provided");
 }
 
 void StudentDetailWidget::onRevokeAccess() {
     std::cerr << "[StudentDetail] Revoking access for student: " << currentStudent_.getId() << std::endl;
     revokeAccessClicked_.emit(std::stoi(currentStudent_.getId()));
 
-    // Update local state
     isRevoked_ = true;
     updateDisplay();
 }
@@ -237,7 +475,6 @@ void StudentDetailWidget::onRestoreAccess() {
     std::cerr << "[StudentDetail] Restoring access for student: " << currentStudent_.getId() << std::endl;
     restoreAccessClicked_.emit(std::stoi(currentStudent_.getId()));
 
-    // Update local state
     isRevoked_ = false;
     updateDisplay();
 }
@@ -245,6 +482,9 @@ void StudentDetailWidget::onRestoreAccess() {
 void StudentDetailWidget::clear() {
     currentStudent_ = ::StudentIntake::Models::Student();
     isRevoked_ = false;
+    currentStudentId_ = 0;
+    formSubmissions_.clear();
+
     studentName_->setText("");
     studentEmail_->setText("");
     statusBadge_->setText("");
@@ -252,6 +492,9 @@ void StudentDetailWidget::clear() {
     enrolledText_->setText("-");
     phoneText_->setText("-");
     addressText_->setText("-");
+
+    submissionsTable_->clear();
+    noSubmissionsText_->hide();
 }
 
 std::string StudentDetailWidget::formatDate(const std::string& dateStr) {
@@ -261,6 +504,14 @@ std::string StudentDetailWidget::formatDate(const std::string& dateStr) {
         return dateStr.substr(0, 10);
     }
     return dateStr;
+}
+
+std::string StudentDetailWidget::getStatusBadgeClass(const std::string& status) {
+    if (status == "approved") return "badge-success";
+    if (status == "pending") return "badge-warning";
+    if (status == "rejected") return "badge-danger";
+    if (status == "needs_revision") return "badge-info";
+    return "badge-secondary";
 }
 
 } // namespace Admin

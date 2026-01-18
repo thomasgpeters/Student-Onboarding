@@ -101,6 +101,8 @@ set(ADMIN_SOURCES
     src/admin/forms/FormSubmissionsWidget.cpp
     src/admin/forms/FormDetailViewer.cpp
     src/admin/forms/FormPdfPreviewWidget.cpp
+    src/admin/forms/FormTypesListWidget.cpp
+    src/admin/forms/FormTypeDetailWidget.cpp
 )
 
 set(APP_SOURCES
