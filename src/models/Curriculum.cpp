@@ -51,14 +51,15 @@ nlohmann::json Curriculum::toJson() const {
     j["id"] = id_;
     j["name"] = name_;
     j["description"] = description_;
-    j["department"] = department_;
     j["degree_type"] = degreeType_;
     j["credit_hours"] = creditHours_;
     j["duration_semesters"] = durationSemesters_;
-    j["required_forms"] = requiredForms_;
-    j["prerequisites"] = prerequisites_;
     j["is_active"] = isActive_;
     j["is_online"] = isOnline_;
+    // Note: department_id, required_forms, and prerequisites are handled separately
+    // department_id requires lookup from department name
+    // required_forms are stored in curriculum_form_requirement junction table
+    // prerequisites are stored in curriculum_prerequisite table
     return j;
 }
 
