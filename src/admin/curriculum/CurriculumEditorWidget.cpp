@@ -122,13 +122,13 @@ void CurriculumEditorWidget::setupUI() {
     departmentSelect_ = deptGroup->addWidget(std::make_unique<Wt::WComboBox>());
     departmentSelect_->addStyleClass("form-control");
     departmentSelect_->addItem("Select Department");
-    departmentSelect_->addItem("Computer Science");
-    departmentSelect_->addItem("Engineering");
-    departmentSelect_->addItem("Business");
-    departmentSelect_->addItem("Arts & Sciences");
-    departmentSelect_->addItem("Health Sciences");
-    departmentSelect_->addItem("Education");
-    departmentSelect_->addItem("Law");
+    departmentSelect_->addItem("Professional Driving School");
+    departmentSelect_->addItem("Information Technology");
+    departmentSelect_->addItem("Electrical Technology");
+    departmentSelect_->addItem("Carpentry");
+    departmentSelect_->addItem("Automotive");
+    departmentSelect_->addItem("Food Services");
+    departmentSelect_->addItem("Nursing");
 
     // Degree Type
     auto degreeGroup = twoColRow->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -284,9 +284,9 @@ void CurriculumEditorWidget::loadCurriculum(const std::string& curriculumId) {
 
     // Fallback: use mock data for testing
     currentCurriculum_.setId(curriculumId);
-    currentCurriculum_.setName("Computer Science");
-    currentCurriculum_.setDescription("Bachelor of Science in Computer Science with focus on software development and systems.");
-    currentCurriculum_.setDepartment("Computer Science");
+    currentCurriculum_.setName("Information Technology Fundamentals");
+    currentCurriculum_.setDescription("Certificate program covering IT fundamentals and computer systems.");
+    currentCurriculum_.setDepartment("Information Technology");
     currentCurriculum_.setDegreeType("bachelor");
     currentCurriculum_.setCreditHours(120);
     currentCurriculum_.setDurationSemesters(8);
