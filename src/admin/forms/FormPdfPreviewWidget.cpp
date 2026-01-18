@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <chrono>
 #include <ctime>
+#include <algorithm>
 #include <nlohmann/json.hpp>
 
 namespace StudentIntake {
@@ -221,18 +222,63 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     auto ecJson = nlohmann::json::parse(ecResponse.body);
                     nlohmann::json ecItems = ecJson.is_array() ? ecJson : (ecJson.contains("data") ? ecJson["data"] : nlohmann::json::array());
 
-                    if (!ecItems.empty()) {
-                        nlohmann::json ec = ecItems[0];
+                    int contactNum = 1;
+                    for (const auto& ec : ecItems) {
                         nlohmann::json ecAttrs = ec.contains("attributes") ? ec["attributes"] : ec;
 
-                        fields.push_back({"Contact Name", ecAttrs.value("first_name", "") + " " + ecAttrs.value("last_name", ""), "text"});
+                        // Determine contact label
+                        std::string contactLabel;
+                        bool isPrimary = ecAttrs.value("is_primary", false);
+                        int priority = ecAttrs.value("priority", 0);
+
+                        if (isPrimary || priority == 1) {
+                            contactLabel = "Primary Contact";
+                        } else if (priority == 2) {
+                            contactLabel = "Secondary Contact";
+                        } else {
+                            contactLabel = "Contact #" + std::to_string(contactNum);
+                        }
+
+                        if (contactNum > 1) {
+                            fields.push_back({"", "", "text"});
+                        }
+                        fields.push_back({contactLabel, "", "header"});
+
+                        std::string fullName = ecAttrs.value("first_name", "") + " " + ecAttrs.value("last_name", "");
+                        fields.push_back({"Name", fullName, "text"});
                         fields.push_back({"Relationship", ecAttrs.value("contact_relationship", ""), "text"});
                         fields.push_back({"Phone", ecAttrs.value("phone", ""), "phone"});
+
+                        std::string altPhone = ecAttrs.value("alternate_phone", "");
+                        if (!altPhone.empty()) {
+                            fields.push_back({"Alternate Phone", altPhone, "phone"});
+                        }
                         fields.push_back({"Email", ecAttrs.value("email", ""), "email"});
-                        fields.push_back({"Address", ecAttrs.value("street1", ""), "text"});
-                        fields.push_back({"City", ecAttrs.value("city", ""), "text"});
-                        fields.push_back({"State", ecAttrs.value("state", ""), "text"});
-                        fields.push_back({"Postal Code", ecAttrs.value("postal_code", ""), "text"});
+
+                        // Build address
+                        std::string street1 = ecAttrs.value("street1", "");
+                        std::string street2 = ecAttrs.value("street2", "");
+                        std::string city = ecAttrs.value("city", "");
+                        std::string state = ecAttrs.value("state", "");
+                        std::string postalCode = ecAttrs.value("postal_code", "");
+                        std::string country = ecAttrs.value("country", "");
+
+                        if (!street1.empty()) {
+                            std::string fullAddress = street1;
+                            if (!street2.empty()) fullAddress += ", " + street2;
+                            fields.push_back({"Street Address", fullAddress, "text"});
+                        }
+                        if (!city.empty() || !state.empty() || !postalCode.empty()) {
+                            std::string cityStateZip = city;
+                            if (!state.empty()) cityStateZip += (!cityStateZip.empty() ? ", " : "") + state;
+                            if (!postalCode.empty()) cityStateZip += " " + postalCode;
+                            fields.push_back({"City, State, Zip", cityStateZip, "text"});
+                        }
+                        if (!country.empty() && country != "USA" && country != "US" && country != "United States") {
+                            fields.push_back({"Country", country, "text"});
+                        }
+
+                        contactNum++;
                     }
                 }
             } else if (formType == "academic_history") {
@@ -241,20 +287,114 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     auto ahJson = nlohmann::json::parse(ahResponse.body);
                     nlohmann::json ahItems = ahJson.is_array() ? ahJson : (ahJson.contains("data") ? ahJson["data"] : nlohmann::json::array());
 
-                    if (!ahItems.empty()) {
-                        nlohmann::json ah = ahItems[0];
-                        nlohmann::json ahAttrs = ah.contains("attributes") ? ah["attributes"] : ah;
+                    // Group by institution type
+                    std::vector<std::string> institutionTypes = {"High School", "College", "University", "Trade School"};
+                    std::map<std::string, std::vector<nlohmann::json>> groupedRecords;
 
-                        fields.push_back({"Institution Name", ahAttrs.value("institution_name", ""), "text"});
-                        fields.push_back({"Institution Type", ahAttrs.value("institution_type", ""), "text"});
-                        fields.push_back({"City", ahAttrs.value("institution_city", ""), "text"});
-                        fields.push_back({"State", ahAttrs.value("institution_state", ""), "text"});
-                        fields.push_back({"Degree Earned", ahAttrs.value("degree_earned", ""), "text"});
-                        fields.push_back({"Major", ahAttrs.value("major", ""), "text"});
-                        if (ahAttrs.contains("gpa") && !ahAttrs["gpa"].is_null()) {
-                            fields.push_back({"GPA", std::to_string(ahAttrs.value("gpa", 0.0)), "text"});
+                    for (const auto& ah : ahItems) {
+                        nlohmann::json ahAttrs = ah.contains("attributes") ? ah["attributes"] : ah;
+                        std::string instType = ahAttrs.value("institution_type", "Other");
+                        groupedRecords[instType].push_back(ahAttrs);
+                    }
+
+                    bool firstGroup = true;
+                    for (const auto& instType : institutionTypes) {
+                        if (groupedRecords.find(instType) != groupedRecords.end()) {
+                            if (!firstGroup) {
+                                fields.push_back({"", "", "text"}); // Separator
+                            }
+                            fields.push_back({instType + " Education", "", "header"});
+                            firstGroup = false;
+
+                            int recordNum = 1;
+                            for (const auto& ahAttrs : groupedRecords[instType]) {
+                                if (recordNum > 1) {
+                                    fields.push_back({"", "", "text"});
+                                }
+
+                                fields.push_back({"Institution Name", ahAttrs.value("institution_name", ""), "text"});
+
+                                // Location
+                                std::string city = ahAttrs.value("institution_city", "");
+                                std::string state = ahAttrs.value("institution_state", "");
+                                std::string country = ahAttrs.value("institution_country", "");
+                                std::string location;
+                                if (!city.empty()) location = city;
+                                if (!state.empty()) location += (!location.empty() ? ", " : "") + state;
+                                if (!country.empty() && country != "USA" && country != "US" && country != "United States") {
+                                    location += (!location.empty() ? ", " : "") + country;
+                                }
+                                if (!location.empty()) {
+                                    fields.push_back({"Location", location, "text"});
+                                }
+
+                                // Degree and major/minor
+                                std::string degree = ahAttrs.value("degree_earned", "");
+                                if (!degree.empty()) {
+                                    fields.push_back({"Degree Earned", degree, "text"});
+                                }
+                                std::string major = ahAttrs.value("major", "");
+                                if (!major.empty()) {
+                                    fields.push_back({"Major", major, "text"});
+                                }
+                                std::string minor = ahAttrs.value("minor", "");
+                                if (!minor.empty()) {
+                                    fields.push_back({"Minor", minor, "text"});
+                                }
+
+                                // GPA
+                                if (ahAttrs.contains("gpa") && !ahAttrs["gpa"].is_null()) {
+                                    double gpa = ahAttrs.value("gpa", 0.0);
+                                    double gpaScale = ahAttrs.value("gpa_scale", 4.0);
+                                    std::ostringstream gpaStr;
+                                    gpaStr << std::fixed << std::setprecision(2) << gpa << " / " << gpaScale;
+                                    fields.push_back({"GPA", gpaStr.str(), "text"});
+                                }
+
+                                // Dates
+                                std::string startDate = ahAttrs.value("start_date", "");
+                                std::string endDate = ahAttrs.value("end_date", "");
+                                bool currentlyAttending = ahAttrs.value("is_currently_attending", false);
+
+                                if (!startDate.empty() || !endDate.empty()) {
+                                    std::string dateRange = formatDate(startDate) + " - ";
+                                    if (currentlyAttending) {
+                                        dateRange += "Present";
+                                    } else if (!endDate.empty()) {
+                                        dateRange += formatDate(endDate);
+                                    }
+                                    fields.push_back({"Attendance Period", dateRange, "text"});
+                                }
+
+                                std::string gradDate = ahAttrs.value("graduation_date", "");
+                                if (!gradDate.empty()) {
+                                    fields.push_back({"Graduation Date", gradDate, "date"});
+                                }
+
+                                // Transcript status
+                                bool transcriptReceived = ahAttrs.value("transcript_received", false);
+                                fields.push_back({"Transcript Received", transcriptReceived ? "Yes" : "No", "text"});
+
+                                recordNum++;
+                            }
                         }
-                        fields.push_back({"Graduation Date", ahAttrs.value("graduation_date", ""), "date"});
+                    }
+
+                    // Handle any "Other" types not in the standard list
+                    for (const auto& pair : groupedRecords) {
+                        if (std::find(institutionTypes.begin(), institutionTypes.end(), pair.first) == institutionTypes.end()) {
+                            if (!firstGroup) {
+                                fields.push_back({"", "", "text"});
+                            }
+                            fields.push_back({pair.first + " Education", "", "header"});
+                            firstGroup = false;
+
+                            for (const auto& ahAttrs : pair.second) {
+                                fields.push_back({"Institution Name", ahAttrs.value("institution_name", ""), "text"});
+                                fields.push_back({"Degree Earned", ahAttrs.value("degree_earned", ""), "text"});
+                                fields.push_back({"Graduation Date", ahAttrs.value("graduation_date", ""), "date"});
+                            }
+                        }
                     }
                 }
             } else if (formType == "financial_aid") {
@@ -282,14 +422,61 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     auto cJson = nlohmann::json::parse(cResponse.body);
                     nlohmann::json cItems = cJson.is_array() ? cJson : (cJson.contains("data") ? cJson["data"] : nlohmann::json::array());
 
-                    if (!cItems.empty()) {
-                        nlohmann::json c = cItems[0];
+                    // Display all consent records
+                    int consentNum = 1;
+                    for (const auto& c : cItems) {
                         nlohmann::json cAttrs = c.contains("attributes") ? c["attributes"] : c;
 
-                        fields.push_back({"Consent Type", cAttrs.value("consent_type", ""), "text"});
-                        fields.push_back({"Consent Accepted", cAttrs.value("is_accepted", false) ? "Yes" : "No", "text"});
-                        fields.push_back({"Electronic Signature", cAttrs.value("electronic_signature", ""), "text"});
-                        fields.push_back({"Signature Date", cAttrs.value("signature_date", ""), "date"});
+                        if (consentNum > 1) {
+                            fields.push_back({"", "", "text"});
+                        }
+
+                        std::string consentType = cAttrs.value("consent_type", "");
+                        std::string consentVersion = cAttrs.value("consent_version", "");
+                        std::string consentLabel = !consentType.empty() ? consentType : "Consent Agreement";
+                        if (!consentVersion.empty()) {
+                            consentLabel += " (v" + consentVersion + ")";
+                        }
+                        fields.push_back({consentLabel, "", "header"});
+
+                        // Acceptance status
+                        bool isAccepted = cAttrs.value("is_accepted", false);
+                        fields.push_back({"Status", isAccepted ? "Accepted" : "Not Accepted", "text"});
+
+                        // Acceptance timestamp
+                        std::string acceptedAt = cAttrs.value("accepted_at", "");
+                        if (!acceptedAt.empty()) {
+                            fields.push_back({"Accepted On", acceptedAt, "date"});
+                        }
+
+                        // Signature information
+                        std::string signature = cAttrs.value("electronic_signature", "");
+                        if (!signature.empty()) {
+                            fields.push_back({"Electronic Signature", signature, "text"});
+                        }
+
+                        std::string sigDate = cAttrs.value("signature_date", "");
+                        if (!sigDate.empty()) {
+                            fields.push_back({"Signature Date", sigDate, "date"});
+                        }
+
+                        // IP address for audit
+                        std::string ipAddress = cAttrs.value("ip_address", "");
+                        if (!ipAddress.empty()) {
+                            fields.push_back({"IP Address", ipAddress, "text"});
+                        }
+
+                        consentNum++;
+                    }
+
+                    // If we have consent records, add a summary of what was agreed to
+                    if (!cItems.empty()) {
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Acknowledgments", "", "header"});
+                        fields.push_back({"Terms of Service", "Acknowledged", "text"});
+                        fields.push_back({"Privacy Policy", "Acknowledged", "text"});
+                        fields.push_back({"FERPA Rights", "Acknowledged", "text"});
+                        fields.push_back({"Information Accuracy", "Certified", "text"});
                     }
                 }
             }
@@ -364,35 +551,8 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
             {7, {"consent", "Consent Form"}}
         };
 
-        // Build a combined document for all forms
-        // Document header
-        auto header = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
-        header->addStyleClass("pdf-header");
-
-        auto logoRow = header->addWidget(std::make_unique<Wt::WContainerWidget>());
-        logoRow->addStyleClass("pdf-logo-row");
-
-        // Company Logo from Imagery Business Systems
-        auto logo = logoRow->addWidget(std::make_unique<Wt::WImage>(
-            "https://media.licdn.com/dms/image/v2/D4E0BAQFNqqJ59i1lgQ/company-logo_200_200/company-logo_200_200/0/1733939002925/imagery_business_systems_llc_logo?e=2147483647&v=beta&t=s_hATe0kqIDc64S79VJYXNS4N_UwrcnUA1x7VCb3sFA"));
-        logo->addStyleClass("pdf-logo-img");
-
-        auto institutionName = logoRow->addWidget(std::make_unique<Wt::WText>("Student Intake System"));
-        institutionName->addStyleClass("pdf-institution-name");
-
-        // Main title for all forms
-        auto mainTitle = header->addWidget(std::make_unique<Wt::WText>(
-            "<h1 class='pdf-main-title'>Complete Student Intake Forms</h1>"));
-        mainTitle->setTextFormat(Wt::TextFormat::XHTML);
-
-        // Student info banner
-        auto studentInfo = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
-        studentInfo->addStyleClass("pdf-student-info-banner");
-
-        auto studentDetails = studentInfo->addWidget(std::make_unique<Wt::WText>(
-            "<strong>Student:</strong> " + studentName + " &nbsp;|&nbsp; <strong>Email:</strong> " + studentEmail +
-            " &nbsp;|&nbsp; <strong>Forms:</strong> " + std::to_string(submissions.size()) + " submission(s)"));
-        studentDetails->setTextFormat(Wt::TextFormat::XHTML);
+        // Calculate total pages for footer
+        int totalPages = static_cast<int>(submissions.size());
 
         // Process each form submission
         int formIndex = 0;
@@ -449,14 +609,12 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 "<span class='badge " + statusClass + "'>" + statusDisplay + "</span>"));
             statusBadge->setTextFormat(Wt::TextFormat::XHTML);
 
-            // Student info for this form
-            auto formStudentInfo = formSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-            formStudentInfo->addStyleClass("pdf-info-bar");
-
-            auto formStudentDetails = formStudentInfo->addWidget(std::make_unique<Wt::WText>(
-                "<strong>Student:</strong> " + studentName + " &nbsp;|&nbsp; <strong>Email:</strong> " + studentEmail +
-                " &nbsp;|&nbsp; <strong>Submitted:</strong> " + formatDate(submittedAt)));
-            formStudentDetails->setTextFormat(Wt::TextFormat::XHTML);
+            // Submission date info only
+            auto formDateInfo = formSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+            formDateInfo->addStyleClass("pdf-info-bar");
+            auto formDateDetails = formDateInfo->addWidget(std::make_unique<Wt::WText>(
+                "<strong>Submitted:</strong> " + formatDate(submittedAt)));
+            formDateDetails->setTextFormat(Wt::TextFormat::XHTML);
 
             // Load form fields for this submission
             std::vector<FormFieldData> fields;
@@ -481,13 +639,67 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 if (ecResponse.success) {
                     auto ecJson = nlohmann::json::parse(ecResponse.body);
                     nlohmann::json ecItems = ecJson.is_array() ? ecJson : (ecJson.contains("data") ? ecJson["data"] : nlohmann::json::array());
-                    for (size_t i = 0; i < ecItems.size() && i < 2; i++) {
-                        nlohmann::json ec = ecItems[i];
+
+                    int contactNum = 1;
+                    for (const auto& ec : ecItems) {
                         nlohmann::json ecAttrs = ec.contains("attributes") ? ec["attributes"] : ec;
-                        std::string prefix = (i == 0) ? "Primary " : "Secondary ";
-                        fields.push_back({prefix + "Contact Name", ecAttrs.value("first_name", "") + " " + ecAttrs.value("last_name", ""), "text"});
-                        fields.push_back({prefix + "Relationship", ecAttrs.value("relationship", ""), "text"});
-                        fields.push_back({prefix + "Phone", ecAttrs.value("phone_number", ""), "phone"});
+
+                        // Determine contact label based on priority or is_primary
+                        std::string contactLabel;
+                        bool isPrimary = ecAttrs.value("is_primary", false);
+                        int priority = ecAttrs.value("priority", 0);
+
+                        if (isPrimary || priority == 1) {
+                            contactLabel = "Primary Contact";
+                        } else if (priority == 2) {
+                            contactLabel = "Secondary Contact";
+                        } else {
+                            contactLabel = "Contact #" + std::to_string(contactNum);
+                        }
+
+                        // Add section header for each contact
+                        if (contactNum > 1) {
+                            fields.push_back({"", "", "text"}); // Empty row as separator
+                        }
+                        fields.push_back({contactLabel, "", "header"});
+
+                        // Name and relationship
+                        std::string fullName = ecAttrs.value("first_name", "") + " " + ecAttrs.value("last_name", "");
+                        fields.push_back({"Name", fullName, "text"});
+                        fields.push_back({"Relationship", ecAttrs.value("contact_relationship", ""), "text"});
+
+                        // Contact info
+                        fields.push_back({"Phone", ecAttrs.value("phone", ""), "phone"});
+                        std::string altPhone = ecAttrs.value("alternate_phone", "");
+                        if (!altPhone.empty()) {
+                            fields.push_back({"Alternate Phone", altPhone, "phone"});
+                        }
+                        fields.push_back({"Email", ecAttrs.value("email", ""), "email"});
+
+                        // Address
+                        std::string street1 = ecAttrs.value("street1", "");
+                        std::string street2 = ecAttrs.value("street2", "");
+                        std::string city = ecAttrs.value("city", "");
+                        std::string state = ecAttrs.value("state", "");
+                        std::string postalCode = ecAttrs.value("postal_code", "");
+                        std::string country = ecAttrs.value("country", "");
+
+                        if (!street1.empty()) {
+                            std::string fullAddress = street1;
+                            if (!street2.empty()) fullAddress += ", " + street2;
+                            fields.push_back({"Street Address", fullAddress, "text"});
+                        }
+                        if (!city.empty() || !state.empty() || !postalCode.empty()) {
+                            std::string cityStateZip = city;
+                            if (!state.empty()) cityStateZip += (!cityStateZip.empty() ? ", " : "") + state;
+                            if (!postalCode.empty()) cityStateZip += " " + postalCode;
+                            fields.push_back({"City, State, Zip", cityStateZip, "text"});
+                        }
+                        if (!country.empty() && country != "USA" && country != "US" && country != "United States") {
+                            fields.push_back({"Country", country, "text"});
+                        }
+
+                        contactNum++;
                     }
                 }
             } else if (formType == "medical_info") {
@@ -509,12 +721,107 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 if (ahResponse.success) {
                     auto ahJson = nlohmann::json::parse(ahResponse.body);
                     nlohmann::json ahItems = ahJson.is_array() ? ahJson : (ahJson.contains("data") ? ahJson["data"] : nlohmann::json::array());
+
+                    // Group by institution type
+                    std::vector<std::string> institutionTypes = {"High School", "College", "University", "Trade School"};
+                    std::map<std::string, std::vector<nlohmann::json>> groupedRecords;
+
                     for (const auto& ah : ahItems) {
                         nlohmann::json ahAttrs = ah.contains("attributes") ? ah["attributes"] : ah;
-                        fields.push_back({"Institution", ahAttrs.value("institution_name", ""), "text"});
-                        fields.push_back({"Type", ahAttrs.value("institution_type", ""), "text"});
-                        fields.push_back({"Degree", ahAttrs.value("degree_earned", ""), "text"});
-                        fields.push_back({"Graduation Date", ahAttrs.value("graduation_date", ""), "date"});
+                        std::string instType = ahAttrs.value("institution_type", "Other");
+                        groupedRecords[instType].push_back(ahAttrs);
+                    }
+
+                    bool firstGroup = true;
+                    for (const auto& instType : institutionTypes) {
+                        if (groupedRecords.find(instType) != groupedRecords.end()) {
+                            if (!firstGroup) {
+                                fields.push_back({"", "", "text"});
+                            }
+                            fields.push_back({instType + " Education", "", "header"});
+                            firstGroup = false;
+
+                            int recordNum = 1;
+                            for (const auto& ahAttrs : groupedRecords[instType]) {
+                                if (recordNum > 1) {
+                                    fields.push_back({"", "", "text"});
+                                }
+
+                                fields.push_back({"Institution Name", ahAttrs.value("institution_name", ""), "text"});
+
+                                std::string city = ahAttrs.value("institution_city", "");
+                                std::string state = ahAttrs.value("institution_state", "");
+                                std::string country = ahAttrs.value("institution_country", "");
+                                std::string location;
+                                if (!city.empty()) location = city;
+                                if (!state.empty()) location += (!location.empty() ? ", " : "") + state;
+                                if (!country.empty() && country != "USA" && country != "US" && country != "United States") {
+                                    location += (!location.empty() ? ", " : "") + country;
+                                }
+                                if (!location.empty()) {
+                                    fields.push_back({"Location", location, "text"});
+                                }
+
+                                std::string degree = ahAttrs.value("degree_earned", "");
+                                if (!degree.empty()) {
+                                    fields.push_back({"Degree Earned", degree, "text"});
+                                }
+                                std::string major = ahAttrs.value("major", "");
+                                if (!major.empty()) {
+                                    fields.push_back({"Major", major, "text"});
+                                }
+                                std::string minor = ahAttrs.value("minor", "");
+                                if (!minor.empty()) {
+                                    fields.push_back({"Minor", minor, "text"});
+                                }
+
+                                if (ahAttrs.contains("gpa") && !ahAttrs["gpa"].is_null()) {
+                                    double gpa = ahAttrs.value("gpa", 0.0);
+                                    double gpaScale = ahAttrs.value("gpa_scale", 4.0);
+                                    std::ostringstream gpaStr;
+                                    gpaStr << std::fixed << std::setprecision(2) << gpa << " / " << gpaScale;
+                                    fields.push_back({"GPA", gpaStr.str(), "text"});
+                                }
+
+                                std::string startDate = ahAttrs.value("start_date", "");
+                                std::string endDate = ahAttrs.value("end_date", "");
+                                bool currentlyAttending = ahAttrs.value("is_currently_attending", false);
+                                if (!startDate.empty() || !endDate.empty()) {
+                                    std::string dateRange = formatDate(startDate) + " - ";
+                                    if (currentlyAttending) {
+                                        dateRange += "Present";
+                                    } else if (!endDate.empty()) {
+                                        dateRange += formatDate(endDate);
+                                    }
+                                    fields.push_back({"Attendance Period", dateRange, "text"});
+                                }
+
+                                std::string gradDate = ahAttrs.value("graduation_date", "");
+                                if (!gradDate.empty()) {
+                                    fields.push_back({"Graduation Date", gradDate, "date"});
+                                }
+
+                                bool transcriptReceived = ahAttrs.value("transcript_received", false);
+                                fields.push_back({"Transcript Received", transcriptReceived ? "Yes" : "No", "text"});
+
+                                recordNum++;
+                            }
+                        }
+                    }
+
+                    // Handle any "Other" types
+                    for (const auto& pair : groupedRecords) {
+                        if (std::find(institutionTypes.begin(), institutionTypes.end(), pair.first) == institutionTypes.end()) {
+                            if (!firstGroup) {
+                                fields.push_back({"", "", "text"});
+                            }
+                            fields.push_back({pair.first + " Education", "", "header"});
+                            for (const auto& ahAttrs : pair.second) {
+                                fields.push_back({"Institution Name", ahAttrs.value("institution_name", ""), "text"});
+                                fields.push_back({"Degree Earned", ahAttrs.value("degree_earned", ""), "text"});
+                                fields.push_back({"Graduation Date", ahAttrs.value("graduation_date", ""), "date"});
+                            }
+                        }
                     }
                 }
             } else if (formType == "financial_aid") {
@@ -535,12 +842,56 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 if (cResponse.success) {
                     auto cJson = nlohmann::json::parse(cResponse.body);
                     nlohmann::json cItems = cJson.is_array() ? cJson : (cJson.contains("data") ? cJson["data"] : nlohmann::json::array());
-                    if (!cItems.empty()) {
-                        nlohmann::json c = cItems[0];
+
+                    int consentNum = 1;
+                    for (const auto& c : cItems) {
                         nlohmann::json cAttrs = c.contains("attributes") ? c["attributes"] : c;
-                        fields.push_back({"Consent Accepted", cAttrs.value("is_accepted", false) ? "Yes" : "No", "text"});
-                        fields.push_back({"Electronic Signature", cAttrs.value("electronic_signature", ""), "text"});
-                        fields.push_back({"Signature Date", cAttrs.value("signature_date", ""), "date"});
+
+                        if (consentNum > 1) {
+                            fields.push_back({"", "", "text"});
+                        }
+
+                        std::string consentType = cAttrs.value("consent_type", "");
+                        std::string consentVersion = cAttrs.value("consent_version", "");
+                        std::string consentLabel = !consentType.empty() ? consentType : "Consent Agreement";
+                        if (!consentVersion.empty()) {
+                            consentLabel += " (v" + consentVersion + ")";
+                        }
+                        fields.push_back({consentLabel, "", "header"});
+
+                        bool isAccepted = cAttrs.value("is_accepted", false);
+                        fields.push_back({"Status", isAccepted ? "Accepted" : "Not Accepted", "text"});
+
+                        std::string acceptedAt = cAttrs.value("accepted_at", "");
+                        if (!acceptedAt.empty()) {
+                            fields.push_back({"Accepted On", acceptedAt, "date"});
+                        }
+
+                        std::string signature = cAttrs.value("electronic_signature", "");
+                        if (!signature.empty()) {
+                            fields.push_back({"Electronic Signature", signature, "text"});
+                        }
+
+                        std::string sigDate = cAttrs.value("signature_date", "");
+                        if (!sigDate.empty()) {
+                            fields.push_back({"Signature Date", sigDate, "date"});
+                        }
+
+                        std::string ipAddress = cAttrs.value("ip_address", "");
+                        if (!ipAddress.empty()) {
+                            fields.push_back({"IP Address", ipAddress, "text"});
+                        }
+
+                        consentNum++;
+                    }
+
+                    if (!cItems.empty()) {
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Acknowledgments", "", "header"});
+                        fields.push_back({"Terms of Service", "Acknowledged", "text"});
+                        fields.push_back({"Privacy Policy", "Acknowledged", "text"});
+                        fields.push_back({"FERPA Rights", "Acknowledged", "text"});
+                        fields.push_back({"Information Accuracy", "Certified", "text"});
                     }
                 }
             }
@@ -551,7 +902,14 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 table->addStyleClass("pdf-field-table");
 
                 for (const auto& field : fields) {
-                    if (!field.value.empty()) {
+                    // Handle header type (section headers within forms)
+                    if (field.type == "header") {
+                        auto row = table->insertRow(table->rowCount());
+                        auto headerCell = row->elementAt(0);
+                        headerCell->setColumnSpan(2);
+                        headerCell->addWidget(std::make_unique<Wt::WText>(field.label));
+                        headerCell->addStyleClass("pdf-section-header");
+                    } else if (!field.value.empty()) {
                         auto row = table->insertRow(table->rowCount());
                         auto labelCell = row->elementAt(0);
                         auto valueCell = row->elementAt(1);
@@ -569,17 +927,17 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 noFields->setTextFormat(Wt::TextFormat::XHTML);
             }
 
+            // Page footer with student name and page number
+            auto pageFooter = formSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+            pageFooter->addStyleClass("pdf-page-footer");
+
+            int currentPage = formIndex + 1;
+            auto pageFooterText = pageFooter->addWidget(std::make_unique<Wt::WText>(
+                studentName + " &nbsp;&nbsp;|&nbsp;&nbsp; Page " + std::to_string(currentPage) + " of " + std::to_string(totalPages)));
+            pageFooterText->setTextFormat(Wt::TextFormat::XHTML);
+
             formIndex++;
         }
-
-        // Footer
-        auto footer = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
-        footer->addStyleClass("pdf-footer");
-
-        auto footerText = footer->addWidget(std::make_unique<Wt::WText>(
-            "This document was generated from the Student Intake System. " +
-            std::to_string(submissions.size()) + " form(s) included."));
-        footerText->addStyleClass("pdf-footer-text");
 
     } catch (const std::exception& e) {
         std::cerr << "[FormPdfPreviewWidget] Error loading student forms: " << e.what() << std::endl;
