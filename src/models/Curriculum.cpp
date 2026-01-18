@@ -10,6 +10,7 @@ Curriculum::Curriculum()
     , name_("")
     , description_("")
     , department_("")
+    , departmentId_(0)
     , degreeType_("certificate")
     , creditHours_(0)
     , durationSemesters_(0)
@@ -23,6 +24,7 @@ Curriculum::Curriculum(const std::string& id, const std::string& name)
     , name_(name)
     , description_("")
     , department_("")
+    , departmentId_(0)
     , degreeType_("certificate")
     , creditHours_(0)
     , durationSemesters_(0)
@@ -54,13 +56,13 @@ nlohmann::json Curriculum::toJson() const {
     j["code"] = code_;
     j["name"] = name_;
     j["description"] = description_;
+    j["department_id"] = departmentId_;
     j["degree_type"] = degreeType_;
     j["credit_hours"] = creditHours_;
     j["duration_semesters"] = durationSemesters_;
     j["is_active"] = isActive_;
     j["is_online"] = isOnline_;
-    // Note: department_id, required_forms, and prerequisites are handled separately
-    // department_id requires lookup from department name
+    // Note: required_forms and prerequisites are handled separately
     // required_forms are stored in curriculum_form_requirement junction table
     // prerequisites are stored in curriculum_prerequisite table
     return j;
@@ -93,13 +95,16 @@ Curriculum Curriculum::fromJson(const nlohmann::json& json) {
     if (attrs.contains("description") && !attrs["description"].is_null())
         curriculum.description_ = attrs["description"].get<std::string>();
 
-    // department / department_id
-    if (attrs.contains("department")) curriculum.department_ = attrs["department"].get<std::string>();
-    else if (attrs.contains("department_id") && !attrs["department_id"].is_null()) {
-        if (attrs["department_id"].is_string()) {
-            curriculum.department_ = attrs["department_id"].get<std::string>();
-        } else if (attrs["department_id"].is_number()) {
-            curriculum.department_ = std::to_string(attrs["department_id"].get<int>());
+    // department (display name)
+    if (attrs.contains("department") && !attrs["department"].is_null())
+        curriculum.department_ = attrs["department"].get<std::string>();
+
+    // department_id (integer ID for API)
+    if (attrs.contains("department_id") && !attrs["department_id"].is_null()) {
+        if (attrs["department_id"].is_number()) {
+            curriculum.departmentId_ = attrs["department_id"].get<int>();
+        } else if (attrs["department_id"].is_string()) {
+            curriculum.departmentId_ = std::stoi(attrs["department_id"].get<std::string>());
         }
     }
 
