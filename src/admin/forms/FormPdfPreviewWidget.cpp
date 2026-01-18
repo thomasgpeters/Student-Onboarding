@@ -397,6 +397,73 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                         }
                     }
                 }
+            } else if (formType == "medical_info") {
+                auto medResponse = apiService_->getApiClient()->get("/MedicalInfo?filter[student_id]=" + std::to_string(studentId));
+                if (medResponse.success) {
+                    auto medJson = nlohmann::json::parse(medResponse.body);
+                    nlohmann::json medItems = medJson.is_array() ? medJson : (medJson.contains("data") ? medJson["data"] : nlohmann::json::array());
+                    if (!medItems.empty()) {
+                        nlohmann::json med = medItems[0];
+                        nlohmann::json medAttrs = med.contains("attributes") ? med["attributes"] : med;
+
+                        // Basic medical info
+                        fields.push_back({"Medical Information", "", "header"});
+                        fields.push_back({"Blood Type", medAttrs.value("blood_type", ""), "text"});
+
+                        // Allergies
+                        bool hasAllergies = medAttrs.value("has_allergies", false);
+                        fields.push_back({"Has Allergies", hasAllergies ? "Yes" : "No", "text"});
+                        if (hasAllergies) {
+                            fields.push_back({"Allergies", medAttrs.value("allergies", ""), "text"});
+                        }
+
+                        // Medications
+                        bool hasMedications = medAttrs.value("has_medications", false);
+                        fields.push_back({"Currently on Medications", hasMedications ? "Yes" : "No", "text"});
+                        if (hasMedications) {
+                            fields.push_back({"Medications", medAttrs.value("medications", ""), "text"});
+                        }
+
+                        // Chronic conditions
+                        bool hasChronicConditions = medAttrs.value("has_chronic_conditions", false);
+                        fields.push_back({"Has Chronic Conditions", hasChronicConditions ? "Yes" : "No", "text"});
+                        if (hasChronicConditions) {
+                            fields.push_back({"Chronic Conditions", medAttrs.value("chronic_conditions", ""), "text"});
+                        }
+
+                        // Disabilities
+                        bool hasDisabilities = medAttrs.value("has_disabilities", false);
+                        fields.push_back({"Has Disabilities", hasDisabilities ? "Yes" : "No", "text"});
+                        if (hasDisabilities) {
+                            fields.push_back({"Disabilities", medAttrs.value("disabilities", ""), "text"});
+                        }
+
+                        // Accommodations
+                        bool requiresAccommodations = medAttrs.value("requires_accommodations", false);
+                        fields.push_back({"Requires Accommodations", requiresAccommodations ? "Yes" : "No", "text"});
+                        if (requiresAccommodations) {
+                            fields.push_back({"Accommodations Needed", medAttrs.value("accommodations_needed", ""), "text"});
+                        }
+
+                        // Immunizations
+                        bool immunizationsUpToDate = medAttrs.value("immunizations_up_to_date", false);
+                        fields.push_back({"Immunizations Up To Date", immunizationsUpToDate ? "Yes" : "No", "text"});
+
+                        // Insurance information
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Insurance Information", "", "header"});
+                        fields.push_back({"Insurance Provider", medAttrs.value("insurance_provider", ""), "text"});
+                        fields.push_back({"Policy Number", medAttrs.value("insurance_policy_number", ""), "text"});
+                        fields.push_back({"Group Number", medAttrs.value("insurance_group_number", ""), "text"});
+                        fields.push_back({"Insurance Phone", medAttrs.value("insurance_phone", ""), "phone"});
+
+                        // Physician info
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Primary Care Physician", "", "header"});
+                        fields.push_back({"Physician Name", medAttrs.value("primary_physician", ""), "text"});
+                        fields.push_back({"Physician Phone", medAttrs.value("physician_phone", ""), "phone"});
+                    }
+                }
             } else if (formType == "financial_aid") {
                 auto faResponse = apiService_->getApiClient()->get("/FinancialAid?filter[student_id]=" + std::to_string(studentId));
                 if (faResponse.success) {
@@ -407,13 +474,114 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                         nlohmann::json fa = faItems[0];
                         nlohmann::json faAttrs = fa.contains("attributes") ? fa["attributes"] : fa;
 
+                        // FAFSA Information
+                        fields.push_back({"FAFSA Information", "", "header"});
                         fields.push_back({"FAFSA Completed", faAttrs.value("fafsa_completed", false) ? "Yes" : "No", "text"});
-                        fields.push_back({"Employment Status", faAttrs.value("employment_status", ""), "text"});
-                        fields.push_back({"Employer", faAttrs.value("employer_name", ""), "text"});
+                        fields.push_back({"FAFSA Year", faAttrs.value("fafsa_year", ""), "text"});
+                        if (faAttrs.contains("efc") && !faAttrs["efc"].is_null()) {
+                            std::ostringstream efcStr;
+                            efcStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("efc", 0.0);
+                            fields.push_back({"Expected Family Contribution (EFC)", efcStr.str(), "text"});
+                        }
                         fields.push_back({"Aid Types Requested", faAttrs.value("aid_types", ""), "text"});
+                        if (faAttrs.contains("requested_aid_amount") && !faAttrs["requested_aid_amount"].is_null()) {
+                            std::ostringstream aidStr;
+                            aidStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("requested_aid_amount", 0.0);
+                            fields.push_back({"Requested Aid Amount", aidStr.str(), "text"});
+                        }
+
+                        // Employment Information
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Employment Information", "", "header"});
+                        fields.push_back({"Employment Status", faAttrs.value("employment_status", ""), "text"});
+                        fields.push_back({"Employer Name", faAttrs.value("employer_name", ""), "text"});
+                        if (faAttrs.contains("annual_income") && !faAttrs["annual_income"].is_null()) {
+                            std::ostringstream incomeStr;
+                            incomeStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("annual_income", 0.0);
+                            fields.push_back({"Annual Income", incomeStr.str(), "text"});
+                        }
+
+                        // Household Information
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Household Information", "", "header"});
+                        fields.push_back({"Independent Student", faAttrs.value("is_independent", false) ? "Yes" : "No", "text"});
+                        if (faAttrs.contains("household_size") && !faAttrs["household_size"].is_null()) {
+                            fields.push_back({"Household Size", std::to_string(faAttrs.value("household_size", 0)), "text"});
+                        }
                         if (faAttrs.contains("dependents_count") && !faAttrs["dependents_count"].is_null()) {
                             fields.push_back({"Number of Dependents", std::to_string(faAttrs.value("dependents_count", 0)), "text"});
                         }
+
+                        // Loan Information
+                        bool hasLoans = faAttrs.value("has_outstanding_loans", false);
+                        fields.push_back({"Has Outstanding Loans", hasLoans ? "Yes" : "No", "text"});
+                        if (hasLoans && faAttrs.contains("outstanding_loan_amount") && !faAttrs["outstanding_loan_amount"].is_null()) {
+                            std::ostringstream loanStr;
+                            loanStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("outstanding_loan_amount", 0.0);
+                            fields.push_back({"Outstanding Loan Amount", loanStr.str(), "text"});
+                        }
+
+                        // Scholarships
+                        std::string scholarships = faAttrs.value("scholarship_applications", "");
+                        if (!scholarships.empty()) {
+                            fields.push_back({"", "", "text"});
+                            fields.push_back({"Scholarship Applications", "", "header"});
+                            fields.push_back({"Scholarships", scholarships, "text"});
+                        }
+                    }
+                }
+            } else if (formType == "documents") {
+                auto docResponse = apiService_->getApiClient()->get("/Document?filter[student_id]=" + std::to_string(studentId));
+                if (docResponse.success) {
+                    auto docJson = nlohmann::json::parse(docResponse.body);
+                    nlohmann::json docItems = docJson.is_array() ? docJson : (docJson.contains("data") ? docJson["data"] : nlohmann::json::array());
+
+                    if (!docItems.empty()) {
+                        int docNum = 1;
+                        for (const auto& doc : docItems) {
+                            nlohmann::json docAttrs = doc.contains("attributes") ? doc["attributes"] : doc;
+
+                            if (docNum > 1) {
+                                fields.push_back({"", "", "text"});
+                            }
+                            fields.push_back({"Document #" + std::to_string(docNum), "", "header"});
+
+                            fields.push_back({"Document Type", docAttrs.value("document_type", ""), "text"});
+                            fields.push_back({"File Name", docAttrs.value("file_name", ""), "text"});
+
+                            // File size in KB/MB
+                            int fileSize = docAttrs.value("file_size", 0);
+                            std::string sizeStr;
+                            if (fileSize >= 1048576) {
+                                std::ostringstream ss;
+                                ss << std::fixed << std::setprecision(2) << (fileSize / 1048576.0) << " MB";
+                                sizeStr = ss.str();
+                            } else if (fileSize >= 1024) {
+                                std::ostringstream ss;
+                                ss << std::fixed << std::setprecision(1) << (fileSize / 1024.0) << " KB";
+                                sizeStr = ss.str();
+                            } else {
+                                sizeStr = std::to_string(fileSize) + " bytes";
+                            }
+                            fields.push_back({"File Size", sizeStr, "text"});
+
+                            fields.push_back({"Status", docAttrs.value("status", ""), "text"});
+
+                            std::string verifiedAt = docAttrs.value("verified_at", "");
+                            if (!verifiedAt.empty()) {
+                                fields.push_back({"Verified On", verifiedAt, "date"});
+                                fields.push_back({"Verified By", docAttrs.value("verified_by", ""), "text"});
+                            }
+
+                            std::string notes = docAttrs.value("notes", "");
+                            if (!notes.empty()) {
+                                fields.push_back({"Notes", notes, "text"});
+                            }
+
+                            docNum++;
+                        }
+                    } else {
+                        fields.push_back({"No Documents", "No documents uploaded yet", "text"});
                     }
                 }
             } else if (formType == "consent") {
@@ -710,10 +878,57 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                     if (!medItems.empty()) {
                         nlohmann::json med = medItems[0];
                         nlohmann::json medAttrs = med.contains("attributes") ? med["attributes"] : med;
+
+                        // Basic medical info
+                        fields.push_back({"Medical Information", "", "header"});
+                        fields.push_back({"Blood Type", medAttrs.value("blood_type", ""), "text"});
+
+                        bool hasAllergies = medAttrs.value("has_allergies", false);
+                        fields.push_back({"Has Allergies", hasAllergies ? "Yes" : "No", "text"});
+                        if (hasAllergies) {
+                            fields.push_back({"Allergies", medAttrs.value("allergies", ""), "text"});
+                        }
+
+                        bool hasMedications = medAttrs.value("has_medications", false);
+                        fields.push_back({"Currently on Medications", hasMedications ? "Yes" : "No", "text"});
+                        if (hasMedications) {
+                            fields.push_back({"Medications", medAttrs.value("medications", ""), "text"});
+                        }
+
+                        bool hasChronicConditions = medAttrs.value("has_chronic_conditions", false);
+                        fields.push_back({"Has Chronic Conditions", hasChronicConditions ? "Yes" : "No", "text"});
+                        if (hasChronicConditions) {
+                            fields.push_back({"Chronic Conditions", medAttrs.value("chronic_conditions", ""), "text"});
+                        }
+
+                        bool hasDisabilities = medAttrs.value("has_disabilities", false);
+                        fields.push_back({"Has Disabilities", hasDisabilities ? "Yes" : "No", "text"});
+                        if (hasDisabilities) {
+                            fields.push_back({"Disabilities", medAttrs.value("disabilities", ""), "text"});
+                        }
+
+                        bool requiresAccommodations = medAttrs.value("requires_accommodations", false);
+                        fields.push_back({"Requires Accommodations", requiresAccommodations ? "Yes" : "No", "text"});
+                        if (requiresAccommodations) {
+                            fields.push_back({"Accommodations Needed", medAttrs.value("accommodations_needed", ""), "text"});
+                        }
+
+                        bool immunizationsUpToDate = medAttrs.value("immunizations_up_to_date", false);
+                        fields.push_back({"Immunizations Up To Date", immunizationsUpToDate ? "Yes" : "No", "text"});
+
+                        // Insurance information
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Insurance Information", "", "header"});
                         fields.push_back({"Insurance Provider", medAttrs.value("insurance_provider", ""), "text"});
-                        fields.push_back({"Policy Number", medAttrs.value("policy_number", ""), "text"});
-                        fields.push_back({"Primary Physician", medAttrs.value("primary_physician_name", ""), "text"});
-                        fields.push_back({"Known Allergies", medAttrs.value("allergies", ""), "text"});
+                        fields.push_back({"Policy Number", medAttrs.value("insurance_policy_number", ""), "text"});
+                        fields.push_back({"Group Number", medAttrs.value("insurance_group_number", ""), "text"});
+                        fields.push_back({"Insurance Phone", medAttrs.value("insurance_phone", ""), "phone"});
+
+                        // Physician info
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Primary Care Physician", "", "header"});
+                        fields.push_back({"Physician Name", medAttrs.value("primary_physician", ""), "text"});
+                        fields.push_back({"Physician Phone", medAttrs.value("physician_phone", ""), "phone"});
                     }
                 }
             } else if (formType == "academic_history") {
@@ -832,9 +1047,114 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                     if (!faItems.empty()) {
                         nlohmann::json fa = faItems[0];
                         nlohmann::json faAttrs = fa.contains("attributes") ? fa["attributes"] : fa;
+
+                        // FAFSA Information
+                        fields.push_back({"FAFSA Information", "", "header"});
                         fields.push_back({"FAFSA Completed", faAttrs.value("fafsa_completed", false) ? "Yes" : "No", "text"});
+                        fields.push_back({"FAFSA Year", faAttrs.value("fafsa_year", ""), "text"});
+                        if (faAttrs.contains("efc") && !faAttrs["efc"].is_null()) {
+                            std::ostringstream efcStr;
+                            efcStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("efc", 0.0);
+                            fields.push_back({"Expected Family Contribution (EFC)", efcStr.str(), "text"});
+                        }
+                        fields.push_back({"Aid Types Requested", faAttrs.value("aid_types", ""), "text"});
+                        if (faAttrs.contains("requested_aid_amount") && !faAttrs["requested_aid_amount"].is_null()) {
+                            std::ostringstream aidStr;
+                            aidStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("requested_aid_amount", 0.0);
+                            fields.push_back({"Requested Aid Amount", aidStr.str(), "text"});
+                        }
+
+                        // Employment Information
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Employment Information", "", "header"});
                         fields.push_back({"Employment Status", faAttrs.value("employment_status", ""), "text"});
-                        fields.push_back({"Employer", faAttrs.value("employer_name", ""), "text"});
+                        fields.push_back({"Employer Name", faAttrs.value("employer_name", ""), "text"});
+                        if (faAttrs.contains("annual_income") && !faAttrs["annual_income"].is_null()) {
+                            std::ostringstream incomeStr;
+                            incomeStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("annual_income", 0.0);
+                            fields.push_back({"Annual Income", incomeStr.str(), "text"});
+                        }
+
+                        // Household Information
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Household Information", "", "header"});
+                        fields.push_back({"Independent Student", faAttrs.value("is_independent", false) ? "Yes" : "No", "text"});
+                        if (faAttrs.contains("household_size") && !faAttrs["household_size"].is_null()) {
+                            fields.push_back({"Household Size", std::to_string(faAttrs.value("household_size", 0)), "text"});
+                        }
+                        if (faAttrs.contains("dependents_count") && !faAttrs["dependents_count"].is_null()) {
+                            fields.push_back({"Number of Dependents", std::to_string(faAttrs.value("dependents_count", 0)), "text"});
+                        }
+
+                        // Loan Information
+                        bool hasLoans = faAttrs.value("has_outstanding_loans", false);
+                        fields.push_back({"Has Outstanding Loans", hasLoans ? "Yes" : "No", "text"});
+                        if (hasLoans && faAttrs.contains("outstanding_loan_amount") && !faAttrs["outstanding_loan_amount"].is_null()) {
+                            std::ostringstream loanStr;
+                            loanStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("outstanding_loan_amount", 0.0);
+                            fields.push_back({"Outstanding Loan Amount", loanStr.str(), "text"});
+                        }
+
+                        // Scholarships
+                        std::string scholarships = faAttrs.value("scholarship_applications", "");
+                        if (!scholarships.empty()) {
+                            fields.push_back({"", "", "text"});
+                            fields.push_back({"Scholarship Applications", "", "header"});
+                            fields.push_back({"Scholarships", scholarships, "text"});
+                        }
+                    }
+                }
+            } else if (formType == "documents") {
+                auto docResponse = apiService_->getApiClient()->get("/Document?filter[student_id]=" + std::to_string(studentId));
+                if (docResponse.success) {
+                    auto docJson = nlohmann::json::parse(docResponse.body);
+                    nlohmann::json docItems = docJson.is_array() ? docJson : (docJson.contains("data") ? docJson["data"] : nlohmann::json::array());
+
+                    if (!docItems.empty()) {
+                        int docNum = 1;
+                        for (const auto& doc : docItems) {
+                            nlohmann::json docAttrs = doc.contains("attributes") ? doc["attributes"] : doc;
+
+                            if (docNum > 1) {
+                                fields.push_back({"", "", "text"});
+                            }
+                            fields.push_back({"Document #" + std::to_string(docNum), "", "header"});
+
+                            fields.push_back({"Document Type", docAttrs.value("document_type", ""), "text"});
+                            fields.push_back({"File Name", docAttrs.value("file_name", ""), "text"});
+
+                            int fileSize = docAttrs.value("file_size", 0);
+                            std::string sizeStr;
+                            if (fileSize >= 1048576) {
+                                std::ostringstream ss;
+                                ss << std::fixed << std::setprecision(2) << (fileSize / 1048576.0) << " MB";
+                                sizeStr = ss.str();
+                            } else if (fileSize >= 1024) {
+                                std::ostringstream ss;
+                                ss << std::fixed << std::setprecision(1) << (fileSize / 1024.0) << " KB";
+                                sizeStr = ss.str();
+                            } else {
+                                sizeStr = std::to_string(fileSize) + " bytes";
+                            }
+                            fields.push_back({"File Size", sizeStr, "text"});
+
+                            fields.push_back({"Status", docAttrs.value("status", ""), "text"});
+
+                            std::string verifiedAt = docAttrs.value("verified_at", "");
+                            if (!verifiedAt.empty()) {
+                                fields.push_back({"Verified On", verifiedAt, "date"});
+                                fields.push_back({"Verified By", docAttrs.value("verified_by", ""), "text"});
+                            }
+
+                            std::string notes = docAttrs.value("notes", "");
+                            if (!notes.empty()) {
+                                fields.push_back({"Notes", notes, "text"});
+                            }
+
+                            docNum++;
+                        }
+                    } else {
+                        fields.push_back({"No Documents", "No documents uploaded yet", "text"});
                     }
                 }
             } else if (formType == "consent") {
