@@ -38,7 +38,7 @@ public:
 
     void setApiService(std::shared_ptr<Api::FormSubmissionService> apiService);
     void loadFormType(int formTypeId);
-    void clear();
+    void clear() override;
 
     // Signals
     Wt::Signal<>& backClicked() { return backClicked_; }
