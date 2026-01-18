@@ -437,7 +437,7 @@ void CurriculumEditorWidget::saveCurriculum() {
     if (apiService_) {
         try {
             nlohmann::json payload;
-            payload["data"]["type"] = "curriculum";
+            payload["data"]["type"] = "Curriculum";
             payload["data"]["attributes"] = currentCurriculum_.toJson();
 
             Api::ApiResponse response;
