@@ -341,6 +341,7 @@ void StudentListWidget::loadStudents() {
 
         std::cerr << "[StudentList] Loaded " << allStudents_.size() << " students" << std::endl;
         updateTable(allStudents_);
+        updateStats();  // Update stat cards with correct counts
 
     } catch (const std::exception& e) {
         std::cerr << "[StudentList] Exception loading students: " << e.what() << std::endl;
