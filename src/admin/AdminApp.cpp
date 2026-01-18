@@ -12,7 +12,7 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , currentState_(AppState::Login)
     , selectedStudentId_(0)
     , selectedCurriculumId_("")
-    , selectedSubmissionId_(0)
+    , selectedFormTypeId_(0)
     , apiClient_(nullptr)
     , apiService_(nullptr)
     , authManager_(nullptr)
@@ -30,6 +30,8 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , formSubmissionsWidget_(nullptr)
     , formDetailViewer_(nullptr)
     , formPdfPreviewWidget_(nullptr)
+    , formTypesListWidget_(nullptr)
+    , formTypeDetailWidget_(nullptr)
     , curriculumListWidget_(nullptr)
     , curriculumEditorWidget_(nullptr)
     , settingsView_(nullptr) {
@@ -119,14 +121,16 @@ void AdminApp::setupUI() {
     studentListWidget_->hide();
 
     // Student Detail widget (hidden initially)
+    // Form submissions are now embedded directly in this widget
     studentDetailWidget_ = contentContainer_->addWidget(std::make_unique<StudentDetailWidget>());
     studentDetailWidget_->setApiService(apiService_);
     studentDetailWidget_->backClicked().connect([this]() {
         setState(AppState::Students);
     });
-    studentDetailWidget_->viewFormsClicked().connect(this, &AdminApp::handleViewStudentForms);
     studentDetailWidget_->revokeAccessClicked().connect(this, &AdminApp::handleRevokeAccess);
     studentDetailWidget_->restoreAccessClicked().connect(this, &AdminApp::handleRestoreAccess);
+    studentDetailWidget_->previewFormClicked().connect(this, &AdminApp::handleFormPdfPreview);
+    studentDetailWidget_->printAllFormsClicked().connect(this, &AdminApp::handlePrintAllStudentForms);
     studentDetailWidget_->hide();
 
     // Student Form Viewer widget (hidden initially)
@@ -137,7 +141,21 @@ void AdminApp::setupUI() {
     });
     studentFormViewer_->hide();
 
-    // Form Submissions widget (hidden initially)
+    // Form Types List widget (hidden initially) - Shows form definitions
+    formTypesListWidget_ = contentContainer_->addWidget(std::make_unique<FormTypesListWidget>());
+    formTypesListWidget_->setApiService(apiService_);
+    formTypesListWidget_->formTypeSelected().connect(this, &AdminApp::handleFormTypeSelected);
+    formTypesListWidget_->hide();
+
+    // Form Type Detail widget (hidden initially) - Shows form type metadata and fields
+    formTypeDetailWidget_ = contentContainer_->addWidget(std::make_unique<FormTypeDetailWidget>());
+    formTypeDetailWidget_->setApiService(apiService_);
+    formTypeDetailWidget_->backClicked().connect([this]() {
+        setState(AppState::Forms);
+    });
+    formTypeDetailWidget_->hide();
+
+    // Legacy Form Submissions widget (hidden - kept for FormDetailViewer compatibility)
     formSubmissionsWidget_ = contentContainer_->addWidget(std::make_unique<FormSubmissionsWidget>());
     formSubmissionsWidget_->setApiService(apiService_);
     formSubmissionsWidget_->viewSubmissionClicked().connect(this, &AdminApp::handleFormSubmissionSelected);
@@ -227,7 +245,7 @@ void AdminApp::setState(AppState state) {
             showForms();
             break;
         case AppState::FormDetail:
-            showFormDetail(selectedSubmissionId_);
+            showFormDetail(selectedFormTypeId_);
             break;
         case AppState::FormPdfPreview:
             // PDF preview is now a modal dialog, shown via handleFormPdfPreview
@@ -251,6 +269,8 @@ void AdminApp::hideAllViews() {
     studentListWidget_->hide();
     studentDetailWidget_->hide();
     studentFormViewer_->hide();
+    formTypesListWidget_->hide();
+    formTypeDetailWidget_->hide();
     formSubmissionsWidget_->hide();
     formDetailViewer_->hide();
     // formPdfPreviewWidget_ is a WDialog - it manages its own visibility
@@ -340,11 +360,12 @@ void AdminApp::showForms() {
     contentWrapper_->removeStyleClass("login-state");
     contentWrapper_->addStyleClass("with-sidebar");
 
-    formSubmissionsWidget_->show();
-    formSubmissionsWidget_->loadData();
+    // Show form definitions list (repurposed from form submissions)
+    formTypesListWidget_->show();
+    formTypesListWidget_->loadData();
 }
 
-void AdminApp::showFormDetail(int submissionId) {
+void AdminApp::showFormDetail(int formTypeId) {
     // hideAllViews() already called by setState()
 
     sidebarWidget_->show();
@@ -354,9 +375,9 @@ void AdminApp::showFormDetail(int submissionId) {
     contentWrapper_->addStyleClass("with-sidebar");
 
     currentState_ = AppState::FormDetail;
-    selectedSubmissionId_ = submissionId;
-    formDetailViewer_->loadSubmission(submissionId);
-    formDetailViewer_->show();
+    selectedFormTypeId_ = formTypeId;
+    formTypeDetailWidget_->loadFormType(formTypeId);
+    formTypeDetailWidget_->show();
 }
 
 void AdminApp::showCurriculum() {
@@ -525,9 +546,15 @@ void AdminApp::handleCurriculumSaved() {
 
 void AdminApp::handleFormSubmissionSelected(int submissionId) {
     std::cerr << "[AdminApp] Form submission selected: " << submissionId << std::endl;
-    selectedSubmissionId_ = submissionId;
+    // Legacy handler - no longer used for main Forms section
+    // Kept for FormDetailViewer compatibility
+}
+
+void AdminApp::handleFormTypeSelected(int formTypeId) {
+    std::cerr << "[AdminApp] Form type selected: " << formTypeId << std::endl;
+    selectedFormTypeId_ = formTypeId;
     hideAllViews();
-    showFormDetail(submissionId);
+    showFormDetail(formTypeId);
 }
 
 void AdminApp::handleFormApproved(int submissionId) {

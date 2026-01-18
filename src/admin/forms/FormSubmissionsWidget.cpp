@@ -577,6 +577,17 @@ void FormSubmissionsWidget::applyFilters() {
         filteredSubmissions_.push_back(submission);
     }
 
+    // Sort by student name (last name, then first name for same last names)
+    std::sort(filteredSubmissions_.begin(), filteredSubmissions_.end(),
+        [](const FormSubmissionRecord& a, const FormSubmissionRecord& b) {
+            // Case-insensitive comparison
+            std::string nameA = a.studentName;
+            std::string nameB = b.studentName;
+            std::transform(nameA.begin(), nameA.end(), nameA.begin(), ::tolower);
+            std::transform(nameB.begin(), nameB.end(), nameB.begin(), ::tolower);
+            return nameA < nameB;
+        });
+
     // Update statistics display
     todayCountText_->setText(std::to_string(todayCount));
     pendingCountText_->setText(std::to_string(pendingCount));
@@ -627,7 +638,48 @@ void FormSubmissionsWidget::updateTable() {
     }
 
     int row = 1;
+    std::string currentStudentName = "";
+    int currentStudentId = -1;
+
     for (const auto& submission : filteredSubmissions_) {
+        // Add student group header when student changes
+        if (submission.studentId != currentStudentId) {
+            currentStudentId = submission.studentId;
+            currentStudentName = submission.studentName;
+
+            // Count forms for this student
+            int studentFormCount = 0;
+            for (const auto& s : filteredSubmissions_) {
+                if (s.studentId == currentStudentId) {
+                    studentFormCount++;
+                }
+            }
+
+            // Create group header row
+            auto groupCell = submissionsTable_->elementAt(row, 0);
+            groupCell->setColumnSpan(7);
+            auto groupContainer = groupCell->addWidget(std::make_unique<Wt::WContainerWidget>());
+            groupContainer->addStyleClass("student-group-header");
+
+            auto studentIcon = groupContainer->addWidget(std::make_unique<Wt::WText>("👤"));
+            studentIcon->addStyleClass("student-group-icon");
+
+            auto studentNameLabel = groupContainer->addWidget(std::make_unique<Wt::WText>(
+                " " + submission.studentName + " "));
+            studentNameLabel->addStyleClass("student-group-name");
+
+            auto studentEmail = groupContainer->addWidget(std::make_unique<Wt::WText>(
+                "(" + submission.studentEmail + ")"));
+            studentEmail->addStyleClass("student-group-email");
+
+            auto formCountBadge = groupContainer->addWidget(std::make_unique<Wt::WText>(
+                " " + std::to_string(studentFormCount) + " form(s)"));
+            formCountBadge->addStyleClass("student-group-count");
+
+            groupCell->addStyleClass("student-group-cell");
+            row++;
+        }
+
         col = 0;
 
         // Form icon
@@ -635,8 +687,9 @@ void FormSubmissionsWidget::updateTable() {
         iconCell->addStyleClass("admin-row-icon form-icon");
         submissionsTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
 
-        // Student info
+        // Student info (now indented under group)
         auto studentContainer = submissionsTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WContainerWidget>());
+        studentContainer->addStyleClass("grouped-student-info");
         auto nameText = studentContainer->addWidget(std::make_unique<Wt::WText>(submission.studentName));
         nameText->addStyleClass("admin-student-name-cell");
         studentContainer->addWidget(std::make_unique<Wt::WBreak>());

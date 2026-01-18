@@ -598,6 +598,52 @@
     border-bottom: 1px solid #e2e8f0;
 }
 
+/* Student group header for grouped view */
+.student-group-cell {
+    background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+    border-bottom: 2px solid #3b82f6;
+    padding: 0 !important;
+}
+
+.student-group-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    gap: 0.25rem;
+}
+
+.student-group-icon {
+    font-size: 1.25rem;
+    margin-right: 0.25rem;
+}
+
+.student-group-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1e40af;
+}
+
+.student-group-email {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.student-group-count {
+    margin-left: auto;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #3b82f6;
+    background: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid #bfdbfe;
+}
+
+.grouped-student-info {
+    padding-left: 1rem;
+    border-left: 3px solid #e2e8f0;
+}
+
 /* Icon column styling */
 .admin-table-icon-header {
     width: 50px;
@@ -762,6 +808,43 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
+}
+
+/* Student Detail - Form Submissions Section */
+.admin-submissions-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-top: 1.5rem;
+}
+
+.admin-submissions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.admin-pdf-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+    font-style: italic;
 }
 
 /* =====================================================
@@ -2022,4 +2105,87 @@ textarea.form-control {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
+}
+
+/* =====================================================
+   FORM TYPES LIST WIDGET
+   ===================================================== */
+
+.admin-form-types-list {
+    padding: 1rem;
+}
+
+/* Form name with code underneath */
+.admin-primary-text {
+    display: block;
+    font-weight: 500;
+    color: #1e293b;
+    margin-bottom: 0.125rem;
+}
+
+.admin-secondary-text {
+    display: block;
+    font-size: 0.8125rem;
+    color: #64748b;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+/* Code/monospace text styling */
+.admin-code-text {
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: #475569;
+    background-color: #f1f5f9;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+}
+
+/* =====================================================
+   FORM TYPE DETAIL WIDGET
+   ===================================================== */
+
+.admin-form-type-detail {
+    padding: 1rem;
+    max-width: 1000px;
+}
+
+.admin-detail-code {
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9375rem;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 0.75rem;
+}
+
+.admin-detail-description {
+    color: #475569;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-top: 0.5rem;
+}
+
+.admin-field-count {
+    font-size: 0.9375rem;
+    color: #64748b;
+    font-weight: 400;
+    margin-left: 0.5rem;
+}
+
+/* Checkbox table styling */
+.admin-table-cell input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: default;
+}
+
+.admin-table-cell input[type="checkbox"]:disabled {
+    opacity: 0.7;
+}
+
+/* Text alignment */
+.text-center {
+    text-align: center;
 }

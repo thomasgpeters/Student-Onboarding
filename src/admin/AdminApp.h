@@ -22,6 +22,8 @@
 #include "admin/forms/FormSubmissionsWidget.h"
 #include "admin/forms/FormDetailViewer.h"
 #include "admin/forms/FormPdfPreviewWidget.h"
+#include "admin/forms/FormTypesListWidget.h"
+#include "admin/forms/FormTypeDetailWidget.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -41,8 +43,8 @@ public:
         Students,
         StudentDetail,
         StudentForms,
-        Forms,
-        FormDetail,
+        Forms,           // Now shows FormTypesListWidget (form definitions)
+        FormDetail,      // Now shows FormTypeDetailWidget (form type details)
         FormPdfPreview,
         Curriculum,
         CurriculumEdit,
@@ -66,8 +68,9 @@ private:
     void showStudentDetail(int studentId);
     void showStudentForms(int studentId);
     void showForms();
-    void showFormDetail(int submissionId);
+    void showFormDetail(int formTypeId);
     // showFormPdfPreview removed - PDF preview is now a modal dialog
+    void handleFormTypeSelected(int formTypeId);
     void showCurriculum();
     void showCurriculumEdit(const std::string& curriculumId);
     void showSettings();
@@ -97,7 +100,7 @@ private:
     int selectedStudentId_;
     std::string selectedStudentName_;
     std::string selectedCurriculumId_;
-    int selectedSubmissionId_;
+    int selectedFormTypeId_;
 
     // Services
     std::shared_ptr<Api::ApiClient> apiClient_;
@@ -118,9 +121,11 @@ private:
     StudentListWidget* studentListWidget_;
     StudentDetailWidget* studentDetailWidget_;
     StudentFormViewer* studentFormViewer_;
-    FormSubmissionsWidget* formSubmissionsWidget_;
-    FormDetailViewer* formDetailViewer_;
+    FormSubmissionsWidget* formSubmissionsWidget_;  // Legacy - kept for FormDetailViewer
+    FormDetailViewer* formDetailViewer_;            // Legacy - kept for submission viewing
     FormPdfPreviewWidget* formPdfPreviewWidget_;
+    FormTypesListWidget* formTypesListWidget_;      // New - lists form definitions
+    FormTypeDetailWidget* formTypeDetailWidget_;    // New - shows form type details
     CurriculumListWidget* curriculumListWidget_;
     CurriculumEditorWidget* curriculumEditorWidget_;
     Wt::WContainerWidget* settingsView_;
