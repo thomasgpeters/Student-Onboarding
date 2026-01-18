@@ -21,6 +21,7 @@ CurriculumEditorWidget::CurriculumEditorWidget()
     , errorMessage_(nullptr)
     , successMessage_(nullptr)
     , formContainer_(nullptr)
+    , codeInput_(nullptr)
     , nameInput_(nullptr)
     , descriptionInput_(nullptr)
     , departmentSelect_(nullptr)
@@ -91,13 +92,26 @@ void CurriculumEditorWidget::setupUI() {
     auto basicFields = basicSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     basicFields->addStyleClass("admin-form-fields");
 
+    // Two-column row for code and name
+    auto codeNameRow = basicFields->addWidget(std::make_unique<Wt::WContainerWidget>());
+    codeNameRow->addStyleClass("admin-form-row");
+
+    // Program Code
+    auto codeGroup = codeNameRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    codeGroup->addStyleClass("form-group");
+    auto codeLabel = codeGroup->addWidget(std::make_unique<Wt::WText>("Program Code *"));
+    codeLabel->addStyleClass("form-label");
+    codeInput_ = codeGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    codeInput_->setPlaceholderText("e.g., CDL-A");
+    codeInput_->addStyleClass("form-control");
+
     // Program Name
-    auto nameGroup = basicFields->addWidget(std::make_unique<Wt::WContainerWidget>());
+    auto nameGroup = codeNameRow->addWidget(std::make_unique<Wt::WContainerWidget>());
     nameGroup->addStyleClass("form-group");
     auto nameLabel = nameGroup->addWidget(std::make_unique<Wt::WText>("Program Name *"));
     nameLabel->addStyleClass("form-label");
     nameInput_ = nameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
-    nameInput_->setPlaceholderText("e.g., Computer Science");
+    nameInput_->setPlaceholderText("e.g., Class A CDL Training");
     nameInput_->addStyleClass("form-control");
 
     // Description
@@ -306,12 +320,13 @@ void CurriculumEditorWidget::createNew() {
     currentCurriculum_.setActive(true);
 
     // Reset form fields
+    codeInput_->setText("");
     nameInput_->setText("");
     descriptionInput_->setText("");
     departmentSelect_->setCurrentIndex(0);
     degreeTypeSelect_->setCurrentIndex(0);
     creditHoursInput_->setValue(120);
-    durationInput_->setValue(8);
+    durationInput_->setValue(2);
     isActiveCheck_->setChecked(true);
     isOnlineCheck_->setChecked(false);
 
@@ -329,6 +344,7 @@ void CurriculumEditorWidget::createNew() {
 }
 
 void CurriculumEditorWidget::populateForm(const Curriculum& curriculum) {
+    codeInput_->setText(curriculum.getCode());
     nameInput_->setText(curriculum.getName());
     descriptionInput_->setText(curriculum.getDescription());
 
@@ -366,12 +382,13 @@ void CurriculumEditorWidget::populateForm(const Curriculum& curriculum) {
 }
 
 void CurriculumEditorWidget::clearForm() {
+    codeInput_->setText("");
     nameInput_->setText("");
     descriptionInput_->setText("");
     departmentSelect_->setCurrentIndex(0);
     degreeTypeSelect_->setCurrentIndex(0);
     creditHoursInput_->setValue(120);
-    durationInput_->setValue(8);
+    durationInput_->setValue(2);
     isActiveCheck_->setChecked(true);
     isOnlineCheck_->setChecked(false);
     for (auto& [id, checkbox] : formCheckboxes_) {
@@ -388,6 +405,7 @@ void CurriculumEditorWidget::saveCurriculum() {
     }
 
     // Gather form data
+    currentCurriculum_.setCode(codeInput_->text().toUTF8());
     currentCurriculum_.setName(nameInput_->text().toUTF8());
     currentCurriculum_.setDescription(descriptionInput_->text().toUTF8());
 
@@ -452,6 +470,11 @@ void CurriculumEditorWidget::saveCurriculum() {
 }
 
 bool CurriculumEditorWidget::validateForm() {
+    if (codeInput_->text().empty()) {
+        showError("Program code is required.");
+        return false;
+    }
+
     if (nameInput_->text().empty()) {
         showError("Program name is required.");
         return false;

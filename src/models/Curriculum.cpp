@@ -6,10 +6,11 @@ namespace Models {
 
 Curriculum::Curriculum()
     : id_("")
+    , code_("")
     , name_("")
     , description_("")
     , department_("")
-    , degreeType_("bachelor")
+    , degreeType_("certificate")
     , creditHours_(0)
     , durationSemesters_(0)
     , isActive_(true)
@@ -18,10 +19,11 @@ Curriculum::Curriculum()
 
 Curriculum::Curriculum(const std::string& id, const std::string& name)
     : id_(id)
+    , code_("")
     , name_(name)
     , description_("")
     , department_("")
-    , degreeType_("bachelor")
+    , degreeType_("certificate")
     , creditHours_(0)
     , durationSemesters_(0)
     , isActive_(true)
@@ -49,6 +51,7 @@ bool Curriculum::requiresForm(const std::string& formId) const {
 nlohmann::json Curriculum::toJson() const {
     nlohmann::json j;
     j["id"] = id_;
+    j["code"] = code_;
     j["name"] = name_;
     j["description"] = description_;
     j["degree_type"] = degreeType_;
@@ -79,6 +82,10 @@ Curriculum Curriculum::fromJson(const nlohmann::json& json) {
     }
 
     // Handle both camelCase and snake_case field names from API
+    // code
+    if (attrs.contains("code") && !attrs["code"].is_null())
+        curriculum.code_ = attrs["code"].get<std::string>();
+
     // name
     if (attrs.contains("name")) curriculum.name_ = attrs["name"].get<std::string>();
 

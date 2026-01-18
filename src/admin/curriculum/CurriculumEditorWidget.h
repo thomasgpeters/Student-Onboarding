@@ -73,6 +73,7 @@ private:
 
     // Form fields - Basic Info
     Wt::WContainerWidget* formContainer_;
+    Wt::WLineEdit* codeInput_;
     Wt::WLineEdit* nameInput_;
     Wt::WTextArea* descriptionInput_;
     Wt::WComboBox* departmentSelect_;

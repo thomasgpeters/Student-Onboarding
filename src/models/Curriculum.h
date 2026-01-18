@@ -18,6 +18,7 @@ public:
 
     // Getters
     std::string getId() const { return id_; }
+    std::string getCode() const { return code_; }
     std::string getName() const { return name_; }
     std::string getDescription() const { return description_; }
     std::string getDepartment() const { return department_; }
@@ -31,6 +32,7 @@ public:
 
     // Setters
     void setId(const std::string& id) { id_ = id; }
+    void setCode(const std::string& code) { code_ = code; }
     void setName(const std::string& name) { name_ = name; }
     void setDescription(const std::string& description) { description_ = description; }
     void setDepartment(const std::string& department) { department_ = department; }
@@ -53,6 +55,7 @@ public:
 
 private:
     std::string id_;
+    std::string code_;  // Unique program code (required)
     std::string name_;
     std::string description_;
     std::string department_;
