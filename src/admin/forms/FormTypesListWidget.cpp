@@ -31,7 +31,7 @@ void FormTypesListWidget::setApiService(std::shared_ptr<Api::FormSubmissionServi
 }
 
 void FormTypesListWidget::setupUI() {
-    addStyleClass("admin-section-view");
+    addStyleClass("admin-form-submissions");  // Use same styling as FormSubmissionsWidget
 
     // Header section
     auto headerContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
