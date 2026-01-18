@@ -348,13 +348,20 @@ void CurriculumEditorWidget::populateForm(const Curriculum& curriculum) {
     nameInput_->setText(curriculum.getName());
     descriptionInput_->setText(curriculum.getDescription());
 
-    // Set department
+    // Set department - try by name first, then by ID
     std::string dept = curriculum.getDepartment();
+    bool found = false;
     for (int i = 0; i < departmentSelect_->count(); i++) {
         if (departmentSelect_->itemText(i).toUTF8() == dept) {
             departmentSelect_->setCurrentIndex(i);
+            found = true;
             break;
         }
+    }
+    // Fallback to department ID if name not found
+    if (!found && curriculum.getDepartmentId() > 0 &&
+        curriculum.getDepartmentId() < departmentSelect_->count()) {
+        departmentSelect_->setCurrentIndex(curriculum.getDepartmentId());
     }
 
     // Set degree type - capitalize first letter for matching
@@ -411,6 +418,8 @@ void CurriculumEditorWidget::saveCurriculum() {
 
     if (departmentSelect_->currentIndex() > 0) {
         currentCurriculum_.setDepartment(departmentSelect_->currentText().toUTF8());
+        // Department ID maps to dropdown index (1=Professional Driving School, etc.)
+        currentCurriculum_.setDepartmentId(departmentSelect_->currentIndex());
     }
 
     if (degreeTypeSelect_->currentIndex() > 0) {

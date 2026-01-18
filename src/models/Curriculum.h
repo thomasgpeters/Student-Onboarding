@@ -22,6 +22,7 @@ public:
     std::string getName() const { return name_; }
     std::string getDescription() const { return description_; }
     std::string getDepartment() const { return department_; }
+    int getDepartmentId() const { return departmentId_; }
     std::string getDegreeType() const { return degreeType_; }
     int getCreditHours() const { return creditHours_; }
     int getDurationSemesters() const { return durationSemesters_; }
@@ -36,6 +37,7 @@ public:
     void setName(const std::string& name) { name_ = name; }
     void setDescription(const std::string& description) { description_ = description; }
     void setDepartment(const std::string& department) { department_ = department; }
+    void setDepartmentId(int departmentId) { departmentId_ = departmentId; }
     void setDegreeType(const std::string& degreeType) { degreeType_ = degreeType; }
     void setCreditHours(int creditHours) { creditHours_ = creditHours; }
     void setDurationSemesters(int duration) { durationSemesters_ = duration; }
@@ -58,7 +60,8 @@ private:
     std::string code_;  // Unique program code (required)
     std::string name_;
     std::string description_;
-    std::string department_;
+    std::string department_;      // Department name (for display)
+    int departmentId_;            // Department ID (for API)
     std::string degreeType_;  // "bachelor", "master", "doctoral", "certificate", "associate"
     int creditHours_;
     int durationSemesters_;
