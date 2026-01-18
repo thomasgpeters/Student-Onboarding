@@ -45,41 +45,49 @@ void FormTypesListWidget::setupUI() {
         "View and manage form type definitions in the system"));
     headerSubtitle_->addStyleClass("admin-section-subtitle");
 
-    // Stats cards
+    // Stats cards - using consistent admin-stat-mini-card pattern
     statsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    statsContainer_->addStyleClass("admin-stats-grid");
+    statsContainer_->addStyleClass("admin-submission-stats");
 
     // Total forms card
     auto totalCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    totalCard->addStyleClass("admin-stat-card");
-    auto totalLabel = totalCard->addWidget(std::make_unique<Wt::WText>("Total Forms"));
-    totalLabel->addStyleClass("admin-stat-label");
+    totalCard->addStyleClass("admin-stat-mini-card today");
+    auto totalIcon = totalCard->addWidget(std::make_unique<Wt::WText>("📋"));
+    totalIcon->addStyleClass("admin-stat-mini-icon");
     totalFormsText_ = totalCard->addWidget(std::make_unique<Wt::WText>("0"));
-    totalFormsText_->addStyleClass("admin-stat-value");
+    totalFormsText_->addStyleClass("admin-stat-mini-number");
+    auto totalLabel = totalCard->addWidget(std::make_unique<Wt::WText>("Total Forms"));
+    totalLabel->addStyleClass("admin-stat-mini-label");
 
     // Required forms card
     auto requiredCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    requiredCard->addStyleClass("admin-stat-card");
-    auto requiredLabel = requiredCard->addWidget(std::make_unique<Wt::WText>("Required"));
-    requiredLabel->addStyleClass("admin-stat-label");
+    requiredCard->addStyleClass("admin-stat-mini-card pending");
+    auto requiredIcon = requiredCard->addWidget(std::make_unique<Wt::WText>("*"));
+    requiredIcon->addStyleClass("admin-stat-mini-icon");
     requiredFormsText_ = requiredCard->addWidget(std::make_unique<Wt::WText>("0"));
-    requiredFormsText_->addStyleClass("admin-stat-value stat-required");
+    requiredFormsText_->addStyleClass("admin-stat-mini-number");
+    auto requiredLabel = requiredCard->addWidget(std::make_unique<Wt::WText>("Required"));
+    requiredLabel->addStyleClass("admin-stat-mini-label");
 
     // Optional forms card
     auto optionalCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    optionalCard->addStyleClass("admin-stat-card");
-    auto optionalLabel = optionalCard->addWidget(std::make_unique<Wt::WText>("Optional"));
-    optionalLabel->addStyleClass("admin-stat-label");
+    optionalCard->addStyleClass("admin-stat-mini-card approved");
+    auto optionalIcon = optionalCard->addWidget(std::make_unique<Wt::WText>("○"));
+    optionalIcon->addStyleClass("admin-stat-mini-icon");
     optionalFormsText_ = optionalCard->addWidget(std::make_unique<Wt::WText>("0"));
-    optionalFormsText_->addStyleClass("admin-stat-value stat-optional");
+    optionalFormsText_->addStyleClass("admin-stat-mini-number");
+    auto optionalLabel = optionalCard->addWidget(std::make_unique<Wt::WText>("Optional"));
+    optionalLabel->addStyleClass("admin-stat-mini-label");
 
     // Active forms card
     auto activeCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    activeCard->addStyleClass("admin-stat-card");
-    auto activeLabel = activeCard->addWidget(std::make_unique<Wt::WText>("Active"));
-    activeLabel->addStyleClass("admin-stat-label");
+    activeCard->addStyleClass("admin-stat-mini-card active");
+    auto activeIcon = activeCard->addWidget(std::make_unique<Wt::WText>("✓"));
+    activeIcon->addStyleClass("admin-stat-mini-icon");
     activeFormsText_ = activeCard->addWidget(std::make_unique<Wt::WText>("0"));
-    activeFormsText_->addStyleClass("admin-stat-value stat-active");
+    activeFormsText_->addStyleClass("admin-stat-mini-number");
+    auto activeLabel = activeCard->addWidget(std::make_unique<Wt::WText>("Active"));
+    activeLabel->addStyleClass("admin-stat-mini-label");
 
     // Table container
     tableContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
