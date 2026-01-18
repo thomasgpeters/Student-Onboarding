@@ -50,7 +50,7 @@ bool Curriculum::requiresForm(const std::string& formId) const {
 
 nlohmann::json Curriculum::toJson() const {
     nlohmann::json j;
-    j["id"] = id_;
+    // Note: id is NOT included here - in JSON:API format, id goes at data level, not in attributes
     j["code"] = code_;
     j["name"] = name_;
     j["description"] = description_;
