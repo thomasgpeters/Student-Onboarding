@@ -451,10 +451,10 @@ void CurriculumEditorWidget::saveCurriculum() {
 
             Api::ApiResponse response;
             if (isNewCurriculum_) {
-                response = apiService_->getApiClient()->post("/Curriculum", payload.dump());
+                response = apiService_->getApiClient()->post("/Curriculum", payload);
             } else {
                 payload["data"]["id"] = currentCurriculum_.getId();
-                response = apiService_->getApiClient()->patch("/Curriculum/" + currentCurriculum_.getId(), payload.dump());
+                response = apiService_->getApiClient()->patch("/Curriculum/" + currentCurriculum_.getId(), payload);
             }
 
             if (response.success) {
