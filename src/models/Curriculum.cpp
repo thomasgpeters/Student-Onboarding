@@ -52,13 +52,13 @@ nlohmann::json Curriculum::toJson() const {
     j["name"] = name_;
     j["description"] = description_;
     j["department"] = department_;
-    j["degreeType"] = degreeType_;
-    j["creditHours"] = creditHours_;
-    j["durationSemesters"] = durationSemesters_;
-    j["requiredForms"] = requiredForms_;
+    j["degree_type"] = degreeType_;
+    j["credit_hours"] = creditHours_;
+    j["duration_semesters"] = durationSemesters_;
+    j["required_forms"] = requiredForms_;
     j["prerequisites"] = prerequisites_;
-    j["isActive"] = isActive_;
-    j["isOnline"] = isOnline_;
+    j["is_active"] = isActive_;
+    j["is_online"] = isOnline_;
     return j;
 }
 
