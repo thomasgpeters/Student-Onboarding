@@ -7,6 +7,8 @@
 
 /* Import Inter font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Import Dancing Script for electronic signatures */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;600;700&display=swap');
 
 /* =====================================================
    ADMIN MAIN CONTAINER
@@ -1805,6 +1807,16 @@ textarea.form-control {
     border-left: 3px solid #0284c7;
     font-size: 10pt;
     margin-top: 0.5rem;
+}
+
+/* Electronic signature styling */
+.pdf-signature-value {
+    font-family: 'Dancing Script', cursive !important;
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+    color: #1e40af !important;
+    font-style: italic;
+    letter-spacing: 1px;
 }
 
 .pdf-footer {

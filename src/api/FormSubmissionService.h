@@ -92,6 +92,9 @@ public:
     SubmissionResult submitDocuments(const std::string& studentId, const Models::FormData& data);
     SubmissionResult submitConsent(const std::string& studentId, const Models::FormData& data);
 
+    // Consent record management
+    SubmissionResult deleteStudentConsents(const std::string& studentId);
+
     // Generic form submission (determines endpoint from form ID)
     SubmissionResult submitForm(const std::string& studentId,
                                 const std::string& formId,

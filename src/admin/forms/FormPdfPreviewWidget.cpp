@@ -776,7 +776,7 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                         // Signature information
                         std::string signature = safeGetString("electronic_signature");
                         if (!signature.empty()) {
-                            fields.push_back({"Electronic Signature", signature, "text"});
+                            fields.push_back({"Electronic Signature", signature, "signature"});
                         }
 
                         std::string sigDate = safeGetString("signature_date");
@@ -1377,7 +1377,7 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
 
                         std::string signature = cAttrs.value("electronic_signature", "");
                         if (!signature.empty()) {
-                            fields.push_back({"Electronic Signature", signature, "text"});
+                            fields.push_back({"Electronic Signature", signature, "signature"});
                         }
 
                         std::string sigDate = cAttrs.value("signature_date", "");
@@ -1427,6 +1427,11 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
 
                         valueCell->addWidget(std::make_unique<Wt::WText>(formatValue(field.value, field.type)));
                         valueCell->addStyleClass("pdf-field-value");
+
+                        // Add signature styling for electronic signatures
+                        if (field.type == "signature") {
+                            valueCell->addStyleClass("pdf-signature-value");
+                        }
                     }
                 }
             } else {
@@ -1530,6 +1535,11 @@ void FormPdfPreviewWidget::buildPreview() {
                 fieldsTable->elementAt(row, 0)->addStyleClass("pdf-field-label");
                 fieldsTable->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(formatValue(field.value, field.type)));
                 fieldsTable->elementAt(row, 1)->addStyleClass("pdf-field-value");
+
+                // Add signature styling for electronic signatures
+                if (field.type == "signature") {
+                    fieldsTable->elementAt(row, 1)->addStyleClass("pdf-signature-value");
+                }
             }
             row++;
         }
