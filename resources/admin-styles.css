@@ -1797,6 +1797,16 @@ textarea.form-control {
     color: #1e293b;
 }
 
+.pdf-section-header {
+    background: #e0f2fe !important;
+    color: #0c4a6e !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 0.75rem !important;
+    border-left: 3px solid #0284c7;
+    font-size: 10pt;
+    margin-top: 0.5rem;
+}
+
 .pdf-footer {
     margin-top: 3rem;
     padding-top: 1rem;
