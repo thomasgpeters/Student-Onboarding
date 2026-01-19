@@ -132,7 +132,6 @@ void FormPdfPreviewWidget::setFormData(const std::string& formType,
 }
 
 void FormPdfPreviewWidget::showFormSubmission(int submissionId) {
-    setWindowTitle("Form Preview");
     loadFormSubmissionData(submissionId);
     show();
 }
@@ -164,20 +163,25 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
             std::string status = attrs.value("status", "pending");
             std::string submittedAt = attrs.value("submitted_at", "");
 
-            // Map form_type_id to form type name
-            std::map<int, std::pair<std::string, std::string>> formTypeMap = {
-                {1, {"personal_info", "Personal Information Form"}},
-                {2, {"emergency_contact", "Emergency Contact Form"}},
-                {3, {"medical_info", "Medical Information Form"}},
-                {4, {"academic_history", "Academic History Form"}},
-                {5, {"financial_aid", "Financial Aid Form"}},
-                {6, {"documents", "Document Upload Form"}},
-                {7, {"consent", "Consent Form"}}
+            // Map form_type_id to form type name and display title
+            // Each entry: {form_type_key, {document_title, window_title}}
+            std::map<int, std::tuple<std::string, std::string, std::string>> formTypeMap = {
+                {1, {"personal_info", "Personal Information Form", "Personal Information"}},
+                {2, {"emergency_contact", "Emergency Contact Form", "Emergency Contact"}},
+                {3, {"medical_info", "Medical Information Form", "Medical Information"}},
+                {4, {"academic_history", "Academic History Form", "Academic History"}},
+                {5, {"financial_aid", "Financial Aid Form", "Financial Aid"}},
+                {6, {"documents", "Document Upload Form", "Document Upload"}},
+                {7, {"consent", "Consent Form", "Consent"}}
             };
 
             auto formIt = formTypeMap.find(formTypeId);
-            std::string formType = formIt != formTypeMap.end() ? formIt->second.first : "unknown";
-            std::string formTitle = formIt != formTypeMap.end() ? formIt->second.second : "Form";
+            std::string formType = formIt != formTypeMap.end() ? std::get<0>(formIt->second) : "unknown";
+            std::string formTitle = formIt != formTypeMap.end() ? std::get<1>(formIt->second) : "Form";
+            std::string windowTitle = formIt != formTypeMap.end() ? std::get<2>(formIt->second) : "Form Preview";
+
+            // Set the window title to the form name
+            setWindowTitle(windowTitle);
 
             // Load student data
             std::string studentName = "Unknown Student";
