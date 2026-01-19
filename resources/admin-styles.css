@@ -1466,10 +1466,10 @@ textarea.form-control {
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    width: 540px !important;
+    width: 650px !important;
     max-width: 95vw !important;
     height: auto !important;
-    max-height: 80vh !important;
+    max-height: 85vh !important;
     background: white !important;
     border-radius: 8px !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
@@ -1624,9 +1624,9 @@ textarea.form-control {
 }
 
 .pdf-document {
-    /* Full size dimensions */
+    /* Standard letter size dimensions: 8.5 x 11 inches */
     width: 8.5in;
-    min-height: 11in;
+    max-height: 11in;
     background: white;
     padding: 0.4in 0.5in;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
@@ -1634,11 +1634,11 @@ textarea.form-control {
     font-size: 11pt;
     line-height: 1.5;
     color: #1e293b;
-    /* Scale to 50% for viewing */
-    transform: scale(0.5);
+    /* Scale to 70% for viewing */
+    transform: scale(0.7);
     transform-origin: top center;
-    /* Adjust margin to account for scaled size */
-    margin-bottom: -5.5in;
+    /* Adjust margin to account for scaled size - minimal since height is auto */
+    margin-bottom: -2in;
 }
 
 /* Print styles - reset to full size */
