@@ -70,6 +70,7 @@ private:
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     std::unique_ptr<Api::PdfGenerator> pdfGenerator_;
     std::string currentPdfPath_;  // Path to most recently generated PDF
+    std::shared_ptr<Wt::WFileResource> pdfResource_;  // Keep resource alive for download
 
     // Form data
     std::string formType_;

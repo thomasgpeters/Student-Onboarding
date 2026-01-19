@@ -70,11 +70,14 @@ void FormPdfPreviewWidget::setupUI() {
             // Generate PDF and open in new tab for printing
             std::string pdfPath = generatePdf();
             if (!pdfPath.empty()) {
-                // Create a file resource and trigger download/print
+                // Create a file resource and store as member to keep it alive
                 auto app = Wt::WApplication::instance();
-                auto resource = std::make_shared<Wt::WFileResource>("application/pdf", pdfPath);
-                resource->suggestFileName(formTitle_ + ".pdf");
-                app->redirect(resource->url());
+                pdfResource_ = std::make_shared<Wt::WFileResource>("application/pdf", pdfPath);
+                pdfResource_->suggestFileName(formTitle_ + ".pdf");
+                // Open in new tab for printing
+                app->doJavaScript(
+                    "window.open('" + pdfResource_->url() + "', '_blank');"
+                );
             }
         } else {
             // Fallback: Use CSS to hide everything except PDF content and trigger print
@@ -1491,7 +1494,7 @@ void FormPdfPreviewWidget::downloadPdf() {
         return;
     }
 
-    // Create a file resource for download
+    // Create a file resource for download and store as member to keep it alive
     auto app = Wt::WApplication::instance();
 
     // Generate a clean filename from form title
@@ -1499,13 +1502,13 @@ void FormPdfPreviewWidget::downloadPdf() {
     std::replace(filename.begin(), filename.end(), ' ', '_');
     filename += ".pdf";
 
-    // Use WFileResource to serve the PDF
-    auto resource = std::make_shared<Wt::WFileResource>("application/pdf", pdfPath);
-    resource->suggestFileName(filename);
+    // Use WFileResource to serve the PDF - store as member to persist
+    pdfResource_ = std::make_shared<Wt::WFileResource>("application/pdf", pdfPath);
+    pdfResource_->suggestFileName(filename);
 
     // Trigger download by opening the resource URL
     app->doJavaScript(
-        "window.open('" + resource->url() + "', '_blank');"
+        "window.open('" + pdfResource_->url() + "', '_blank');"
     );
 }
 
