@@ -1499,11 +1499,20 @@ void FormPdfPreviewWidget::buildPreview() {
     // Field rows
     int row = 1;
     for (const auto& field : fields_) {
-        if (!field.value.empty()) {
-            fieldsTable->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(field.label));
-            fieldsTable->elementAt(row, 0)->addStyleClass("pdf-field-label");
-            fieldsTable->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(formatValue(field.value, field.type)));
-            fieldsTable->elementAt(row, 1)->addStyleClass("pdf-field-value");
+        // Show field if it has a value, OR if it's a header (headers have empty values but should show)
+        if (!field.value.empty() || field.type == "header") {
+            if (field.type == "header") {
+                // Section header - spans both columns
+                fieldsTable->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(field.label));
+                fieldsTable->elementAt(row, 0)->addStyleClass("pdf-section-header");
+                fieldsTable->elementAt(row, 0)->setColumnSpan(2);
+            } else {
+                // Regular field row
+                fieldsTable->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(field.label));
+                fieldsTable->elementAt(row, 0)->addStyleClass("pdf-field-label");
+                fieldsTable->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(formatValue(field.value, field.type)));
+                fieldsTable->elementAt(row, 1)->addStyleClass("pdf-field-value");
+            }
             row++;
         }
     }
