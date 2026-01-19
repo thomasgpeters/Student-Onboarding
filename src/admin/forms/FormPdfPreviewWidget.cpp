@@ -796,11 +796,11 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     // If we have consent records, add a summary of what was agreed to
                     if (!cItems.empty()) {
                         fields.push_back({"", "", "text"});
-                        fields.push_back({"Acknowledgments", "", "header"});
-                        fields.push_back({"Terms of Service", "Acknowledged", "text"});
-                        fields.push_back({"Privacy Policy", "Acknowledged", "text"});
-                        fields.push_back({"FERPA Rights", "Acknowledged", "text"});
-                        fields.push_back({"Information Accuracy", "Certified", "text"});
+                        fields.push_back({"Consent Acknowledgments", "", "header"});
+                        fields.push_back({"☑ Terms of Service", "Consented - I agree to abide by the institution's terms of service and student conduct policies", "consent_item"});
+                        fields.push_back({"☑ Privacy Policy", "Consented - I acknowledge the institution's privacy policy and data handling practices", "consent_item"});
+                        fields.push_back({"☑ FERPA Rights", "Consented - I understand my rights under the Family Educational Rights and Privacy Act", "consent_item"});
+                        fields.push_back({"☑ Information Accuracy", "Consented - I certify that all information provided is accurate and complete", "consent_item"});
                     }
                 }
             }
@@ -1395,11 +1395,11 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
 
                     if (!cItems.empty()) {
                         fields.push_back({"", "", "text"});
-                        fields.push_back({"Acknowledgments", "", "header"});
-                        fields.push_back({"Terms of Service", "Acknowledged", "text"});
-                        fields.push_back({"Privacy Policy", "Acknowledged", "text"});
-                        fields.push_back({"FERPA Rights", "Acknowledged", "text"});
-                        fields.push_back({"Information Accuracy", "Certified", "text"});
+                        fields.push_back({"Consent Acknowledgments", "", "header"});
+                        fields.push_back({"☑ Terms of Service", "Consented - I agree to abide by the institution's terms of service and student conduct policies", "consent_item"});
+                        fields.push_back({"☑ Privacy Policy", "Consented - I acknowledge the institution's privacy policy and data handling practices", "consent_item"});
+                        fields.push_back({"☑ FERPA Rights", "Consented - I understand my rights under the Family Educational Rights and Privacy Act", "consent_item"});
+                        fields.push_back({"☑ Information Accuracy", "Consented - I certify that all information provided is accurate and complete", "consent_item"});
                     }
                 }
             }
@@ -1431,6 +1431,12 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                         // Add signature styling for electronic signatures
                         if (field.type == "signature") {
                             valueCell->addStyleClass("pdf-signature-value");
+                        }
+
+                        // Add consent item styling for checkbox items
+                        if (field.type == "consent_item") {
+                            labelCell->addStyleClass("pdf-consent-checkbox");
+                            valueCell->addStyleClass("pdf-consent-description");
                         }
                     }
                 }
@@ -1539,6 +1545,12 @@ void FormPdfPreviewWidget::buildPreview() {
                 // Add signature styling for electronic signatures
                 if (field.type == "signature") {
                     fieldsTable->elementAt(row, 1)->addStyleClass("pdf-signature-value");
+                }
+
+                // Add consent item styling for checkbox items
+                if (field.type == "consent_item") {
+                    fieldsTable->elementAt(row, 0)->addStyleClass("pdf-consent-checkbox");
+                    fieldsTable->elementAt(row, 1)->addStyleClass("pdf-consent-description");
                 }
             }
             row++;
