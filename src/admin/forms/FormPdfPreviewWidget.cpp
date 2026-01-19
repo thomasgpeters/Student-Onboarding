@@ -254,8 +254,9 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 std::cerr << "[FormPdfPreviewWidget] Loading emergency contacts from: " << ecUrl << std::endl;
                 auto ecResponse = apiService_->getApiClient()->get(ecUrl);
                 std::cerr << "[FormPdfPreviewWidget] EC response success: " << ecResponse.success
+                          << ", status: " << ecResponse.statusCode
                           << ", body length: " << ecResponse.body.length() << std::endl;
-                if (ecResponse.success) {
+                if (ecResponse.success && !ecResponse.body.empty()) {
                     std::cerr << "[FormPdfPreviewWidget] EC response body: " << ecResponse.body.substr(0, 500) << std::endl;
                     auto ecJson = nlohmann::json::parse(ecResponse.body);
                     nlohmann::json ecItems = ecJson.is_array() ? ecJson : (ecJson.contains("data") ? ecJson["data"] : nlohmann::json::array());
@@ -319,10 +320,16 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
 
                         contactNum++;
                     }
+                } else {
+                    std::cerr << "[FormPdfPreviewWidget] EC: No emergency contacts found in response" << std::endl;
                 }
             } else if (formType == "academic_history") {
-                auto ahResponse = apiService_->getApiClient()->get("/AcademicHistory?filter[student_id]=" + std::to_string(studentId));
-                if (ahResponse.success) {
+                std::string ahUrl = "/AcademicHistory?filter[student_id]=" + std::to_string(studentId);
+                std::cerr << "[FormPdfPreviewWidget] Loading academic history from: " << ahUrl << std::endl;
+                auto ahResponse = apiService_->getApiClient()->get(ahUrl);
+                std::cerr << "[FormPdfPreviewWidget] AH response success: " << ahResponse.success
+                          << ", status: " << ahResponse.statusCode << std::endl;
+                if (ahResponse.success && !ahResponse.body.empty()) {
                     auto ahJson = nlohmann::json::parse(ahResponse.body);
                     nlohmann::json ahItems = ahJson.is_array() ? ahJson : (ahJson.contains("data") ? ahJson["data"] : nlohmann::json::array());
 
@@ -437,10 +444,15 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     }
                 }
             } else if (formType == "medical_info") {
-                auto medResponse = apiService_->getApiClient()->get("/MedicalInfo?filter[student_id]=" + std::to_string(studentId));
-                if (medResponse.success) {
+                std::string medUrl = "/MedicalInfo?filter[student_id]=" + std::to_string(studentId);
+                std::cerr << "[FormPdfPreviewWidget] Loading medical info from: " << medUrl << std::endl;
+                auto medResponse = apiService_->getApiClient()->get(medUrl);
+                std::cerr << "[FormPdfPreviewWidget] Med response success: " << medResponse.success
+                          << ", status: " << medResponse.statusCode << std::endl;
+                if (medResponse.success && !medResponse.body.empty()) {
                     auto medJson = nlohmann::json::parse(medResponse.body);
                     nlohmann::json medItems = medJson.is_array() ? medJson : (medJson.contains("data") ? medJson["data"] : nlohmann::json::array());
+                    std::cerr << "[FormPdfPreviewWidget] Found " << medItems.size() << " medical info records" << std::endl;
                     if (!medItems.empty()) {
                         nlohmann::json med = medItems[0];
                         nlohmann::json medAttrs = med.contains("attributes") ? med["attributes"] : med;
@@ -504,11 +516,15 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     }
                 }
             } else if (formType == "financial_aid") {
-                auto faResponse = apiService_->getApiClient()->get("/FinancialAid?filter[student_id]=" + std::to_string(studentId));
-                if (faResponse.success) {
+                std::string faUrl = "/FinancialAid?filter[student_id]=" + std::to_string(studentId);
+                std::cerr << "[FormPdfPreviewWidget] Loading financial aid from: " << faUrl << std::endl;
+                auto faResponse = apiService_->getApiClient()->get(faUrl);
+                std::cerr << "[FormPdfPreviewWidget] FA response success: " << faResponse.success
+                          << ", status: " << faResponse.statusCode << std::endl;
+                if (faResponse.success && !faResponse.body.empty()) {
                     auto faJson = nlohmann::json::parse(faResponse.body);
                     nlohmann::json faItems = faJson.is_array() ? faJson : (faJson.contains("data") ? faJson["data"] : nlohmann::json::array());
-
+                    std::cerr << "[FormPdfPreviewWidget] Found " << faItems.size() << " financial aid records" << std::endl;
                     if (!faItems.empty()) {
                         nlohmann::json fa = faItems[0];
                         nlohmann::json faAttrs = fa.contains("attributes") ? fa["attributes"] : fa;
@@ -686,6 +702,18 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                         fields.push_back({"Information Accuracy", "Certified", "text"});
                     }
                 }
+            }
+
+            // If no fields were loaded, add a fallback message with student basic info
+            if (fields.empty()) {
+                std::cerr << "[FormPdfPreviewWidget] WARNING: No fields loaded for form type: " << formType << std::endl;
+                fields.push_back({"Student Information", "", "header"});
+                fields.push_back({"Student Name", studentName, "text"});
+                fields.push_back({"Email", studentEmail, "text"});
+                fields.push_back({"", "", "text"});
+                fields.push_back({"Form Status", "", "header"});
+                fields.push_back({"Data Status", "No detailed data has been entered for this form yet", "text"});
+                fields.push_back({"Submission Status", status, "text"});
             }
 
             // Set the form data and build preview
