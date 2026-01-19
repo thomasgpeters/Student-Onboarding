@@ -662,16 +662,25 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                         for (const auto& doc : docItems) {
                             nlohmann::json docAttrs = doc.contains("attributes") ? doc["attributes"] : doc;
 
+                            // Helper lambda to safely get string from JSON (handles null values)
+                            auto safeGetString = [&docAttrs](const std::string& key) -> std::string {
+                                if (docAttrs.contains(key) && docAttrs[key].is_string()) {
+                                    return docAttrs[key].get<std::string>();
+                                }
+                                return "";
+                            };
+
                             if (docNum > 1) {
                                 fields.push_back({"", "", "text"});
                             }
                             fields.push_back({"Document #" + std::to_string(docNum), "", "header"});
 
-                            fields.push_back({"Document Type", docAttrs.value("document_type", ""), "text"});
-                            fields.push_back({"File Name", docAttrs.value("file_name", ""), "text"});
+                            fields.push_back({"Document Type", safeGetString("document_type"), "text"});
+                            fields.push_back({"File Name", safeGetString("file_name"), "text"});
 
                             // File size in KB/MB
-                            int fileSize = docAttrs.value("file_size", 0);
+                            int fileSize = docAttrs.contains("file_size") && docAttrs["file_size"].is_number() ?
+                                docAttrs["file_size"].get<int>() : 0;
                             std::string sizeStr;
                             if (fileSize >= 1048576) {
                                 std::ostringstream ss;
@@ -686,15 +695,15 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                             }
                             fields.push_back({"File Size", sizeStr, "text"});
 
-                            fields.push_back({"Status", docAttrs.value("status", ""), "text"});
+                            fields.push_back({"Status", safeGetString("status"), "text"});
 
-                            std::string verifiedAt = docAttrs.value("verified_at", "");
+                            std::string verifiedAt = safeGetString("verified_at");
                             if (!verifiedAt.empty()) {
                                 fields.push_back({"Verified On", verifiedAt, "date"});
-                                fields.push_back({"Verified By", docAttrs.value("verified_by", ""), "text"});
+                                fields.push_back({"Verified By", safeGetString("verified_by"), "text"});
                             }
 
-                            std::string notes = docAttrs.value("notes", "");
+                            std::string notes = safeGetString("notes");
                             if (!notes.empty()) {
                                 fields.push_back({"Notes", notes, "text"});
                             }
@@ -737,8 +746,16 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                             fields.push_back({"", "", "text"});
                         }
 
-                        std::string consentType = cAttrs.value("consent_type", "");
-                        std::string consentVersion = cAttrs.value("consent_version", "");
+                        // Helper lambda to safely get string from JSON (handles null values)
+                        auto safeGetString = [&cAttrs](const std::string& key) -> std::string {
+                            if (cAttrs.contains(key) && cAttrs[key].is_string()) {
+                                return cAttrs[key].get<std::string>();
+                            }
+                            return "";
+                        };
+
+                        std::string consentType = safeGetString("consent_type");
+                        std::string consentVersion = safeGetString("consent_version");
                         std::string consentLabel = !consentType.empty() ? consentType : "Consent Agreement";
                         if (!consentVersion.empty()) {
                             consentLabel += " (v" + consentVersion + ")";
@@ -746,28 +763,29 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                         fields.push_back({consentLabel, "", "header"});
 
                         // Acceptance status
-                        bool isAccepted = cAttrs.value("is_accepted", false);
+                        bool isAccepted = cAttrs.contains("is_accepted") && !cAttrs["is_accepted"].is_null() ?
+                            cAttrs.value("is_accepted", false) : false;
                         fields.push_back({"Status", isAccepted ? "Accepted" : "Not Accepted", "text"});
 
-                        // Acceptance timestamp
-                        std::string acceptedAt = cAttrs.value("accepted_at", "");
+                        // Acceptance timestamp (can be null)
+                        std::string acceptedAt = safeGetString("accepted_at");
                         if (!acceptedAt.empty()) {
                             fields.push_back({"Accepted On", acceptedAt, "date"});
                         }
 
                         // Signature information
-                        std::string signature = cAttrs.value("electronic_signature", "");
+                        std::string signature = safeGetString("electronic_signature");
                         if (!signature.empty()) {
                             fields.push_back({"Electronic Signature", signature, "text"});
                         }
 
-                        std::string sigDate = cAttrs.value("signature_date", "");
+                        std::string sigDate = safeGetString("signature_date");
                         if (!sigDate.empty()) {
                             fields.push_back({"Signature Date", sigDate, "date"});
                         }
 
-                        // IP address for audit
-                        std::string ipAddress = cAttrs.value("ip_address", "");
+                        // IP address for audit (can be null)
+                        std::string ipAddress = safeGetString("ip_address");
                         if (!ipAddress.empty()) {
                             fields.push_back({"IP Address", ipAddress, "text"});
                         }
