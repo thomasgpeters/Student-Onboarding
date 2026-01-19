@@ -1486,7 +1486,7 @@ textarea.form-control {
     background: #2563eb !important;
     background-color: #2563eb !important;
     color: white !important;
-    padding: 0.75rem 1rem !important;
+    padding: 0.75rem 1rem 0.75rem 0.75rem !important;
     border-radius: 8px 8px 0 0 !important;
     font-weight: 600 !important;
     font-size: 1rem !important;
@@ -1497,19 +1497,23 @@ textarea.form-control {
     display: flex !important;
     align-items: center !important;
     position: relative !important;
+    overflow: visible !important;
 }
 
 /* Form icon before title text */
 .pdf-preview-dialog .Wt-dialog-titlebar::before {
     content: "📋";
-    margin-left: 0.25rem;
-    margin-right: 0.5rem;
-    font-size: 1.2rem;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    font-size: 1.1rem;
     flex-shrink: 0;
     padding: 4px 6px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     line-height: 1;
+    min-width: 28px;
 }
 
 .pdf-preview-dialog .Wt-dialog-titlebar *,
