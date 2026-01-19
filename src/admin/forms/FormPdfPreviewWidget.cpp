@@ -61,16 +61,37 @@ void FormPdfPreviewWidget::setupUI() {
     printBtn_->clicked().connect([this]() {
         // Trigger browser print dialog for the preview container
         Wt::WApplication::instance()->doJavaScript(
-            "var content = document.querySelector('.pdf-preview-container');"
+            "var content = document.querySelector('.pdf-document');"
             "if (content) {"
             "  var printWindow = window.open('', '_blank');"
-            "  printWindow.document.write('<html><head><title>Print Preview</title>');"
-            "  printWindow.document.write('<link rel=\"stylesheet\" href=\"admin-styles.css\">');"
+            "  printWindow.document.write('<html><head><title>Print Form</title>');"
+            "  printWindow.document.write('<style>');"
+            "  printWindow.document.write('body { margin: 0; padding: 0.5in; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1e293b; }');"
+            "  printWindow.document.write('.pdf-document { background: white; }');"
+            "  printWindow.document.write('.pdf-header { text-align: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #1e3a5f; }');"
+            "  printWindow.document.write('.pdf-logo-row { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 0.75rem; }');"
+            "  printWindow.document.write('.pdf-logo-img { width: 60px; height: 60px; border-radius: 4px; }');"
+            "  printWindow.document.write('.pdf-institution-name { font-size: 20pt; font-weight: bold; color: #1e3a5f; }');"
+            "  printWindow.document.write('.pdf-institution-tagline { font-size: 10pt; color: #64748b; font-style: italic; }');"
+            "  printWindow.document.write('.pdf-form-title { font-size: 14pt; font-weight: bold; color: #334155; margin-top: 0.75rem; }');"
+            "  printWindow.document.write('.pdf-info-bar { display: flex; justify-content: space-between; margin-bottom: 1.5rem; padding: 0.75rem; background: #f8fafc; border-radius: 4px; }');"
+            "  printWindow.document.write('.pdf-label { font-weight: bold; color: #475569; }');"
+            "  printWindow.document.write('.pdf-value { color: #1e293b; }');"
+            "  printWindow.document.write('.pdf-fields-table { width: 100%; border-collapse: collapse; }');"
+            "  printWindow.document.write('.pdf-fields-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }');"
+            "  printWindow.document.write('.pdf-table-header { font-weight: bold; background: #f1f5f9; color: #475569; }');"
+            "  printWindow.document.write('.pdf-field-label { width: 40%; font-weight: 500; color: #475569; }');"
+            "  printWindow.document.write('.pdf-field-value { width: 60%; color: #1e293b; }');"
+            "  printWindow.document.write('.pdf-footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; text-align: center; }');"
+            "  printWindow.document.write('.pdf-generated-text { font-size: 9pt; color: #64748b; margin-bottom: 0.5rem; }');"
+            "  printWindow.document.write('.pdf-confidential-text { font-size: 8pt; font-weight: bold; color: #dc2626; text-transform: uppercase; }');"
+            "  printWindow.document.write('@media print { body { margin: 0; padding: 0.25in; } }');"
+            "  printWindow.document.write('</style>');"
             "  printWindow.document.write('</head><body>');"
             "  printWindow.document.write(content.innerHTML);"
             "  printWindow.document.write('</body></html>');"
             "  printWindow.document.close();"
-            "  printWindow.onload = function() { printWindow.print(); printWindow.close(); };"
+            "  setTimeout(function() { printWindow.print(); }, 250);"
             "}"
         );
         printClicked_.emit();
@@ -79,18 +100,39 @@ void FormPdfPreviewWidget::setupUI() {
     downloadBtn_ = toolbar_->addWidget(std::make_unique<Wt::WPushButton>("Download PDF"));
     downloadBtn_->addStyleClass("btn btn-success");
     downloadBtn_->clicked().connect([this]() {
-        // Same as print for now - uses browser's save as PDF
+        // Uses browser's save as PDF functionality
         Wt::WApplication::instance()->doJavaScript(
-            "var content = document.querySelector('.pdf-preview-container');"
+            "var content = document.querySelector('.pdf-document');"
             "if (content) {"
             "  var printWindow = window.open('', '_blank');"
-            "  printWindow.document.write('<html><head><title>Download Preview</title>');"
-            "  printWindow.document.write('<link rel=\"stylesheet\" href=\"admin-styles.css\">');"
+            "  printWindow.document.write('<html><head><title>Download Form</title>');"
+            "  printWindow.document.write('<style>');"
+            "  printWindow.document.write('body { margin: 0; padding: 0.5in; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1e293b; }');"
+            "  printWindow.document.write('.pdf-document { background: white; }');"
+            "  printWindow.document.write('.pdf-header { text-align: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #1e3a5f; }');"
+            "  printWindow.document.write('.pdf-logo-row { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 0.75rem; }');"
+            "  printWindow.document.write('.pdf-logo-img { width: 60px; height: 60px; border-radius: 4px; }');"
+            "  printWindow.document.write('.pdf-institution-name { font-size: 20pt; font-weight: bold; color: #1e3a5f; }');"
+            "  printWindow.document.write('.pdf-institution-tagline { font-size: 10pt; color: #64748b; font-style: italic; }');"
+            "  printWindow.document.write('.pdf-form-title { font-size: 14pt; font-weight: bold; color: #334155; margin-top: 0.75rem; }');"
+            "  printWindow.document.write('.pdf-info-bar { display: flex; justify-content: space-between; margin-bottom: 1.5rem; padding: 0.75rem; background: #f8fafc; border-radius: 4px; }');"
+            "  printWindow.document.write('.pdf-label { font-weight: bold; color: #475569; }');"
+            "  printWindow.document.write('.pdf-value { color: #1e293b; }');"
+            "  printWindow.document.write('.pdf-fields-table { width: 100%; border-collapse: collapse; }');"
+            "  printWindow.document.write('.pdf-fields-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }');"
+            "  printWindow.document.write('.pdf-table-header { font-weight: bold; background: #f1f5f9; color: #475569; }');"
+            "  printWindow.document.write('.pdf-field-label { width: 40%; font-weight: 500; color: #475569; }');"
+            "  printWindow.document.write('.pdf-field-value { width: 60%; color: #1e293b; }');"
+            "  printWindow.document.write('.pdf-footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; text-align: center; }');"
+            "  printWindow.document.write('.pdf-generated-text { font-size: 9pt; color: #64748b; margin-bottom: 0.5rem; }');"
+            "  printWindow.document.write('.pdf-confidential-text { font-size: 8pt; font-weight: bold; color: #dc2626; text-transform: uppercase; }');"
+            "  printWindow.document.write('@media print { body { margin: 0; padding: 0.25in; } }');"
+            "  printWindow.document.write('</style>');"
             "  printWindow.document.write('</head><body>');"
             "  printWindow.document.write(content.innerHTML);"
             "  printWindow.document.write('</body></html>');"
             "  printWindow.document.close();"
-            "  printWindow.onload = function() { printWindow.print(); };"
+            "  setTimeout(function() { printWindow.print(); }, 250);"
             "}"
         );
         downloadClicked_.emit();
@@ -148,6 +190,11 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
         return;
     }
 
+    // Clear previous content before loading new data
+    clearPreview();
+
+    std::cerr << "[FormPdfPreviewWidget] Loading form submission: " << submissionId << std::endl;
+
     try {
         // Load the form submission
         auto response = apiService_->getApiClient()->get("/FormSubmission/" + std::to_string(submissionId));
@@ -162,6 +209,11 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
             int formTypeId = attrs.value("form_type_id", 0);
             std::string status = attrs.value("status", "pending");
             std::string submittedAt = attrs.value("submitted_at", "");
+
+            std::cerr << "[FormPdfPreviewWidget] Submission " << submissionId
+                      << " - student_id: " << studentId
+                      << ", form_type_id: " << formTypeId
+                      << ", status: " << status << std::endl;
 
             // Map form_type_id to form type name and display title
             // Each entry: {form_type_key, {document_title, window_title}}
