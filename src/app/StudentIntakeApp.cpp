@@ -451,8 +451,11 @@ void StudentIntakeApp::handleChangeProgram() {
     // Clear required forms in session
     session_->setRequiredFormIds({});
 
-    // Update student profile on server to persist the reset
+    // Delete consent records and update student profile on server
     if (apiService_) {
+        std::cout << "[StudentIntakeApp] Deleting consent records for student" << std::endl;
+        apiService_->deleteStudentConsents(session_->getStudent().getId());
+
         std::cout << "[StudentIntakeApp] Updating student profile with cleared forms" << std::endl;
         apiService_->updateStudentProfile(session_->getStudent());
     }

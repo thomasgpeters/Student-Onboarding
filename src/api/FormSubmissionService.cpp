@@ -929,6 +929,65 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
     return parseSubmissionResponse(response);
 }
 
+SubmissionResult FormSubmissionService::deleteStudentConsents(const std::string& studentId) {
+    std::cout << "[FormSubmissionService] deleteStudentConsents for student: " << studentId << std::endl;
+
+    // First, get all consent records for this student
+    std::string endpoint = "/Consent?filter[student_id]=" + studentId;
+    ApiResponse getResponse = apiClient_->get(endpoint);
+
+    if (!getResponse.isSuccess()) {
+        SubmissionResult result;
+        result.success = false;
+        result.message = "Failed to get consent records: " + getResponse.errorMessage;
+        return result;
+    }
+
+    // Parse consent records
+    auto json = getResponse.getJson();
+    nlohmann::json items;
+    if (json.is_array()) {
+        items = json;
+    } else if (json.contains("data") && json["data"].is_array()) {
+        items = json["data"];
+    }
+
+    int deletedCount = 0;
+    std::string lastError;
+
+    // Delete each consent record
+    for (const auto& item : items) {
+        std::string consentId;
+        if (item.contains("id")) {
+            if (item["id"].is_number()) {
+                consentId = std::to_string(item["id"].get<int>());
+            } else if (item["id"].is_string()) {
+                consentId = item["id"].get<std::string>();
+            }
+        }
+
+        if (!consentId.empty()) {
+            ApiResponse delResponse = apiClient_->del("/Consent/" + consentId);
+            if (delResponse.isSuccess()) {
+                deletedCount++;
+                std::cout << "[FormSubmissionService] Deleted consent record: " << consentId << std::endl;
+            } else {
+                lastError = delResponse.errorMessage;
+                std::cerr << "[FormSubmissionService] Failed to delete consent " << consentId << ": " << lastError << std::endl;
+            }
+        }
+    }
+
+    SubmissionResult result;
+    result.success = true;
+    result.message = "Deleted " + std::to_string(deletedCount) + " consent record(s)";
+    if (!lastError.empty()) {
+        result.message += " (some errors occurred)";
+    }
+    std::cout << "[FormSubmissionService] " << result.message << std::endl;
+    return result;
+}
+
 // Generic form submission
 SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
                                                     const std::string& formId,
