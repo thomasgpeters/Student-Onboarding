@@ -1499,16 +1499,16 @@ textarea.form-control {
     position: relative !important;
 }
 
-/* Document icon before title text */
+/* Form icon before title text */
 .pdf-preview-dialog .Wt-dialog-titlebar::before {
-    content: "📄";
-    margin-right: 0.75rem;
-    margin-left: 0.25rem;
-    font-size: 1.3rem;
+    content: "📋";
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
     flex-shrink: 0;
-    padding: 0.25rem;
-    background: rgba(255, 255, 255, 0.15);
+    padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;
+    line-height: 1;
 }
 
 .pdf-preview-dialog .Wt-dialog-titlebar *,
