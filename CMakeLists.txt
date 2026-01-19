@@ -19,6 +19,30 @@ find_package(Wt REQUIRED COMPONENTS Wt HTTP)
 find_package(CURL REQUIRED)
 find_package(nlohmann_json 3.9 QUIET)
 
+# Find libharu for PDF generation
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(HPDF QUIET libhpdf)
+endif()
+
+if(NOT HPDF_FOUND)
+    # Try to find libharu directly
+    find_library(HPDF_LIBRARY NAMES hpdf libhpdf)
+    find_path(HPDF_INCLUDE_DIR NAMES hpdf.h)
+    if(HPDF_LIBRARY AND HPDF_INCLUDE_DIR)
+        set(HPDF_FOUND TRUE)
+        set(HPDF_LIBRARIES ${HPDF_LIBRARY})
+        set(HPDF_INCLUDE_DIRS ${HPDF_INCLUDE_DIR})
+    endif()
+endif()
+
+if(HPDF_FOUND)
+    message(STATUS "Found libharu: ${HPDF_LIBRARIES}")
+    add_compile_definitions(HAVE_LIBHARU)
+else()
+    message(WARNING "libharu not found. PDF generation will be disabled. Install with: apt-get install libhpdf-dev")
+endif()
+
 # If nlohmann_json not found via find_package, try pkg-config or fetch
 if(NOT nlohmann_json_FOUND)
     include(FetchContent)
@@ -52,6 +76,7 @@ set(SESSION_SOURCES
 set(API_SOURCES
     src/api/ApiClient.cpp
     src/api/FormSubmissionService.cpp
+    src/api/PdfGenerator.cpp
 )
 
 set(AUTH_SOURCES
@@ -151,6 +176,12 @@ target_link_libraries(student_intake PRIVATE
     CURL::libcurl
     nlohmann_json::nlohmann_json
 )
+
+# Link libharu if found
+if(HPDF_FOUND)
+    target_include_directories(student_intake PRIVATE ${HPDF_INCLUDE_DIRS})
+    target_link_libraries(student_intake PRIVATE ${HPDF_LIBRARIES})
+endif()
 
 # Copy resources to build directory
 file(COPY ${CMAKE_SOURCE_DIR}/config DESTINATION ${CMAKE_BINARY_DIR})
