@@ -190,6 +190,11 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
         return;
     }
 
+    // Clear previous content before loading new data
+    clearPreview();
+
+    std::cerr << "[FormPdfPreviewWidget] Loading form submission: " << submissionId << std::endl;
+
     try {
         // Load the form submission
         auto response = apiService_->getApiClient()->get("/FormSubmission/" + std::to_string(submissionId));
@@ -204,6 +209,11 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
             int formTypeId = attrs.value("form_type_id", 0);
             std::string status = attrs.value("status", "pending");
             std::string submittedAt = attrs.value("submitted_at", "");
+
+            std::cerr << "[FormPdfPreviewWidget] Submission " << submissionId
+                      << " - student_id: " << studentId
+                      << ", form_type_id: " << formTypeId
+                      << ", status: " << status << std::endl;
 
             // Map form_type_id to form type name and display title
             // Each entry: {form_type_key, {document_title, window_title}}
