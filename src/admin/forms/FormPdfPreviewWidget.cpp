@@ -1300,24 +1300,9 @@ void FormPdfPreviewWidget::buildPreview() {
     auto formTitleText = header->addWidget(std::make_unique<Wt::WText>(formTitle_));
     formTitleText->addStyleClass("pdf-form-title");
 
-    // Submission info bar
+    // Submission date bar
     auto infoBar = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
     infoBar->addStyleClass("pdf-info-bar");
-
-    auto studentInfoContainer = infoBar->addWidget(std::make_unique<Wt::WContainerWidget>());
-    studentInfoContainer->addStyleClass("pdf-student-info");
-
-    auto studentNameLabel = studentInfoContainer->addWidget(std::make_unique<Wt::WText>("Student: "));
-    studentNameLabel->addStyleClass("pdf-label");
-    auto studentNameValue = studentInfoContainer->addWidget(std::make_unique<Wt::WText>(studentName_));
-    studentNameValue->addStyleClass("pdf-value");
-
-    studentInfoContainer->addWidget(std::make_unique<Wt::WBreak>());
-
-    auto emailLabel = studentInfoContainer->addWidget(std::make_unique<Wt::WText>("Email: "));
-    emailLabel->addStyleClass("pdf-label");
-    auto emailValue = studentInfoContainer->addWidget(std::make_unique<Wt::WText>(studentEmail_));
-    emailValue->addStyleClass("pdf-value");
 
     auto dateContainer = infoBar->addWidget(std::make_unique<Wt::WContainerWidget>());
     dateContainer->addStyleClass("pdf-date-info");
@@ -1330,9 +1315,6 @@ void FormPdfPreviewWidget::buildPreview() {
     // Form fields table
     auto fieldsSection = documentContent_->addWidget(std::make_unique<Wt::WContainerWidget>());
     fieldsSection->addStyleClass("pdf-fields-section");
-
-    auto fieldsTitle = fieldsSection->addWidget(std::make_unique<Wt::WText>("Form Data"));
-    fieldsTitle->addStyleClass("pdf-section-title");
 
     auto fieldsTable = fieldsSection->addWidget(std::make_unique<Wt::WTable>());
     fieldsTable->addStyleClass("pdf-fields-table");
