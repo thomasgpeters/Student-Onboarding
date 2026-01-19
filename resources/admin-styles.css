@@ -1502,6 +1502,7 @@ textarea.form-control {
 /* Form icon before title text */
 .pdf-preview-dialog .Wt-dialog-titlebar::before {
     content: "📋";
+    margin-left: 0.25rem;
     margin-right: 0.5rem;
     font-size: 1.2rem;
     flex-shrink: 0;
