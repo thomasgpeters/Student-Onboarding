@@ -232,8 +232,10 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
             std::string formTitle = formIt != formTypeMap.end() ? std::get<1>(formIt->second) : "Form";
             std::string windowTitle = formIt != formTypeMap.end() ? std::get<2>(formIt->second) : "Form Preview";
 
-            // Set the window title to the form name
-            setWindowTitle(windowTitle);
+            // Set the window title to the form name with icon
+            setWindowTitle("📋 " + windowTitle);
+
+            std::cerr << "[FormPdfPreviewWidget] Form type: " << formType << ", title: " << formTitle << std::endl;
 
             // Load student data
             std::string studentName = "Unknown Student";
@@ -273,10 +275,16 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     fields.push_back({"Citizenship Status", pAttrs.value("citizenship_status", ""), "text"});
                 }
             } else if (formType == "emergency_contact") {
-                auto ecResponse = apiService_->getApiClient()->get("/EmergencyContact?filter[student_id]=" + std::to_string(studentId));
+                std::string ecUrl = "/EmergencyContact?filter[student_id]=" + std::to_string(studentId);
+                std::cerr << "[FormPdfPreviewWidget] Loading emergency contacts from: " << ecUrl << std::endl;
+                auto ecResponse = apiService_->getApiClient()->get(ecUrl);
+                std::cerr << "[FormPdfPreviewWidget] EC response success: " << ecResponse.success
+                          << ", body length: " << ecResponse.body.length() << std::endl;
                 if (ecResponse.success) {
+                    std::cerr << "[FormPdfPreviewWidget] EC response body: " << ecResponse.body.substr(0, 500) << std::endl;
                     auto ecJson = nlohmann::json::parse(ecResponse.body);
                     nlohmann::json ecItems = ecJson.is_array() ? ecJson : (ecJson.contains("data") ? ecJson["data"] : nlohmann::json::array());
+                    std::cerr << "[FormPdfPreviewWidget] Found " << ecItems.size() << " emergency contacts" << std::endl;
 
                     int contactNum = 1;
                     for (const auto& ec : ecItems) {
@@ -706,8 +714,11 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
             }
 
             // Set the form data and build preview
+            std::cerr << "[FormPdfPreviewWidget] Setting form data - fields count: " << fields.size() << std::endl;
             setFormData(formType, formTitle, studentName, studentEmail, submittedAt, fields);
 
+        } else {
+            std::cerr << "[FormPdfPreviewWidget] Failed to load form submission: " << response.errorMessage << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "[FormPdfPreviewWidget] Error loading submission: " << e.what() << std::endl;
