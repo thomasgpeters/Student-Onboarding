@@ -6,11 +6,14 @@
 #include <Wt/WText.h>
 #include <Wt/WPushButton.h>
 #include <Wt/WTable.h>
+#include <Wt/WFileResource.h>
+#include <Wt/WAnchor.h>
 #include <memory>
 #include <string>
 #include <vector>
 #include <map>
 #include "../../api/FormSubmissionService.h"
+#include "../../api/PdfGenerator.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -59,7 +62,14 @@ private:
     std::string formatDate(const std::string& dateStr);
     std::string formatValue(const std::string& value, const std::string& type);
 
+    // PDF generation methods
+    std::string generatePdf();
+    void downloadPdf();
+    Api::PdfFormData buildPdfFormData();
+
     std::shared_ptr<Api::FormSubmissionService> apiService_;
+    std::unique_ptr<Api::PdfGenerator> pdfGenerator_;
+    std::string currentPdfPath_;  // Path to most recently generated PDF
 
     // Form data
     std::string formType_;

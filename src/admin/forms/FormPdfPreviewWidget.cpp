@@ -16,6 +16,7 @@ namespace Admin {
 FormPdfPreviewWidget::FormPdfPreviewWidget()
     : WDialog("Form Preview")
     , apiService_(nullptr)
+    , pdfGenerator_(std::make_unique<Api::PdfGenerator>())
     , toolbar_(nullptr)
     , printBtn_(nullptr)
     , downloadBtn_(nullptr)
@@ -23,6 +24,12 @@ FormPdfPreviewWidget::FormPdfPreviewWidget()
     , previewContainer_(nullptr)
     , documentContent_(nullptr) {
     setupUI();
+
+    if (Api::PdfGenerator::isAvailable()) {
+        std::cerr << "[FormPdfPreviewWidget] PDF generation is available (libharu found)" << std::endl;
+    } else {
+        std::cerr << "[FormPdfPreviewWidget] PDF generation not available - using HTML fallback" << std::endl;
+    }
 }
 
 FormPdfPreviewWidget::~FormPdfPreviewWidget() {
@@ -59,30 +66,47 @@ void FormPdfPreviewWidget::setupUI() {
     printBtn_ = toolbar_->addWidget(std::make_unique<Wt::WPushButton>("Print"));
     printBtn_->addStyleClass("btn btn-primary");
     printBtn_->clicked().connect([this]() {
-        // Use CSS to hide everything except PDF content and trigger print
-        Wt::WApplication::instance()->doJavaScript(
-            "var style = document.createElement('style');"
-            "style.id = 'print-style';"
-            "style.innerHTML = '@media print { body * { visibility: hidden; } .pdf-document, .pdf-document * { visibility: visible; } .pdf-document { position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0 !important; box-shadow: none !important; } }';"
-            "document.head.appendChild(style);"
-            "window.print();"
-            "setTimeout(function() { var ps = document.getElementById('print-style'); if(ps) ps.remove(); }, 1000);"
-        );
+        if (Api::PdfGenerator::isAvailable()) {
+            // Generate PDF and open in new tab for printing
+            std::string pdfPath = generatePdf();
+            if (!pdfPath.empty()) {
+                // Create a file resource and trigger download/print
+                auto app = Wt::WApplication::instance();
+                auto resource = std::make_shared<Wt::WFileResource>("application/pdf", pdfPath);
+                resource->suggestFileName(formTitle_ + ".pdf");
+                app->redirect(resource->url());
+            }
+        } else {
+            // Fallback: Use CSS to hide everything except PDF content and trigger print
+            Wt::WApplication::instance()->doJavaScript(
+                "var style = document.createElement('style');"
+                "style.id = 'print-style';"
+                "style.innerHTML = '@media print { body * { visibility: hidden; } .pdf-document, .pdf-document * { visibility: visible; } .pdf-document { position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0 !important; box-shadow: none !important; } }';"
+                "document.head.appendChild(style);"
+                "window.print();"
+                "setTimeout(function() { var ps = document.getElementById(\"print-style\"); if(ps) ps.remove(); }, 1000);"
+            );
+        }
         printClicked_.emit();
     });
 
     downloadBtn_ = toolbar_->addWidget(std::make_unique<Wt::WPushButton>("Download PDF"));
     downloadBtn_->addStyleClass("btn btn-success");
     downloadBtn_->clicked().connect([this]() {
-        // Same as print - user can choose "Save as PDF" in print dialog
-        Wt::WApplication::instance()->doJavaScript(
-            "var style = document.createElement('style');"
-            "style.id = 'print-style';"
-            "style.innerHTML = '@media print { body * { visibility: hidden; } .pdf-document, .pdf-document * { visibility: visible; } .pdf-document { position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0 !important; box-shadow: none !important; } }';"
-            "document.head.appendChild(style);"
-            "window.print();"
-            "setTimeout(function() { var ps = document.getElementById('print-style'); if(ps) ps.remove(); }, 1000);"
-        );
+        if (Api::PdfGenerator::isAvailable()) {
+            // Generate PDF and trigger download
+            downloadPdf();
+        } else {
+            // Fallback: Use browser print-to-PDF
+            Wt::WApplication::instance()->doJavaScript(
+                "var style = document.createElement('style');"
+                "style.id = 'print-style';"
+                "style.innerHTML = '@media print { body * { visibility: hidden; } .pdf-document, .pdf-document * { visibility: visible; } .pdf-document { position: absolute; left: 0; top: 0; width: 100%; transform: none !important; margin: 0 !important; box-shadow: none !important; } }';"
+                "document.head.appendChild(style);"
+                "window.print();"
+                "setTimeout(function() { var ps = document.getElementById(\"print-style\"); if(ps) ps.remove(); }, 1000);"
+            );
+        }
         downloadClicked_.emit();
     });
 
@@ -1418,6 +1442,71 @@ std::string FormPdfPreviewWidget::formatValue(const std::string& value, const st
     }
 
     return value;
+}
+
+Api::PdfFormData FormPdfPreviewWidget::buildPdfFormData() {
+    Api::PdfFormData pdfData;
+    pdfData.formTitle = formTitle_;
+    pdfData.studentName = studentName_;
+    pdfData.studentEmail = studentEmail_;
+    pdfData.submissionDate = submissionDate_;
+    pdfData.institutionName = "Greenfield Technical College";
+    pdfData.institutionTagline = "Official Student Records";
+
+    // Convert FormFieldData to PdfFormField
+    for (const auto& field : fields_) {
+        pdfData.fields.emplace_back(field.label, field.value, field.type);
+    }
+
+    return pdfData;
+}
+
+std::string FormPdfPreviewWidget::generatePdf() {
+    if (!pdfGenerator_ || !Api::PdfGenerator::isAvailable()) {
+        std::cerr << "[FormPdfPreviewWidget] PDF generation not available" << std::endl;
+        return "";
+    }
+
+    Api::PdfFormData pdfData = buildPdfFormData();
+    std::string pdfPath = pdfGenerator_->generateFormPdf(pdfData);
+
+    if (pdfPath.empty()) {
+        std::cerr << "[FormPdfPreviewWidget] Failed to generate PDF: "
+                  << pdfGenerator_->getLastError() << std::endl;
+    } else {
+        currentPdfPath_ = pdfPath;
+        std::cerr << "[FormPdfPreviewWidget] Generated PDF at: " << pdfPath << std::endl;
+    }
+
+    return pdfPath;
+}
+
+void FormPdfPreviewWidget::downloadPdf() {
+    std::string pdfPath = generatePdf();
+    if (pdfPath.empty()) {
+        // Show error message
+        Wt::WApplication::instance()->doJavaScript(
+            "alert('Failed to generate PDF. Please try again.');"
+        );
+        return;
+    }
+
+    // Create a file resource for download
+    auto app = Wt::WApplication::instance();
+
+    // Generate a clean filename from form title
+    std::string filename = formTitle_;
+    std::replace(filename.begin(), filename.end(), ' ', '_');
+    filename += ".pdf";
+
+    // Use WFileResource to serve the PDF
+    auto resource = std::make_shared<Wt::WFileResource>("application/pdf", pdfPath);
+    resource->suggestFileName(filename);
+
+    // Trigger download by opening the resource URL
+    app->doJavaScript(
+        "window.open('" + resource->url() + "', '_blank');"
+    );
 }
 
 } // namespace Admin
