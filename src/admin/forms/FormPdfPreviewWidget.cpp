@@ -259,7 +259,19 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 if (ecResponse.success && !ecResponse.body.empty()) {
                     std::cerr << "[FormPdfPreviewWidget] EC response body: " << ecResponse.body.substr(0, 500) << std::endl;
                     auto ecJson = nlohmann::json::parse(ecResponse.body);
-                    nlohmann::json ecItems = ecJson.is_array() ? ecJson : (ecJson.contains("data") ? ecJson["data"] : nlohmann::json::array());
+
+                    // Handle different JSON response formats
+                    nlohmann::json ecItems = nlohmann::json::array();
+                    if (ecJson.is_array()) {
+                        ecItems = ecJson;
+                    } else if (ecJson.contains("data")) {
+                        if (ecJson["data"].is_array()) {
+                            ecItems = ecJson["data"];
+                        } else if (ecJson["data"].is_object()) {
+                            // Single object - wrap in array
+                            ecItems.push_back(ecJson["data"]);
+                        }
+                    }
                     std::cerr << "[FormPdfPreviewWidget] Found " << ecItems.size() << " emergency contacts" << std::endl;
 
                     int contactNum = 1;
@@ -330,8 +342,21 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 std::cerr << "[FormPdfPreviewWidget] AH response success: " << ahResponse.success
                           << ", status: " << ahResponse.statusCode << std::endl;
                 if (ahResponse.success && !ahResponse.body.empty()) {
+                    std::cerr << "[FormPdfPreviewWidget] AH response body: " << ahResponse.body.substr(0, 500) << std::endl;
                     auto ahJson = nlohmann::json::parse(ahResponse.body);
-                    nlohmann::json ahItems = ahJson.is_array() ? ahJson : (ahJson.contains("data") ? ahJson["data"] : nlohmann::json::array());
+
+                    // Handle different JSON response formats
+                    nlohmann::json ahItems = nlohmann::json::array();
+                    if (ahJson.is_array()) {
+                        ahItems = ahJson;
+                    } else if (ahJson.contains("data")) {
+                        if (ahJson["data"].is_array()) {
+                            ahItems = ahJson["data"];
+                        } else if (ahJson["data"].is_object()) {
+                            ahItems.push_back(ahJson["data"]);
+                        }
+                    }
+                    std::cerr << "[FormPdfPreviewWidget] Found " << ahItems.size() << " academic history records" << std::endl;
 
                     // Group by institution type
                     std::vector<std::string> institutionTypes = {"High School", "College", "University", "Trade School"};
@@ -450,8 +475,20 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 std::cerr << "[FormPdfPreviewWidget] Med response success: " << medResponse.success
                           << ", status: " << medResponse.statusCode << std::endl;
                 if (medResponse.success && !medResponse.body.empty()) {
+                    std::cerr << "[FormPdfPreviewWidget] Med response body: " << medResponse.body.substr(0, 500) << std::endl;
                     auto medJson = nlohmann::json::parse(medResponse.body);
-                    nlohmann::json medItems = medJson.is_array() ? medJson : (medJson.contains("data") ? medJson["data"] : nlohmann::json::array());
+
+                    // Handle different JSON response formats
+                    nlohmann::json medItems = nlohmann::json::array();
+                    if (medJson.is_array()) {
+                        medItems = medJson;
+                    } else if (medJson.contains("data")) {
+                        if (medJson["data"].is_array()) {
+                            medItems = medJson["data"];
+                        } else if (medJson["data"].is_object()) {
+                            medItems.push_back(medJson["data"]);
+                        }
+                    }
                     std::cerr << "[FormPdfPreviewWidget] Found " << medItems.size() << " medical info records" << std::endl;
                     if (!medItems.empty()) {
                         nlohmann::json med = medItems[0];
@@ -522,8 +559,20 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 std::cerr << "[FormPdfPreviewWidget] FA response success: " << faResponse.success
                           << ", status: " << faResponse.statusCode << std::endl;
                 if (faResponse.success && !faResponse.body.empty()) {
+                    std::cerr << "[FormPdfPreviewWidget] FA response body: " << faResponse.body.substr(0, 500) << std::endl;
                     auto faJson = nlohmann::json::parse(faResponse.body);
-                    nlohmann::json faItems = faJson.is_array() ? faJson : (faJson.contains("data") ? faJson["data"] : nlohmann::json::array());
+
+                    // Handle different JSON response formats
+                    nlohmann::json faItems = nlohmann::json::array();
+                    if (faJson.is_array()) {
+                        faItems = faJson;
+                    } else if (faJson.contains("data")) {
+                        if (faJson["data"].is_array()) {
+                            faItems = faJson["data"];
+                        } else if (faJson["data"].is_object()) {
+                            faItems.push_back(faJson["data"]);
+                        }
+                    }
                     std::cerr << "[FormPdfPreviewWidget] Found " << faItems.size() << " financial aid records" << std::endl;
                     if (!faItems.empty()) {
                         nlohmann::json fa = faItems[0];
@@ -586,10 +635,27 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     }
                 }
             } else if (formType == "documents") {
-                auto docResponse = apiService_->getApiClient()->get("/Document?filter[student_id]=" + std::to_string(studentId));
-                if (docResponse.success) {
+                std::string docUrl = "/Document?filter[student_id]=" + std::to_string(studentId);
+                std::cerr << "[FormPdfPreviewWidget] Loading documents from: " << docUrl << std::endl;
+                auto docResponse = apiService_->getApiClient()->get(docUrl);
+                std::cerr << "[FormPdfPreviewWidget] Doc response success: " << docResponse.success
+                          << ", status: " << docResponse.statusCode << std::endl;
+                if (docResponse.success && !docResponse.body.empty()) {
+                    std::cerr << "[FormPdfPreviewWidget] Doc response body: " << docResponse.body.substr(0, 500) << std::endl;
                     auto docJson = nlohmann::json::parse(docResponse.body);
-                    nlohmann::json docItems = docJson.is_array() ? docJson : (docJson.contains("data") ? docJson["data"] : nlohmann::json::array());
+
+                    // Handle different JSON response formats
+                    nlohmann::json docItems = nlohmann::json::array();
+                    if (docJson.is_array()) {
+                        docItems = docJson;
+                    } else if (docJson.contains("data")) {
+                        if (docJson["data"].is_array()) {
+                            docItems = docJson["data"];
+                        } else if (docJson["data"].is_object()) {
+                            docItems.push_back(docJson["data"]);
+                        }
+                    }
+                    std::cerr << "[FormPdfPreviewWidget] Found " << docItems.size() << " document records" << std::endl;
 
                     if (!docItems.empty()) {
                         int docNum = 1;
@@ -640,10 +706,27 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     }
                 }
             } else if (formType == "consent") {
-                auto cResponse = apiService_->getApiClient()->get("/Consent?filter[student_id]=" + std::to_string(studentId));
-                if (cResponse.success) {
+                std::string consentUrl = "/Consent?filter[student_id]=" + std::to_string(studentId);
+                std::cerr << "[FormPdfPreviewWidget] Loading consent from: " << consentUrl << std::endl;
+                auto cResponse = apiService_->getApiClient()->get(consentUrl);
+                std::cerr << "[FormPdfPreviewWidget] Consent response success: " << cResponse.success
+                          << ", status: " << cResponse.statusCode << std::endl;
+                if (cResponse.success && !cResponse.body.empty()) {
+                    std::cerr << "[FormPdfPreviewWidget] Consent response body: " << cResponse.body.substr(0, 500) << std::endl;
                     auto cJson = nlohmann::json::parse(cResponse.body);
-                    nlohmann::json cItems = cJson.is_array() ? cJson : (cJson.contains("data") ? cJson["data"] : nlohmann::json::array());
+
+                    // Handle different JSON response formats
+                    nlohmann::json cItems = nlohmann::json::array();
+                    if (cJson.is_array()) {
+                        cItems = cJson;
+                    } else if (cJson.contains("data")) {
+                        if (cJson["data"].is_array()) {
+                            cItems = cJson["data"];
+                        } else if (cJson["data"].is_object()) {
+                            cItems.push_back(cJson["data"]);
+                        }
+                    }
+                    std::cerr << "[FormPdfPreviewWidget] Found " << cItems.size() << " consent records" << std::endl;
 
                     // Display all consent records
                     int consentNum = 1;
@@ -1175,10 +1258,27 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                     }
                 }
             } else if (formType == "documents") {
-                auto docResponse = apiService_->getApiClient()->get("/Document?filter[student_id]=" + std::to_string(studentId));
-                if (docResponse.success) {
+                std::string docUrl = "/Document?filter[student_id]=" + std::to_string(studentId);
+                std::cerr << "[FormPdfPreviewWidget] Loading documents from: " << docUrl << std::endl;
+                auto docResponse = apiService_->getApiClient()->get(docUrl);
+                std::cerr << "[FormPdfPreviewWidget] Doc response success: " << docResponse.success
+                          << ", status: " << docResponse.statusCode << std::endl;
+                if (docResponse.success && !docResponse.body.empty()) {
+                    std::cerr << "[FormPdfPreviewWidget] Doc response body: " << docResponse.body.substr(0, 500) << std::endl;
                     auto docJson = nlohmann::json::parse(docResponse.body);
-                    nlohmann::json docItems = docJson.is_array() ? docJson : (docJson.contains("data") ? docJson["data"] : nlohmann::json::array());
+
+                    // Handle different JSON response formats
+                    nlohmann::json docItems = nlohmann::json::array();
+                    if (docJson.is_array()) {
+                        docItems = docJson;
+                    } else if (docJson.contains("data")) {
+                        if (docJson["data"].is_array()) {
+                            docItems = docJson["data"];
+                        } else if (docJson["data"].is_object()) {
+                            docItems.push_back(docJson["data"]);
+                        }
+                    }
+                    std::cerr << "[FormPdfPreviewWidget] Found " << docItems.size() << " document records" << std::endl;
 
                     if (!docItems.empty()) {
                         int docNum = 1;
