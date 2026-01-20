@@ -32,7 +32,7 @@ private:
     void showMessage(const std::string& message, bool isError = false);
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
-    Models::InstitutionSettings settings_;
+    StudentIntake::Models::InstitutionSettings settings_;
 
     // Branding fields
     Wt::WLineEdit* institutionNameEdit_;

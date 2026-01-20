@@ -74,7 +74,7 @@ private:
     std::shared_ptr<Wt::WFileResource> pdfResource_;  // Keep resource alive for download
 
     // Institution settings for branding
-    Models::InstitutionSettings institutionSettings_;
+    StudentIntake::Models::InstitutionSettings institutionSettings_;
     void loadInstitutionSettings();
 
     // Form data
