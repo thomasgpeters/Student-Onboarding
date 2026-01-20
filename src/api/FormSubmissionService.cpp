@@ -608,7 +608,7 @@ Models::InstitutionSettings FormSubmissionService::getInstitutionSettings() {
 SubmissionResult FormSubmissionService::updateInstitutionSetting(const std::string& key, const std::string& value) {
     std::cout << "[FormSubmissionService] Updating setting: " << key << std::endl;
 
-    // With setting_key as primary key, we can directly PATCH using the key
+    // With setting_key as primary key, we can directly PUT using the key
     nlohmann::json payload;
     payload["data"] = {
         {"type", "InstitutionSettings"},
@@ -619,8 +619,8 @@ SubmissionResult FormSubmissionService::updateInstitutionSetting(const std::stri
     };
 
     std::cout << "[FormSubmissionService] Updating setting " << key << " with value: " << value << std::endl;
-    ApiResponse patchResponse = apiClient_->patch("/InstitutionSettings/" + key, payload);
-    return parseSubmissionResponse(patchResponse);
+    ApiResponse putResponse = apiClient_->put("/InstitutionSettings/" + key, payload);
+    return parseSubmissionResponse(putResponse);
 }
 
 SubmissionResult FormSubmissionService::updateInstitutionSettings(const Models::InstitutionSettings& settings) {

@@ -315,7 +315,7 @@ The application expects the following API endpoints (note: capitalized resource 
 | `/Document` | POST | Submit documents |
 | `/Consent` | POST | Submit consent form |
 | `/InstitutionSettings` | GET | List all institution settings |
-| `/InstitutionSettings/:setting_key` | GET/PATCH | Get or update a setting by key |
+| `/InstitutionSettings/:setting_key` | GET/PUT | Get or update a setting by key |
 
 ### JSON:API Format
 
