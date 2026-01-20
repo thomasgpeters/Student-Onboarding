@@ -591,6 +591,110 @@ Models::Curriculum FormSubmissionService::getCurriculum(const std::string& curri
     return Models::Curriculum();
 }
 
+// Institution Settings API endpoints
+Models::InstitutionSettings FormSubmissionService::getInstitutionSettings() {
+    std::cout << "[FormSubmissionService] Loading institution settings" << std::endl;
+
+    ApiResponse response = apiClient_->get("/InstitutionSettings");
+    if (response.isSuccess()) {
+        std::cout << "[FormSubmissionService] Institution settings loaded successfully" << std::endl;
+        return Models::InstitutionSettings::fromApiResponse(response.getJson());
+    }
+
+    std::cerr << "[FormSubmissionService] Failed to load institution settings: " << response.errorMessage << std::endl;
+    return Models::InstitutionSettings();
+}
+
+SubmissionResult FormSubmissionService::updateInstitutionSetting(const std::string& key, const std::string& value) {
+    std::cout << "[FormSubmissionService] Updating setting: " << key << std::endl;
+
+    // First, find the setting by key to get its ID
+    std::string endpoint = "/InstitutionSettings?filter[setting_key]=" + key;
+    ApiResponse getResponse = apiClient_->get(endpoint);
+
+    if (!getResponse.isSuccess()) {
+        SubmissionResult result;
+        result.success = false;
+        result.message = "Failed to find setting: " + key;
+        return result;
+    }
+
+    // Parse to find the setting ID
+    auto json = getResponse.getJson();
+    nlohmann::json items;
+    if (json.is_array()) {
+        items = json;
+    } else if (json.contains("data") && json["data"].is_array()) {
+        items = json["data"];
+    }
+
+    if (items.empty()) {
+        SubmissionResult result;
+        result.success = false;
+        result.message = "Setting not found: " + key;
+        return result;
+    }
+
+    // Get the ID of the first matching setting
+    std::string settingId;
+    if (items[0].contains("id")) {
+        if (items[0]["id"].is_number()) {
+            settingId = std::to_string(items[0]["id"].get<int>());
+        } else if (items[0]["id"].is_string()) {
+            settingId = items[0]["id"].get<std::string>();
+        }
+    }
+
+    if (settingId.empty()) {
+        SubmissionResult result;
+        result.success = false;
+        result.message = "Could not determine setting ID for: " + key;
+        return result;
+    }
+
+    // Update the setting using PATCH
+    nlohmann::json payload;
+    payload["data"] = {
+        {"type", "InstitutionSettings"},
+        {"id", settingId},
+        {"attributes", {
+            {"setting_value", value}
+        }}
+    };
+
+    std::cout << "[FormSubmissionService] Updating setting " << settingId << " with value: " << value << std::endl;
+    ApiResponse patchResponse = apiClient_->patch("/InstitutionSettings/" + settingId, payload);
+    return parseSubmissionResponse(patchResponse);
+}
+
+SubmissionResult FormSubmissionService::updateInstitutionSettings(const Models::InstitutionSettings& settings) {
+    std::cout << "[FormSubmissionService] Updating all institution settings" << std::endl;
+
+    SubmissionResult finalResult;
+    finalResult.success = true;
+    int successCount = 0;
+    int failCount = 0;
+
+    for (const auto& [key, value] : settings.getAllSettings()) {
+        auto result = updateInstitutionSetting(key, value);
+        if (result.success) {
+            successCount++;
+        } else {
+            failCount++;
+            std::cerr << "[FormSubmissionService] Failed to update setting " << key << ": " << result.message << std::endl;
+        }
+    }
+
+    finalResult.message = "Updated " + std::to_string(successCount) + " settings";
+    if (failCount > 0) {
+        finalResult.message += " (" + std::to_string(failCount) + " failed)";
+        finalResult.success = (failCount == 0);
+    }
+
+    std::cout << "[FormSubmissionService] " << finalResult.message << std::endl;
+    return finalResult;
+}
+
 // Form type configuration
 std::vector<Models::FormTypeInfo> FormSubmissionService::getFormTypes() {
     std::vector<Models::FormTypeInfo> formTypes;

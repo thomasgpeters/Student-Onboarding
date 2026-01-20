@@ -149,11 +149,13 @@ void FormPdfPreviewWidget::setFormData(const std::string& formType,
 }
 
 void FormPdfPreviewWidget::showFormSubmission(int submissionId) {
+    loadInstitutionSettings();
     loadFormSubmissionData(submissionId);
     show();
 }
 
 void FormPdfPreviewWidget::showStudentForms(int studentId) {
+    loadInstitutionSettings();
     setWindowTitle("All Student Forms");
     loadStudentFormsData(studentId);
     show();
@@ -924,7 +926,7 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 "https://media.licdn.com/dms/image/v2/D4E0BAQFNqqJ59i1lgQ/company-logo_200_200/company-logo_200_200/0/1733939002925/imagery_business_systems_llc_logo?e=2147483647&v=beta&t=s_hATe0kqIDc64S79VJYXNS4N_UwrcnUA1x7VCb3sFA"));
             formLogo->addStyleClass("pdf-logo-img");
 
-            auto formInstitutionName = logoRow->addWidget(std::make_unique<Wt::WText>("Student Intake System"));
+            auto formInstitutionName = logoRow->addWidget(std::make_unique<Wt::WText>(institutionSettings_.getInstitutionName()));
             formInstitutionName->addStyleClass("pdf-institution-name");
 
             // Form title
@@ -1490,10 +1492,10 @@ void FormPdfPreviewWidget::buildPreview() {
     auto institutionInfo = logoRow->addWidget(std::make_unique<Wt::WContainerWidget>());
     institutionInfo->addStyleClass("pdf-institution-info");
 
-    auto institutionName = institutionInfo->addWidget(std::make_unique<Wt::WText>("Student Intake System"));
+    auto institutionName = institutionInfo->addWidget(std::make_unique<Wt::WText>(institutionSettings_.getInstitutionName()));
     institutionName->addStyleClass("pdf-institution-name");
 
-    auto institutionTagline = institutionInfo->addWidget(std::make_unique<Wt::WText>("Official Student Records"));
+    auto institutionTagline = institutionInfo->addWidget(std::make_unique<Wt::WText>(institutionSettings_.getTagline()));
     institutionTagline->addStyleClass("pdf-institution-tagline");
 
     auto formTitleText = header->addWidget(std::make_unique<Wt::WText>(formTitle_));
@@ -1624,14 +1626,24 @@ std::string FormPdfPreviewWidget::formatValue(const std::string& value, const st
     return value;
 }
 
+void FormPdfPreviewWidget::loadInstitutionSettings() {
+    if (apiService_) {
+        std::cerr << "[FormPdfPreviewWidget] Loading institution settings" << std::endl;
+        institutionSettings_ = apiService_->getInstitutionSettings();
+        std::cerr << "[FormPdfPreviewWidget] Institution: " << institutionSettings_.getInstitutionName() << std::endl;
+    }
+}
+
 Api::PdfFormData FormPdfPreviewWidget::buildPdfFormData() {
     Api::PdfFormData pdfData;
     pdfData.formTitle = formTitle_;
     pdfData.studentName = studentName_;
     pdfData.studentEmail = studentEmail_;
     pdfData.submissionDate = submissionDate_;
-    pdfData.institutionName = "Greenfield Technical College";
-    pdfData.institutionTagline = "Official Student Records";
+
+    // Use institution settings (with fallback defaults)
+    pdfData.institutionName = institutionSettings_.getInstitutionName();
+    pdfData.institutionTagline = institutionSettings_.getTagline();
 
     // Convert FormFieldData to PdfFormField
     for (const auto& field : fields_) {

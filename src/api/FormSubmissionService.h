@@ -13,6 +13,7 @@
 #include "models/EmergencyContact.h"
 #include "models/AcademicHistory.h"
 #include "models/Curriculum.h"
+#include "models/InstitutionSettings.h"
 
 namespace StudentIntake {
 namespace Api {
@@ -78,6 +79,11 @@ public:
     // Curriculum API endpoints
     std::vector<Models::Curriculum> getCurriculums();
     Models::Curriculum getCurriculum(const std::string& curriculumId);
+
+    // Institution settings API endpoints
+    Models::InstitutionSettings getInstitutionSettings();
+    SubmissionResult updateInstitutionSetting(const std::string& key, const std::string& value);
+    SubmissionResult updateInstitutionSettings(const Models::InstitutionSettings& settings);
 
     // Form type configuration
     std::vector<Models::FormTypeInfo> getFormTypes();
