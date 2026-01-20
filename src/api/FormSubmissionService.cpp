@@ -595,7 +595,7 @@ Models::Curriculum FormSubmissionService::getCurriculum(const std::string& curri
 Models::InstitutionSettings FormSubmissionService::getInstitutionSettings() {
     std::cout << "[FormSubmissionService] Loading institution settings" << std::endl;
 
-    ApiResponse response = apiClient_->get("/InstitutionSettings");
+    ApiResponse response = apiClient_->get("/InstitutionSetting");
     if (response.isSuccess()) {
         std::cout << "[FormSubmissionService] Institution settings loaded successfully" << std::endl;
         return Models::InstitutionSettings::fromApiResponse(response.getJson());
@@ -608,18 +608,42 @@ Models::InstitutionSettings FormSubmissionService::getInstitutionSettings() {
 SubmissionResult FormSubmissionService::updateInstitutionSetting(const std::string& key, const std::string& value) {
     std::cout << "[FormSubmissionService] Updating setting: " << key << std::endl;
 
-    // With setting_key as primary key, we can directly PATCH using the key
+    // First GET the record to retrieve the S_CheckSum for optimistic locking
+    ApiResponse getResponse = apiClient_->get("/InstitutionSetting/" + key);
+    if (!getResponse.isSuccess()) {
+        SubmissionResult result;
+        result.success = false;
+        result.message = "Failed to fetch setting for update: " + key;
+        return result;
+    }
+
+    // Extract S_CheckSum from the response
+    std::string checksum;
+    auto json = getResponse.getJson();
+    if (json.contains("data") && json["data"].contains("attributes")) {
+        auto& attrs = json["data"]["attributes"];
+        if (attrs.contains("S_CheckSum") && !attrs["S_CheckSum"].is_null()) {
+            if (attrs["S_CheckSum"].is_string()) {
+                checksum = attrs["S_CheckSum"].get<std::string>();
+            } else if (attrs["S_CheckSum"].is_number()) {
+                checksum = std::to_string(attrs["S_CheckSum"].get<int64_t>());
+            }
+        }
+    }
+
+    // Build update payload with checksum for optimistic locking
     nlohmann::json payload;
     payload["data"] = {
-        {"type", "InstitutionSettings"},
+        {"type", "InstitutionSetting"},
         {"id", key},
         {"attributes", {
-            {"setting_value", value}
+            {"setting_value", value},
+            {"S_CheckSum", checksum}
         }}
     };
 
     std::cout << "[FormSubmissionService] Updating setting " << key << " with value: " << value << std::endl;
-    ApiResponse patchResponse = apiClient_->patch("/InstitutionSettings/" + key, payload);
+    ApiResponse patchResponse = apiClient_->patch("/InstitutionSetting/" + key, payload);
     return parseSubmissionResponse(patchResponse);
 }
 
