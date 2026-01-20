@@ -66,6 +66,7 @@ set(MODEL_SOURCES
     src/models/AcademicHistory.cpp
     src/models/FormData.cpp
     src/models/Curriculum.cpp
+    src/models/InstitutionSettings.cpp
 )
 
 set(SESSION_SOURCES
@@ -128,6 +129,7 @@ set(ADMIN_SOURCES
     src/admin/forms/FormPdfPreviewWidget.cpp
     src/admin/forms/FormTypesListWidget.cpp
     src/admin/forms/FormTypeDetailWidget.cpp
+    src/admin/settings/InstitutionSettingsWidget.cpp
 )
 
 set(APP_SOURCES
@@ -167,6 +169,7 @@ target_include_directories(student_intake PRIVATE
     ${CMAKE_SOURCE_DIR}/src/admin/students
     ${CMAKE_SOURCE_DIR}/src/admin/curriculum
     ${CMAKE_SOURCE_DIR}/src/admin/forms
+    ${CMAKE_SOURCE_DIR}/src/admin/settings
 )
 
 # Link libraries
