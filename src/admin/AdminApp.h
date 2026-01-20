@@ -24,6 +24,7 @@
 #include "admin/forms/FormPdfPreviewWidget.h"
 #include "admin/forms/FormTypesListWidget.h"
 #include "admin/forms/FormTypeDetailWidget.h"
+#include "admin/settings/InstitutionSettingsWidget.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -128,7 +129,7 @@ private:
     FormTypeDetailWidget* formTypeDetailWidget_;    // New - shows form type details
     CurriculumListWidget* curriculumListWidget_;
     CurriculumEditorWidget* curriculumEditorWidget_;
-    Wt::WContainerWidget* settingsView_;
+    InstitutionSettingsWidget* settingsWidget_;
 };
 
 } // namespace Admin

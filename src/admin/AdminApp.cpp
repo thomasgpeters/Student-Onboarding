@@ -34,7 +34,7 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , formTypeDetailWidget_(nullptr)
     , curriculumListWidget_(nullptr)
     , curriculumEditorWidget_(nullptr)
-    , settingsView_(nullptr) {
+    , settingsWidget_(nullptr) {
 
     setTitle("Admin Portal - Student Onboarding");
 
@@ -199,15 +199,11 @@ void AdminApp::setupUI() {
     curriculumEditorWidget_->saveSuccess().connect(this, &AdminApp::handleCurriculumSaved);
     curriculumEditorWidget_->hide();
 
-    // Settings view placeholder (hidden initially)
-    settingsView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    settingsView_->addStyleClass("admin-section-view");
-    auto settingsTitle = settingsView_->addWidget(std::make_unique<Wt::WText>("<h2>System Settings</h2>"));
-    settingsTitle->setTextFormat(Wt::TextFormat::XHTML);
-    auto settingsPlaceholder = settingsView_->addWidget(std::make_unique<Wt::WText>(
-        "<p>Admin user management and system configuration will be implemented in Phase 5.</p>"));
-    settingsPlaceholder->setTextFormat(Wt::TextFormat::XHTML);
-    settingsView_->hide();
+    // Institution Settings widget (hidden initially)
+    settingsWidget_ = contentContainer_->addWidget(std::make_unique<InstitutionSettingsWidget>());
+    settingsWidget_->addStyleClass("admin-section-view");
+    settingsWidget_->setApiService(apiService_);
+    settingsWidget_->hide();
 
     // Footer
     auto footer = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -276,7 +272,7 @@ void AdminApp::hideAllViews() {
     // formPdfPreviewWidget_ is a WDialog - it manages its own visibility
     curriculumListWidget_->hide();
     curriculumEditorWidget_->hide();
-    settingsView_->hide();
+    settingsWidget_->hide();
 }
 
 void AdminApp::showLogin() {
@@ -421,7 +417,8 @@ void AdminApp::showSettings() {
     contentWrapper_->removeStyleClass("login-state");
     contentWrapper_->addStyleClass("with-sidebar");
 
-    settingsView_->show();
+    settingsWidget_->loadSettings();
+    settingsWidget_->show();
 }
 
 void AdminApp::handleLoginSuccess() {

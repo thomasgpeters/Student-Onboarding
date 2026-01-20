@@ -123,7 +123,7 @@ std::string PdfGenerator::generateFormPdf(const PdfFormData& formData, const std
         HPDF_Page_SetRGBFill(page, 0.12, 0.23, 0.37);  // Dark blue #1e3a5f
 
         std::string instName = formData.institutionName.empty() ?
-            "Greenfield Technical College" : formData.institutionName;
+            "Student Intake System" : formData.institutionName;
         float textWidth = HPDF_Page_TextWidth(page, instName.c_str());
         HPDF_Page_BeginText(page);
         HPDF_Page_TextOut(page, (pageWidth - textWidth) / 2, yPos, instName.c_str());
@@ -371,7 +371,7 @@ std::string PdfGenerator::generateMultiFormPdf(const std::vector<PdfFormData>& f
             HPDF_Page_SetFontAndSize(page, fontBold, 16);
             HPDF_Page_SetRGBFill(page, 0.12, 0.23, 0.37);
             std::string instName = formData.institutionName.empty() ?
-                "Greenfield Technical College" : formData.institutionName;
+                "Student Intake System" : formData.institutionName;
             float textWidth = HPDF_Page_TextWidth(page, instName.c_str());
             HPDF_Page_BeginText(page);
             HPDF_Page_TextOut(page, (pageWidth - textWidth) / 2, yPos, instName.c_str());

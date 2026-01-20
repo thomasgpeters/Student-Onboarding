@@ -2232,3 +2232,87 @@ textarea.form-control {
 .text-center {
     text-align: center;
 }
+
+/* =====================================================
+   INSTITUTION SETTINGS WIDGET
+   ===================================================== */
+
+.institution-settings-widget {
+    padding: 1.5rem;
+    max-width: 900px;
+}
+
+.settings-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.settings-header h2 {
+    color: #1e293b;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.settings-message {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.settings-message.alert-success {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+}
+
+.settings-message.alert-danger {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+}
+
+.settings-section {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.settings-section h3 {
+    color: #1e3a5f;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #3b82f6;
+}
+
+.settings-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.settings-row .settings-col {
+    flex: 1;
+    min-width: 200px;
+}
+
+.settings-row-3 .settings-col {
+    flex: 1;
+    min-width: 150px;
+}
+
+.settings-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.settings-actions .btn-lg {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+}

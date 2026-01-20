@@ -14,6 +14,7 @@
 #include <map>
 #include "../../api/FormSubmissionService.h"
 #include "../../api/PdfGenerator.h"
+#include "../../models/InstitutionSettings.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -71,6 +72,10 @@ private:
     std::unique_ptr<Api::PdfGenerator> pdfGenerator_;
     std::string currentPdfPath_;  // Path to most recently generated PDF
     std::shared_ptr<Wt::WFileResource> pdfResource_;  // Keep resource alive for download
+
+    // Institution settings for branding
+    Models::InstitutionSettings institutionSettings_;
+    void loadInstitutionSettings();
 
     // Form data
     std::string formType_;
