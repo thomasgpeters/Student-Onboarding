@@ -1,4 +1,5 @@
 #include "InstitutionSettingsWidget.h"
+#include <Wt/WApplication.h>
 #include <Wt/WTemplate.h>
 #include <Wt/WGroupBox.h>
 #include <Wt/WLabel.h>
