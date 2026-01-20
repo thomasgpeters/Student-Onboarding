@@ -2,8 +2,7 @@
 -- Stores configurable settings for the institution/school
 
 CREATE TABLE IF NOT EXISTS institution_settings (
-    id SERIAL PRIMARY KEY,
-    setting_key VARCHAR(100) NOT NULL UNIQUE,
+    setting_key VARCHAR(100) PRIMARY KEY,
     setting_value TEXT,
     setting_type VARCHAR(50) DEFAULT 'string',  -- string, boolean, integer, json
     category VARCHAR(50) DEFAULT 'general',     -- general, branding, contact, location
@@ -46,6 +45,5 @@ INSERT INTO institution_settings (setting_key, setting_value, setting_type, cate
 ('accreditation_info', '', 'string', 'general', 'Accreditation', 'Accreditation information', FALSE, 31),
 ('timezone', 'America/New_York', 'string', 'general', 'Timezone', 'Institution timezone', FALSE, 32);
 
--- Index for faster lookups
-CREATE INDEX idx_institution_settings_key ON institution_settings(setting_key);
+-- Index for faster lookups by category
 CREATE INDEX idx_institution_settings_category ON institution_settings(category);

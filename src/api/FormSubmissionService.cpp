@@ -608,62 +608,18 @@ Models::InstitutionSettings FormSubmissionService::getInstitutionSettings() {
 SubmissionResult FormSubmissionService::updateInstitutionSetting(const std::string& key, const std::string& value) {
     std::cout << "[FormSubmissionService] Updating setting: " << key << std::endl;
 
-    // First, find the setting by key to get its ID
-    std::string endpoint = "/InstitutionSettings?filter[setting_key]=" + key;
-    ApiResponse getResponse = apiClient_->get(endpoint);
-
-    if (!getResponse.isSuccess()) {
-        SubmissionResult result;
-        result.success = false;
-        result.message = "Failed to find setting: " + key;
-        return result;
-    }
-
-    // Parse to find the setting ID
-    auto json = getResponse.getJson();
-    nlohmann::json items;
-    if (json.is_array()) {
-        items = json;
-    } else if (json.contains("data") && json["data"].is_array()) {
-        items = json["data"];
-    }
-
-    if (items.empty()) {
-        SubmissionResult result;
-        result.success = false;
-        result.message = "Setting not found: " + key;
-        return result;
-    }
-
-    // Get the ID of the first matching setting
-    std::string settingId;
-    if (items[0].contains("id")) {
-        if (items[0]["id"].is_number()) {
-            settingId = std::to_string(items[0]["id"].get<int>());
-        } else if (items[0]["id"].is_string()) {
-            settingId = items[0]["id"].get<std::string>();
-        }
-    }
-
-    if (settingId.empty()) {
-        SubmissionResult result;
-        result.success = false;
-        result.message = "Could not determine setting ID for: " + key;
-        return result;
-    }
-
-    // Update the setting using PATCH
+    // With setting_key as primary key, we can directly PATCH using the key
     nlohmann::json payload;
     payload["data"] = {
         {"type", "InstitutionSettings"},
-        {"id", settingId},
+        {"id", key},
         {"attributes", {
             {"setting_value", value}
         }}
     };
 
-    std::cout << "[FormSubmissionService] Updating setting " << settingId << " with value: " << value << std::endl;
-    ApiResponse patchResponse = apiClient_->patch("/InstitutionSettings/" + settingId, payload);
+    std::cout << "[FormSubmissionService] Updating setting " << key << " with value: " << value << std::endl;
+    ApiResponse patchResponse = apiClient_->patch("/InstitutionSettings/" + key, payload);
     return parseSubmissionResponse(patchResponse);
 }
 
