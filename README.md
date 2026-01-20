@@ -314,6 +314,9 @@ The application expects the following API endpoints (note: capitalized resource 
 | `/FinancialAid` | GET/POST/PATCH | Get/create/update financial aid |
 | `/Document` | POST | Submit documents |
 | `/Consent` | POST | Submit consent form |
+| `/InstitutionSettings` | GET | List all institution settings |
+| `/InstitutionSettings?filter[setting_key]=` | GET | Get setting by key |
+| `/InstitutionSettings/:id` | PATCH | Update a specific setting |
 
 ### JSON:API Format
 
