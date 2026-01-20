@@ -595,7 +595,7 @@ Models::Curriculum FormSubmissionService::getCurriculum(const std::string& curri
 Models::InstitutionSettings FormSubmissionService::getInstitutionSettings() {
     std::cout << "[FormSubmissionService] Loading institution settings" << std::endl;
 
-    ApiResponse response = apiClient_->get("/InstitutionSettings");
+    ApiResponse response = apiClient_->get("/InstitutionSetting");
     if (response.isSuccess()) {
         std::cout << "[FormSubmissionService] Institution settings loaded successfully" << std::endl;
         return Models::InstitutionSettings::fromApiResponse(response.getJson());
@@ -611,7 +611,7 @@ SubmissionResult FormSubmissionService::updateInstitutionSetting(const std::stri
     // With setting_key as primary key, we can directly PUT using the key
     nlohmann::json payload;
     payload["data"] = {
-        {"type", "InstitutionSettings"},
+        {"type", "InstitutionSetting"},
         {"id", key},
         {"attributes", {
             {"setting_value", value}
@@ -619,7 +619,7 @@ SubmissionResult FormSubmissionService::updateInstitutionSetting(const std::stri
     };
 
     std::cout << "[FormSubmissionService] Updating setting " << key << " with value: " << value << std::endl;
-    ApiResponse putResponse = apiClient_->put("/InstitutionSettings/" + key, payload);
+    ApiResponse putResponse = apiClient_->put("/InstitutionSetting/" + key, payload);
     return parseSubmissionResponse(putResponse);
 }
 
