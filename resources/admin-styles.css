@@ -1508,6 +1508,7 @@ textarea.form-control {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
+    margin-left: 8px;
     margin-right: 8px;
     font-size: 1.1rem;
     flex-shrink: 0;
