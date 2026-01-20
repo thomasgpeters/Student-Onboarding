@@ -1508,6 +1508,7 @@ textarea.form-control {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
+    margin-left: 8px;
     margin-right: 8px;
     font-size: 1.1rem;
     flex-shrink: 0;
@@ -1705,7 +1706,7 @@ textarea.form-control {
 
 .pdf-institution-name {
     display: block;
-    font-size: 20pt;
+    font-size: 16pt;
     font-weight: bold;
     color: #1e3a5f;
     letter-spacing: 0.5px;
