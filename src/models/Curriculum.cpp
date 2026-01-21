@@ -80,6 +80,22 @@ std::string Curriculum::typeIdToFormId(int typeId) {
     return (it != mapping.end()) ? it->second : "";
 }
 
+std::string Curriculum::departmentIdToName(int departmentId) {
+    // Maps department_id to department display name
+    // Must match the order in CurriculumEditorWidget departmentSelect_ dropdown
+    static const std::map<int, std::string> mapping = {
+        {1, "Professional Driving School"},
+        {2, "Information Technology"},
+        {3, "Electrical Technology"},
+        {4, "Carpentry"},
+        {5, "Automotive"},
+        {6, "Food Services"},
+        {7, "Nursing"}
+    };
+    auto it = mapping.find(departmentId);
+    return (it != mapping.end()) ? it->second : "";
+}
+
 nlohmann::json Curriculum::toJson() const {
     nlohmann::json j;
     // Note: id is NOT included here - in JSON:API format, id goes at data level, not in attributes
@@ -144,6 +160,11 @@ Curriculum Curriculum::fromJson(const nlohmann::json& json) {
         } else if (attrs["department_id"].is_string()) {
             curriculum.departmentId_ = std::stoi(attrs["department_id"].get<std::string>());
         }
+    }
+
+    // If department name is empty but we have a department_id, look up the name
+    if (curriculum.department_.empty() && curriculum.departmentId_ > 0) {
+        curriculum.department_ = departmentIdToName(curriculum.departmentId_);
     }
 
     // degreeType / degree_type

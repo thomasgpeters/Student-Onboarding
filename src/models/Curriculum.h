@@ -55,6 +55,9 @@ public:
     static int formIdToTypeId(const std::string& formId);
     static std::string typeIdToFormId(int typeId);
 
+    // Department ID mapping (integer ID <-> name)
+    static std::string departmentIdToName(int departmentId);
+
     // Serialization
     nlohmann::json toJson() const;
     static Curriculum fromJson(const nlohmann::json& json);
