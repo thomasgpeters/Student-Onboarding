@@ -1111,6 +1111,23 @@
     gap: 2rem;
 }
 
+/* Duration row - number input + interval dropdown side by side */
+.admin-duration-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.admin-duration-row .admin-duration-number {
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.admin-duration-row .admin-duration-interval {
+    flex: 1;
+    min-width: 100px;
+}
+
 .form-check {
     display: flex;
     align-items: center;

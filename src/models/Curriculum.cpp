@@ -15,6 +15,7 @@ Curriculum::Curriculum()
     , degreeType_("certificate")
     , creditHours_(0)
     , durationSemesters_(0)
+    , durationInterval_("semester")
     , isActive_(true)
     , isOnline_(false) {
 }
@@ -29,8 +30,33 @@ Curriculum::Curriculum(const std::string& id, const std::string& name)
     , degreeType_("certificate")
     , creditHours_(0)
     , durationSemesters_(0)
+    , durationInterval_("semester")
     , isActive_(true)
     , isOnline_(false) {
+}
+
+std::string Curriculum::getFormattedDuration() const {
+    if (durationSemesters_ <= 0) {
+        return "-";
+    }
+
+    std::string interval = durationInterval_;
+    if (interval.empty()) {
+        interval = "semester";
+    }
+
+    // Capitalize first letter
+    std::string displayInterval = interval;
+    if (!displayInterval.empty()) {
+        displayInterval[0] = std::toupper(displayInterval[0]);
+    }
+
+    // Pluralize if duration > 1
+    if (durationSemesters_ > 1) {
+        displayInterval += "s";
+    }
+
+    return std::to_string(durationSemesters_) + " " + displayInterval;
 }
 
 void Curriculum::addRequiredForm(const std::string& formId) {
@@ -99,6 +125,7 @@ nlohmann::json Curriculum::toJson() const {
     j["degree_type"] = degreeType_;
     j["credit_hours"] = creditHours_;
     j["duration_semesters"] = durationSemesters_;
+    j["duration_interval"] = durationInterval_;
     j["is_active"] = isActive_;
     j["is_online"] = isOnline_;
 
@@ -174,6 +201,14 @@ Curriculum Curriculum::fromJson(const nlohmann::json& json) {
     if (attrs.contains("durationSemesters")) curriculum.durationSemesters_ = attrs["durationSemesters"].get<int>();
     else if (attrs.contains("duration_semesters") && !attrs["duration_semesters"].is_null())
         curriculum.durationSemesters_ = attrs["duration_semesters"].get<int>();
+
+    // durationInterval / duration_interval
+    if (attrs.contains("durationInterval") && !attrs["durationInterval"].is_null())
+        curriculum.durationInterval_ = attrs["durationInterval"].get<std::string>();
+    else if (attrs.contains("duration_interval") && !attrs["duration_interval"].is_null())
+        curriculum.durationInterval_ = attrs["duration_interval"].get<std::string>();
+    else
+        curriculum.durationInterval_ = "semester";  // Default
 
     // requiredForms / required_forms / required_form_ids
     // Handle multiple formats: string arrays, integer arrays, or from junction table
