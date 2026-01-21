@@ -2,6 +2,7 @@
 #include <Wt/WBreak.h>
 #include <iostream>
 #include <map>
+#include <algorithm>
 #include <nlohmann/json.hpp>
 
 namespace StudentIntake {
@@ -34,7 +35,13 @@ StudentDetailWidget::StudentDetailWidget()
     , previewPdfBtn_(nullptr)
     , printAllBtn_(nullptr)
     , submissionsTable_(nullptr)
-    , noSubmissionsText_(nullptr) {
+    , noSubmissionsText_(nullptr)
+    , academicHistoryContainer_(nullptr)
+    , academicHistoryHeader_(nullptr)
+    , academicHistoryTitle_(nullptr)
+    , addAcademicHistoryBtn_(nullptr)
+    , academicHistoryTable_(nullptr)
+    , noAcademicHistoryText_(nullptr) {
     setupUI();
 }
 
@@ -172,6 +179,36 @@ void StudentDetailWidget::setupUI() {
         "No form submissions found for this student."));
     noSubmissionsText_->addStyleClass("text-muted admin-no-data");
     noSubmissionsText_->hide();
+
+    // Academic History section
+    academicHistoryContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    academicHistoryContainer_->addStyleClass("admin-submissions-section");
+
+    // Academic History header with title and Add button
+    academicHistoryHeader_ = academicHistoryContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    academicHistoryHeader_->addStyleClass("admin-submissions-header");
+
+    academicHistoryTitle_ = academicHistoryHeader_->addWidget(std::make_unique<Wt::WText>("🎓 Academic History"));
+    academicHistoryTitle_->addStyleClass("admin-section-title");
+
+    auto academicButtonsContainer = academicHistoryHeader_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    academicButtonsContainer->addStyleClass("admin-pdf-buttons");
+
+    addAcademicHistoryBtn_ = academicButtonsContainer->addWidget(std::make_unique<Wt::WPushButton>("+ Add Education"));
+    addAcademicHistoryBtn_->addStyleClass("btn btn-primary");
+    addAcademicHistoryBtn_->clicked().connect([this]() {
+        showAddAcademicHistoryDialog();
+    });
+
+    // Academic History table
+    academicHistoryTable_ = academicHistoryContainer_->addWidget(std::make_unique<Wt::WTable>());
+    academicHistoryTable_->addStyleClass("admin-data-table");
+
+    // No academic history message
+    noAcademicHistoryText_ = academicHistoryContainer_->addWidget(std::make_unique<Wt::WText>(
+        "No academic history records found for this student."));
+    noAcademicHistoryText_->addStyleClass("text-muted admin-no-data");
+    noAcademicHistoryText_->hide();
 }
 
 void StudentDetailWidget::loadStudent(int studentId) {
@@ -242,6 +279,7 @@ void StudentDetailWidget::loadStudent(int studentId) {
         updateDisplay();
         loadStudentAddress();
         loadFormSubmissions();
+        loadAcademicHistory();
         std::cerr << "[StudentDetail] Loaded student: " << currentStudent_.getFullName() << std::endl;
 
     } catch (const std::exception& e) {
@@ -445,6 +483,354 @@ void StudentDetailWidget::updateFormSubmissionsTable() {
     }
 }
 
+void StudentDetailWidget::loadAcademicHistory() {
+    academicHistory_.clear();
+
+    if (!apiService_ || currentStudentId_ <= 0) {
+        updateAcademicHistoryTable();
+        return;
+    }
+
+    try {
+        std::string endpoint = "/AcademicHistory?filter[student_id]=" + std::to_string(currentStudentId_);
+        auto response = apiService_->getApiClient()->get(endpoint);
+
+        if (response.success) {
+            auto json = nlohmann::json::parse(response.body);
+            nlohmann::json records = json.is_array() ? json :
+                (json.contains("data") ? json["data"] : nlohmann::json::array());
+
+            for (const auto& record : records) {
+                nlohmann::json attrs = record.contains("attributes") ? record["attributes"] : record;
+
+                AcademicHistoryRecord historyRecord;
+                historyRecord.id = record.contains("id") ?
+                    (record["id"].is_string() ? std::stoi(record["id"].get<std::string>()) : record["id"].get<int>()) : 0;
+
+                historyRecord.institutionName = attrs.value("institution_name", "");
+                historyRecord.institutionType = attrs.value("institution_type", "");
+                historyRecord.institutionCity = attrs.value("institution_city", "");
+                historyRecord.institutionState = attrs.value("institution_state", "");
+                historyRecord.degreeEarned = attrs.value("degree_earned", "");
+                historyRecord.major = attrs.value("major", "");
+                historyRecord.gpa = attrs.value("gpa", 0.0);
+                historyRecord.startDate = attrs.value("start_date", "");
+                historyRecord.endDate = attrs.value("end_date", "");
+                historyRecord.graduationDate = attrs.value("graduation_date", "");
+                historyRecord.isCurrentlyAttending = attrs.value("is_currently_attending", false);
+
+                academicHistory_.push_back(historyRecord);
+            }
+        }
+        std::cerr << "[StudentDetail] Loaded " << academicHistory_.size() << " academic history records" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[StudentDetail] Error loading academic history: " << e.what() << std::endl;
+    }
+
+    updateAcademicHistoryTable();
+}
+
+void StudentDetailWidget::updateAcademicHistoryTable() {
+    academicHistoryTable_->clear();
+
+    if (academicHistory_.empty()) {
+        academicHistoryTable_->hide();
+        noAcademicHistoryText_->show();
+        return;
+    }
+
+    academicHistoryTable_->show();
+    noAcademicHistoryText_->hide();
+
+    // Header row
+    academicHistoryTable_->setHeaderCount(1);
+    int col = 0;
+    academicHistoryTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>(""));
+    academicHistoryTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Institution"));
+    academicHistoryTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Type"));
+    academicHistoryTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Degree/Major"));
+    academicHistoryTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("GPA"));
+    academicHistoryTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Dates"));
+    academicHistoryTable_->elementAt(0, col++)->addWidget(std::make_unique<Wt::WText>("Actions"));
+
+    for (int i = 0; i < col; i++) {
+        academicHistoryTable_->elementAt(0, i)->addStyleClass("admin-table-header");
+    }
+
+    int row = 1;
+    for (const auto& record : academicHistory_) {
+        col = 0;
+
+        // Institution icon
+        auto iconCell = academicHistoryTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>("🏫"));
+        iconCell->addStyleClass("admin-row-icon");
+        academicHistoryTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // Institution name and location
+        auto instContainer = academicHistoryTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WContainerWidget>());
+        auto instName = instContainer->addWidget(std::make_unique<Wt::WText>(record.institutionName));
+        instName->addStyleClass("admin-primary-text");
+        std::string location = record.institutionCity;
+        if (!record.institutionState.empty()) {
+            if (!location.empty()) location += ", ";
+            location += record.institutionState;
+        }
+        if (!location.empty()) {
+            auto locText = instContainer->addWidget(std::make_unique<Wt::WText>(location));
+            locText->addStyleClass("admin-secondary-text");
+        }
+        academicHistoryTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // Institution type
+        std::string typeDisplay = record.institutionType;
+        if (!typeDisplay.empty()) {
+            typeDisplay[0] = std::toupper(typeDisplay[0]);
+        }
+        academicHistoryTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>(typeDisplay));
+        academicHistoryTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // Degree and Major
+        auto degreeContainer = academicHistoryTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WContainerWidget>());
+        if (!record.degreeEarned.empty()) {
+            auto degreeText = degreeContainer->addWidget(std::make_unique<Wt::WText>(record.degreeEarned));
+            degreeText->addStyleClass("admin-primary-text");
+        }
+        if (!record.major.empty()) {
+            auto majorText = degreeContainer->addWidget(std::make_unique<Wt::WText>(record.major));
+            majorText->addStyleClass("admin-secondary-text");
+        }
+        academicHistoryTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // GPA
+        std::string gpaStr = record.gpa > 0 ? std::to_string(record.gpa).substr(0, 4) : "-";
+        academicHistoryTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>(gpaStr));
+        academicHistoryTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // Dates
+        std::string dateStr;
+        if (!record.startDate.empty()) {
+            dateStr = formatDate(record.startDate);
+            if (record.isCurrentlyAttending) {
+                dateStr += " - Present";
+            } else if (!record.endDate.empty()) {
+                dateStr += " - " + formatDate(record.endDate);
+            }
+        } else if (!record.graduationDate.empty()) {
+            dateStr = "Graduated: " + formatDate(record.graduationDate);
+        } else {
+            dateStr = "-";
+        }
+        academicHistoryTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>(dateStr));
+        academicHistoryTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
+
+        // Actions
+        auto actionsContainer = academicHistoryTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WContainerWidget>());
+        actionsContainer->addStyleClass("admin-table-actions");
+
+        auto deleteBtn = actionsContainer->addWidget(std::make_unique<Wt::WPushButton>("Delete"));
+        deleteBtn->addStyleClass("btn btn-sm btn-danger");
+        int historyId = record.id;
+        deleteBtn->clicked().connect([this, historyId]() {
+            deleteAcademicHistory(historyId);
+        });
+
+        academicHistoryTable_->elementAt(row, col)->addStyleClass("admin-table-cell");
+        row++;
+    }
+}
+
+void StudentDetailWidget::showAddAcademicHistoryDialog() {
+    auto dialog = addChild(std::make_unique<Wt::WDialog>("Add Academic History"));
+    dialog->setModal(true);
+    dialog->setClosable(true);
+    dialog->addStyleClass("admin-dialog");
+    dialog->setWidth(Wt::WLength(500));
+
+    auto content = dialog->contents();
+    content->addStyleClass("admin-dialog-content");
+
+    // Institution Name
+    auto nameGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    nameGroup->addStyleClass("form-group");
+    nameGroup->addWidget(std::make_unique<Wt::WText>("Institution Name *"))->addStyleClass("form-label");
+    auto nameInput = nameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    nameInput->setPlaceholderText("Enter school or university name");
+    nameInput->addStyleClass("form-control");
+
+    // Institution Type
+    auto typeGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    typeGroup->addStyleClass("form-group");
+    typeGroup->addWidget(std::make_unique<Wt::WText>("Institution Type *"))->addStyleClass("form-label");
+    auto typeSelect = typeGroup->addWidget(std::make_unique<Wt::WComboBox>());
+    typeSelect->addStyleClass("form-control");
+    typeSelect->addItem("High School");
+    typeSelect->addItem("Community College");
+    typeSelect->addItem("College");
+    typeSelect->addItem("University");
+    typeSelect->addItem("Trade School");
+    typeSelect->addItem("Other");
+
+    // Location row
+    auto locationRow = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    locationRow->addStyleClass("admin-form-row");
+
+    auto cityGroup = locationRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    cityGroup->addStyleClass("form-group");
+    cityGroup->addWidget(std::make_unique<Wt::WText>("City"))->addStyleClass("form-label");
+    auto cityInput = cityGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    cityInput->addStyleClass("form-control");
+
+    auto stateGroup = locationRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    stateGroup->addStyleClass("form-group");
+    stateGroup->addWidget(std::make_unique<Wt::WText>("State"))->addStyleClass("form-label");
+    auto stateInput = stateGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    stateInput->addStyleClass("form-control");
+
+    // Degree and Major row
+    auto degreeRow = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    degreeRow->addStyleClass("admin-form-row");
+
+    auto degreeGroup = degreeRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    degreeGroup->addStyleClass("form-group");
+    degreeGroup->addWidget(std::make_unique<Wt::WText>("Degree Earned"))->addStyleClass("form-label");
+    auto degreeInput = degreeGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    degreeInput->setPlaceholderText("e.g., Bachelor of Science");
+    degreeInput->addStyleClass("form-control");
+
+    auto majorGroup = degreeRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    majorGroup->addStyleClass("form-group");
+    majorGroup->addWidget(std::make_unique<Wt::WText>("Major/Field of Study"))->addStyleClass("form-label");
+    auto majorInput = majorGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    majorInput->addStyleClass("form-control");
+
+    // GPA
+    auto gpaGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    gpaGroup->addStyleClass("form-group");
+    gpaGroup->addWidget(std::make_unique<Wt::WText>("GPA"))->addStyleClass("form-label");
+    auto gpaInput = gpaGroup->addWidget(std::make_unique<Wt::WDoubleSpinBox>());
+    gpaInput->setRange(0.0, 4.0);
+    gpaInput->setSingleStep(0.1);
+    gpaInput->setDecimals(2);
+    gpaInput->addStyleClass("form-control");
+
+    // Date row
+    auto dateRow = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    dateRow->addStyleClass("admin-form-row");
+
+    auto startGroup = dateRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    startGroup->addStyleClass("form-group");
+    startGroup->addWidget(std::make_unique<Wt::WText>("Start Date"))->addStyleClass("form-label");
+    auto startInput = startGroup->addWidget(std::make_unique<Wt::WDateEdit>());
+    startInput->addStyleClass("form-control");
+
+    auto endGroup = dateRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    endGroup->addStyleClass("form-group");
+    endGroup->addWidget(std::make_unique<Wt::WText>("End Date"))->addStyleClass("form-label");
+    auto endInput = endGroup->addWidget(std::make_unique<Wt::WDateEdit>());
+    endInput->addStyleClass("form-control");
+
+    // Currently attending checkbox
+    auto currentGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    currentGroup->addStyleClass("form-group form-check");
+    auto currentCheck = currentGroup->addWidget(std::make_unique<Wt::WCheckBox>("Currently Attending"));
+    currentCheck->addStyleClass("form-check-input");
+
+    // Buttons
+    auto buttonRow = dialog->footer();
+    buttonRow->addStyleClass("admin-dialog-buttons");
+
+    auto cancelBtn = buttonRow->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
+    cancelBtn->addStyleClass("btn btn-secondary");
+    cancelBtn->clicked().connect([dialog]() {
+        dialog->reject();
+    });
+
+    auto saveBtn = buttonRow->addWidget(std::make_unique<Wt::WPushButton>("Save"));
+    saveBtn->addStyleClass("btn btn-primary");
+
+    // Capture input pointers for the lambda
+    saveBtn->clicked().connect([this, dialog, nameInput, typeSelect, cityInput, stateInput,
+                                degreeInput, majorInput, gpaInput, startInput, endInput, currentCheck]() {
+        // Validate required fields
+        if (nameInput->text().empty()) {
+            return;
+        }
+
+        // Build JSON payload
+        nlohmann::json payload;
+        payload["data"]["type"] = "AcademicHistory";
+        payload["data"]["attributes"]["student_id"] = currentStudentId_;
+        payload["data"]["attributes"]["institution_name"] = nameInput->text().toUTF8();
+
+        std::string instType = typeSelect->currentText().toUTF8();
+        std::transform(instType.begin(), instType.end(), instType.begin(), ::tolower);
+        std::replace(instType.begin(), instType.end(), ' ', '_');
+        payload["data"]["attributes"]["institution_type"] = instType;
+
+        if (!cityInput->text().empty())
+            payload["data"]["attributes"]["institution_city"] = cityInput->text().toUTF8();
+        if (!stateInput->text().empty())
+            payload["data"]["attributes"]["institution_state"] = stateInput->text().toUTF8();
+        if (!degreeInput->text().empty())
+            payload["data"]["attributes"]["degree_earned"] = degreeInput->text().toUTF8();
+        if (!majorInput->text().empty())
+            payload["data"]["attributes"]["major"] = majorInput->text().toUTF8();
+        if (gpaInput->value() > 0)
+            payload["data"]["attributes"]["gpa"] = gpaInput->value();
+        if (!startInput->date().isNull())
+            payload["data"]["attributes"]["start_date"] = startInput->date().toString("yyyy-MM-dd").toUTF8();
+        if (!endInput->date().isNull())
+            payload["data"]["attributes"]["end_date"] = endInput->date().toString("yyyy-MM-dd").toUTF8();
+        payload["data"]["attributes"]["is_currently_attending"] = currentCheck->isChecked();
+
+        // POST to API
+        if (apiService_) {
+            try {
+                auto response = apiService_->getApiClient()->post("/AcademicHistory", payload.dump());
+                if (response.success) {
+                    std::cerr << "[StudentDetail] Academic history saved successfully" << std::endl;
+                    loadAcademicHistory();
+                    dialog->accept();
+                } else {
+                    std::cerr << "[StudentDetail] Failed to save academic history: " << response.errorMessage << std::endl;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[StudentDetail] Error saving academic history: " << e.what() << std::endl;
+            }
+        }
+    });
+
+    dialog->show();
+}
+
+void StudentDetailWidget::saveAcademicHistory(Wt::WDialog* dialog) {
+    // This method is now integrated into showAddAcademicHistoryDialog
+    dialog->accept();
+}
+
+void StudentDetailWidget::deleteAcademicHistory(int historyId) {
+    std::cerr << "[StudentDetail] Deleting academic history: " << historyId << std::endl;
+
+    if (apiService_) {
+        try {
+            auto response = apiService_->getApiClient()->del("/AcademicHistory/" + std::to_string(historyId));
+            if (response.success) {
+                std::cerr << "[StudentDetail] Academic history deleted successfully" << std::endl;
+                // Remove from local list
+                academicHistory_.erase(
+                    std::remove_if(academicHistory_.begin(), academicHistory_.end(),
+                        [historyId](const AcademicHistoryRecord& r) { return r.id == historyId; }),
+                    academicHistory_.end());
+                updateAcademicHistoryTable();
+            } else {
+                std::cerr << "[StudentDetail] Failed to delete academic history: " << response.errorMessage << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[StudentDetail] Error deleting academic history: " << e.what() << std::endl;
+        }
+    }
+}
+
 void StudentDetailWidget::approveSubmission(int submissionId) {
     std::cerr << "[StudentDetail] Approving submission: " << submissionId << std::endl;
 
@@ -576,6 +962,7 @@ void StudentDetailWidget::clear() {
     isRevoked_ = false;
     currentStudentId_ = 0;
     formSubmissions_.clear();
+    academicHistory_.clear();
     intakeStatus_ = "in_progress";
 
     studentName_->setText("");
@@ -589,6 +976,9 @@ void StudentDetailWidget::clear() {
 
     submissionsTable_->clear();
     noSubmissionsText_->hide();
+
+    academicHistoryTable_->clear();
+    noAcademicHistoryText_->hide();
 }
 
 std::string StudentDetailWidget::formatDate(const std::string& dateStr) {
