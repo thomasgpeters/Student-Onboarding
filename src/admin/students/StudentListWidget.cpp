@@ -17,6 +17,7 @@ StudentListWidget::StudentListWidget()
     , pendingCountText_(nullptr)
     , completedCountText_(nullptr)
     , revokedCountText_(nullptr)
+    , addStudentBtn_(nullptr)
     , searchInput_(nullptr)
     , programFilter_(nullptr)
     , statusFilter_(nullptr)
@@ -37,16 +38,26 @@ void StudentListWidget::setApiService(std::shared_ptr<Api::FormSubmissionService
 void StudentListWidget::setupUI() {
     addStyleClass("admin-student-list");
 
-    // Header
+    // Header with title and Add Student button
     auto header = addWidget(std::make_unique<Wt::WContainerWidget>());
-    header->addStyleClass("admin-section-header");
+    header->addStyleClass("admin-section-header admin-section-header-with-action");
 
-    auto title = header->addWidget(std::make_unique<Wt::WText>("Student Management"));
+    auto titleContainer = header->addWidget(std::make_unique<Wt::WContainerWidget>());
+    titleContainer->addStyleClass("admin-header-title-container");
+
+    auto title = titleContainer->addWidget(std::make_unique<Wt::WText>("Student Management"));
     title->addStyleClass("admin-section-title");
 
-    auto subtitle = header->addWidget(std::make_unique<Wt::WText>(
+    auto subtitle = titleContainer->addWidget(std::make_unique<Wt::WText>(
         "View and manage all enrolled students"));
     subtitle->addStyleClass("admin-section-subtitle");
+
+    // Add Student button
+    addStudentBtn_ = header->addWidget(std::make_unique<Wt::WPushButton>("+ Add Student"));
+    addStudentBtn_->addStyleClass("btn btn-primary");
+    addStudentBtn_->clicked().connect([this]() {
+        showAddStudentDialog();
+    });
 
     // Statistics cards
     setupStats();
@@ -514,6 +525,152 @@ void StudentListWidget::updateTable(const std::vector<::StudentIntake::Models::S
 void StudentListWidget::onStudentRowClicked(int studentId) {
     std::cerr << "[StudentList] Student selected: " << studentId << std::endl;
     studentSelected_.emit(studentId);
+}
+
+void StudentListWidget::showAddStudentDialog() {
+    auto dialog = addChild(std::make_unique<Wt::WDialog>("Add New Student"));
+    dialog->setModal(true);
+    dialog->setClosable(true);
+    dialog->addStyleClass("admin-dialog");
+    dialog->setWidth(Wt::WLength(450));
+
+    auto content = dialog->contents();
+    content->addStyleClass("admin-dialog-content");
+
+    // Info message
+    auto infoMsg = content->addWidget(std::make_unique<Wt::WText>(
+        "Create a student account with minimal information. The student will complete their intake forms after logging in."));
+    infoMsg->addStyleClass("admin-dialog-info");
+
+    // First Name
+    auto firstNameGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    firstNameGroup->addStyleClass("form-group");
+    firstNameGroup->addWidget(std::make_unique<Wt::WText>("First Name *"))->addStyleClass("form-label");
+    auto firstNameInput = firstNameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    firstNameInput->setPlaceholderText("Enter first name");
+    firstNameInput->addStyleClass("form-control");
+
+    // Last Name
+    auto lastNameGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    lastNameGroup->addStyleClass("form-group");
+    lastNameGroup->addWidget(std::make_unique<Wt::WText>("Last Name *"))->addStyleClass("form-label");
+    auto lastNameInput = lastNameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    lastNameInput->setPlaceholderText("Enter last name");
+    lastNameInput->addStyleClass("form-control");
+
+    // Email
+    auto emailGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    emailGroup->addStyleClass("form-group");
+    emailGroup->addWidget(std::make_unique<Wt::WText>("Email *"))->addStyleClass("form-label");
+    auto emailInput = emailGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    emailInput->setPlaceholderText("student@email.com");
+    emailInput->addStyleClass("form-control");
+
+    // Password
+    auto passwordGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    passwordGroup->addStyleClass("form-group");
+    passwordGroup->addWidget(std::make_unique<Wt::WText>("Temporary Password *"))->addStyleClass("form-label");
+    auto passwordInput = passwordGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    passwordInput->setEchoMode(Wt::EchoMode::Password);
+    passwordInput->setPlaceholderText("Enter temporary password");
+    passwordInput->addStyleClass("form-control");
+    auto passwordHint = passwordGroup->addWidget(std::make_unique<Wt::WText>("Student will change password on first login"));
+    passwordHint->addStyleClass("form-text text-muted");
+
+    // Program selection
+    auto programGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    programGroup->addStyleClass("form-group");
+    programGroup->addWidget(std::make_unique<Wt::WText>("Program *"))->addStyleClass("form-label");
+    auto programSelect = programGroup->addWidget(std::make_unique<Wt::WComboBox>());
+    programSelect->addStyleClass("form-control");
+    programSelect->addItem("Select a program...");
+
+    // Populate programs from curriculumMap_
+    for (const auto& [id, name] : curriculumMap_) {
+        programSelect->addItem(name);
+    }
+
+    // Error message container
+    auto errorContainer = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    errorContainer->addStyleClass("admin-dialog-error");
+    errorContainer->hide();
+    auto errorText = errorContainer->addWidget(std::make_unique<Wt::WText>(""));
+    errorText->addStyleClass("text-danger");
+
+    // Buttons
+    auto buttonRow = dialog->footer();
+    buttonRow->addStyleClass("admin-dialog-buttons");
+
+    auto cancelBtn = buttonRow->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
+    cancelBtn->addStyleClass("btn btn-secondary");
+    cancelBtn->clicked().connect([dialog]() {
+        dialog->reject();
+    });
+
+    auto saveBtn = buttonRow->addWidget(std::make_unique<Wt::WPushButton>("Create Student"));
+    saveBtn->addStyleClass("btn btn-primary");
+
+    // Save handler
+    saveBtn->clicked().connect([this, dialog, firstNameInput, lastNameInput, emailInput,
+                                passwordInput, programSelect, errorContainer, errorText]() {
+        // Validate required fields
+        if (firstNameInput->text().empty() || lastNameInput->text().empty() ||
+            emailInput->text().empty() || passwordInput->text().empty() ||
+            programSelect->currentIndex() == 0) {
+            errorText->setText("Please fill in all required fields");
+            errorContainer->show();
+            return;
+        }
+
+        // Validate email format
+        std::string email = emailInput->text().toUTF8();
+        if (email.find('@') == std::string::npos || email.find('.') == std::string::npos) {
+            errorText->setText("Please enter a valid email address");
+            errorContainer->show();
+            return;
+        }
+
+        // Get curriculum ID from selection
+        std::string selectedProgram = programSelect->currentText().toUTF8();
+        std::string curriculumId = "";
+        for (const auto& [id, name] : curriculumMap_) {
+            if (name == selectedProgram) {
+                curriculumId = id;
+                break;
+            }
+        }
+
+        if (apiService_) {
+            try {
+                // Create student object
+                Models::Student newStudent;
+                newStudent.setFirstName(firstNameInput->text().toUTF8());
+                newStudent.setLastName(lastNameInput->text().toUTF8());
+                newStudent.setEmail(email);
+                newStudent.setCurriculumId(curriculumId);
+
+                // Register student via API
+                auto result = apiService_->registerStudent(newStudent, passwordInput->text().toUTF8());
+
+                if (result.success) {
+                    std::cerr << "[StudentList] Student created successfully" << std::endl;
+                    dialog->accept();
+                    refresh();  // Refresh the student list
+                } else {
+                    std::string errorMsg = result.message.empty() ?
+                        "Failed to create student. Email may already be in use." : result.message;
+                    errorText->setText(errorMsg);
+                    errorContainer->show();
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[StudentList] Error creating student: " << e.what() << std::endl;
+                errorText->setText("Error creating student: " + std::string(e.what()));
+                errorContainer->show();
+            }
+        }
+    });
+
+    dialog->show();
 }
 
 std::string StudentListWidget::formatDate(const std::string& dateStr) {
