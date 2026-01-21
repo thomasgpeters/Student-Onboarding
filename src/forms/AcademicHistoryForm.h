@@ -79,6 +79,7 @@ private:
     // Utility methods
     std::vector<std::string> getUSStates() const;
     std::string getInstitutionTypeLabel(const std::string& type) const;
+    std::string getInstitutionTypeValue(const std::string& label) const;
     std::vector<std::string> getInstitutionTypes() const;
     std::vector<std::string> getDegreeTypesForInstitution(const std::string& institutionType) const;
 
