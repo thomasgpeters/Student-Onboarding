@@ -475,7 +475,7 @@ void AdminApp::handleRevokeAccess(int studentId) {
     try {
         // Update student record to revoke access
         nlohmann::json updateData;
-        updateData["data"]["type"] = "student";
+        updateData["data"]["type"] = "Student";
         updateData["data"]["id"] = std::to_string(studentId);
         updateData["data"]["attributes"]["is_login_revoked"] = true;
 
@@ -505,7 +505,7 @@ void AdminApp::handleRestoreAccess(int studentId) {
     try {
         // Update student record to restore access
         nlohmann::json updateData;
-        updateData["data"]["type"] = "student";
+        updateData["data"]["type"] = "Student";
         updateData["data"]["id"] = std::to_string(studentId);
         updateData["data"]["attributes"]["is_login_revoked"] = false;
 
