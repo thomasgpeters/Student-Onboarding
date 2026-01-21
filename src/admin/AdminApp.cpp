@@ -480,7 +480,7 @@ void AdminApp::handleRevokeAccess(int studentId) {
         updateData["data"]["attributes"]["is_login_revoked"] = true;
 
         std::string endpoint = "/Student/" + std::to_string(studentId);
-        auto response = apiService_->getApiClient()->patch(endpoint, updateData.dump());
+        auto response = apiService_->getApiClient()->patch(endpoint, updateData);
 
         if (response.success) {
             std::cerr << "[AdminApp] Access revoked successfully" << std::endl;
@@ -510,7 +510,7 @@ void AdminApp::handleRestoreAccess(int studentId) {
         updateData["data"]["attributes"]["is_login_revoked"] = false;
 
         std::string endpoint = "/Student/" + std::to_string(studentId);
-        auto response = apiService_->getApiClient()->patch(endpoint, updateData.dump());
+        auto response = apiService_->getApiClient()->patch(endpoint, updateData);
 
         if (response.success) {
             std::cerr << "[AdminApp] Access restored successfully" << std::endl;
