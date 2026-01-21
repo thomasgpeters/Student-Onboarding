@@ -250,7 +250,7 @@ void AcademicHistoryForm::showEditEducationDialog(int index) {
     auto content = dialog->contents();
     content->addStyleClass("p-3");
 
-    // Institution Type
+    // Institution Type (show human-friendly labels)
     auto typeGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     typeGroup->addStyleClass("form-group");
     typeGroup->addWidget(std::make_unique<Wt::WLabel>("Institution Type *"));
@@ -258,7 +258,7 @@ void AcademicHistoryForm::showEditEducationDialog(int index) {
     typeSelect->addStyleClass("form-control");
     typeSelect->addItem("Select...");
     for (const auto& type : getInstitutionTypes()) {
-        typeSelect->addItem(type);
+        typeSelect->addItem(getInstitutionTypeLabel(type));
     }
 
     // Institution Name
@@ -350,10 +350,11 @@ void AcademicHistoryForm::showEditEducationDialog(int index) {
     if (isEdit) {
         const auto& history = academicHistories_[index];
 
-        // Set institution type
+        // Set institution type (convert stored value to label for display)
         std::string instType = history.getInstitutionType();
+        std::string instTypeLabel = getInstitutionTypeLabel(instType);
         for (int i = 0; i < typeSelect->count(); ++i) {
-            if (typeSelect->itemText(i).toUTF8() == instType) {
+            if (typeSelect->itemText(i).toUTF8() == instTypeLabel) {
                 typeSelect->setCurrentIndex(i);
                 break;
             }
@@ -457,10 +458,10 @@ void AcademicHistoryForm::saveEducationFromDialog(Wt::WDialog* dialog,
                                                    Wt::WCheckBox* currentlyAttendingCheckbox,
                                                    int editIndex) {
     // Validate required fields
-    std::string instType = typeSelect->currentText().toUTF8();
+    std::string instTypeLabel = typeSelect->currentText().toUTF8();
     std::string instName = nameInput->text().toUTF8();
 
-    if (instType == "Select..." || instType.empty()) {
+    if (instTypeLabel == "Select..." || instTypeLabel.empty()) {
         // Show validation error
         return;
     }
@@ -470,11 +471,14 @@ void AcademicHistoryForm::saveEducationFromDialog(Wt::WDialog* dialog,
         return;
     }
 
+    // Convert label back to value for storage
+    std::string instType = getInstitutionTypeValue(instTypeLabel);
+
     // Build the academic history record
     Models::AcademicHistory history;
 
     if (editIndex >= 0 && editIndex < static_cast<int>(academicHistories_.size())) {
-        // Preserve existing ID for updates
+        // Preserve existing record for updates
         history = academicHistories_[editIndex];
     }
 
@@ -639,17 +643,33 @@ std::string AcademicHistoryForm::getInstitutionTypeLabel(const std::string& type
     return type;
 }
 
+std::string AcademicHistoryForm::getInstitutionTypeValue(const std::string& label) const {
+    if (label == "High School") return "high_school";
+    if (label == "Undergraduate") return "undergraduate";
+    if (label == "Graduate") return "graduate";
+    if (label == "Vocational/Certificate") return "vocational_certificate";
+    // Return as-is if already a value or unknown
+    return label;
+}
+
 std::vector<std::string> AcademicHistoryForm::getDegreeTypesForInstitution(const std::string& institutionType) const {
-    if (institutionType == "high_school") {
+    // Handle both raw values and labels
+    std::string type = institutionType;
+    if (type == "High School") type = "high_school";
+    else if (type == "Undergraduate") type = "undergraduate";
+    else if (type == "Graduate") type = "graduate";
+    else if (type == "Vocational/Certificate") type = "vocational_certificate";
+
+    if (type == "high_school") {
         return {"High School Diploma", "GED"};
     }
-    if (institutionType == "undergraduate") {
+    if (type == "undergraduate") {
         return {"Associate's", "Bachelor's", "In Progress"};
     }
-    if (institutionType == "graduate") {
+    if (type == "graduate") {
         return {"Master's", "Doctoral/PhD", "Professional (JD, MD, etc.)", "In Progress"};
     }
-    if (institutionType == "vocational_certificate") {
+    if (type == "vocational_certificate") {
         return {"Certificate", "Diploma", "License", "In Progress"};
     }
     // Default
