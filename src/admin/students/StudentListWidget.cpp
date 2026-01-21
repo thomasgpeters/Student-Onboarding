@@ -333,6 +333,13 @@ void StudentListWidget::loadStudents() {
                     } else {
                         student.setStatus("active");  // Default to active if not specified
                     }
+
+                    // Check if login is revoked - override status to "revoked" if true
+                    if (attrs.contains("is_login_revoked") && !attrs["is_login_revoked"].is_null()) {
+                        if (attrs["is_login_revoked"].get<bool>()) {
+                            student.setStatus("revoked");
+                        }
+                    }
                 }
 
                 allStudents_.push_back(student);
