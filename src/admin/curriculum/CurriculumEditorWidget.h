@@ -40,6 +40,8 @@ private:
     void setupUI();
     void populateForm(const StudentIntake::Models::Curriculum& curriculum);
     void loadAvailableForms();
+    void loadCurriculumFormRequirements(const std::string& curriculumId);
+    void saveCurriculumFormRequirements(const std::string& curriculumId);
     void saveCurriculum();
     void updateRequiredFormsDisplay();
     void toggleFormRequirement(const std::string& formId, bool required);

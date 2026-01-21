@@ -1,5 +1,6 @@
 #include "Curriculum.h"
 #include <algorithm>
+#include <map>
 
 namespace StudentIntake {
 namespace Models {
@@ -50,6 +51,35 @@ bool Curriculum::requiresForm(const std::string& formId) const {
            != requiredForms_.end();
 }
 
+// Form type ID mapping: string form ID <-> integer form_type_id
+int Curriculum::formIdToTypeId(const std::string& formId) {
+    static const std::map<std::string, int> mapping = {
+        {"personal_info", 1},
+        {"emergency_contact", 2},
+        {"medical_info", 3},
+        {"academic_history", 4},
+        {"financial_aid", 5},
+        {"document_upload", 6},
+        {"consent", 7}
+    };
+    auto it = mapping.find(formId);
+    return (it != mapping.end()) ? it->second : 0;
+}
+
+std::string Curriculum::typeIdToFormId(int typeId) {
+    static const std::map<int, std::string> mapping = {
+        {1, "personal_info"},
+        {2, "emergency_contact"},
+        {3, "medical_info"},
+        {4, "academic_history"},
+        {5, "financial_aid"},
+        {6, "document_upload"},
+        {7, "consent"}
+    };
+    auto it = mapping.find(typeId);
+    return (it != mapping.end()) ? it->second : "";
+}
+
 nlohmann::json Curriculum::toJson() const {
     nlohmann::json j;
     // Note: id is NOT included here - in JSON:API format, id goes at data level, not in attributes
@@ -62,9 +92,17 @@ nlohmann::json Curriculum::toJson() const {
     j["duration_semesters"] = durationSemesters_;
     j["is_active"] = isActive_;
     j["is_online"] = isOnline_;
-    // Note: required_forms and prerequisites are handled separately
-    // required_forms are stored in curriculum_form_requirement junction table
-    // prerequisites are stored in curriculum_prerequisite table
+
+    // Convert string form IDs to integer form_type_ids for the API
+    nlohmann::json formTypeIds = nlohmann::json::array();
+    for (const auto& formId : requiredForms_) {
+        int typeId = formIdToTypeId(formId);
+        if (typeId > 0) {
+            formTypeIds.push_back(typeId);
+        }
+    }
+    j["required_form_ids"] = formTypeIds;
+
     return j;
 }
 
@@ -123,11 +161,33 @@ Curriculum Curriculum::fromJson(const nlohmann::json& json) {
     else if (attrs.contains("duration_semesters") && !attrs["duration_semesters"].is_null())
         curriculum.durationSemesters_ = attrs["duration_semesters"].get<int>();
 
-    // requiredForms / required_forms
+    // requiredForms / required_forms / required_form_ids
+    // Handle multiple formats: string arrays, integer arrays, or from junction table
     if (attrs.contains("requiredForms")) {
         curriculum.requiredForms_ = attrs["requiredForms"].get<std::vector<std::string>>();
     } else if (attrs.contains("required_forms") && !attrs["required_forms"].is_null()) {
-        curriculum.requiredForms_ = attrs["required_forms"].get<std::vector<std::string>>();
+        // Could be strings or integers
+        if (attrs["required_forms"].is_array() && !attrs["required_forms"].empty()) {
+            if (attrs["required_forms"][0].is_string()) {
+                curriculum.requiredForms_ = attrs["required_forms"].get<std::vector<std::string>>();
+            } else if (attrs["required_forms"][0].is_number()) {
+                // Convert integer IDs to string form IDs
+                for (const auto& id : attrs["required_forms"]) {
+                    std::string formId = typeIdToFormId(id.get<int>());
+                    if (!formId.empty()) {
+                        curriculum.requiredForms_.push_back(formId);
+                    }
+                }
+            }
+        }
+    } else if (attrs.contains("required_form_ids") && !attrs["required_form_ids"].is_null()) {
+        // Array of integer form type IDs
+        for (const auto& id : attrs["required_form_ids"]) {
+            std::string formId = typeIdToFormId(id.get<int>());
+            if (!formId.empty()) {
+                curriculum.requiredForms_.push_back(formId);
+            }
+        }
     }
 
     // prerequisites

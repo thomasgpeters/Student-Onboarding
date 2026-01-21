@@ -287,6 +287,10 @@ void CurriculumEditorWidget::loadCurriculum(const std::string& curriculumId) {
                 auto jsonResponse = nlohmann::json::parse(response.body);
                 if (jsonResponse.contains("data")) {
                     currentCurriculum_ = Curriculum::fromJson(jsonResponse["data"]);
+
+                    // Load required forms from junction table
+                    loadCurriculumFormRequirements(curriculumId);
+
                     populateForm(currentCurriculum_);
                     return;
                 }
@@ -458,6 +462,27 @@ void CurriculumEditorWidget::saveCurriculum() {
             }
 
             if (response.success) {
+                // For new curriculum, get the ID from the response
+                std::string savedId = currentCurriculum_.getId();
+                if (isNewCurriculum_) {
+                    try {
+                        auto respJson = nlohmann::json::parse(response.body);
+                        if (respJson.contains("data") && respJson["data"].contains("id")) {
+                            if (respJson["data"]["id"].is_number()) {
+                                savedId = std::to_string(respJson["data"]["id"].get<int>());
+                            } else {
+                                savedId = respJson["data"]["id"].get<std::string>();
+                            }
+                            currentCurriculum_.setId(savedId);
+                        }
+                    } catch (...) {}
+                }
+
+                // Save form requirements to junction table
+                if (!savedId.empty()) {
+                    saveCurriculumFormRequirements(savedId);
+                }
+
                 showSuccess(isNewCurriculum_ ? "Program created successfully!" : "Program updated successfully!");
                 saveSuccess_.emit();
                 return;
@@ -549,6 +574,108 @@ void CurriculumEditorWidget::updateRequiredFormsDisplay() {
 void CurriculumEditorWidget::toggleFormRequirement(const std::string& formId, bool required) {
     if (formCheckboxes_.count(formId)) {
         formCheckboxes_[formId]->setChecked(required);
+    }
+}
+
+void CurriculumEditorWidget::loadCurriculumFormRequirements(const std::string& curriculumId) {
+    if (!apiService_) return;
+
+    try {
+        // Load from CurriculumFormRequirement junction table
+        std::string endpoint = "/CurriculumFormRequirement?filter[curriculum_id]=" + curriculumId;
+        auto response = apiService_->getApiClient()->get(endpoint);
+
+        if (response.success) {
+            auto jsonResponse = nlohmann::json::parse(response.body);
+
+            // Handle JSON:API format or array
+            nlohmann::json items;
+            if (jsonResponse.is_array()) {
+                items = jsonResponse;
+            } else if (jsonResponse.contains("data")) {
+                items = jsonResponse["data"];
+            }
+
+            // Convert form_type_ids to string form IDs
+            std::vector<std::string> requiredForms;
+            for (const auto& item : items) {
+                nlohmann::json attrs = item.contains("attributes") ? item["attributes"] : item;
+                if (attrs.contains("form_type_id") && !attrs["form_type_id"].is_null()) {
+                    int formTypeId = attrs["form_type_id"].get<int>();
+                    std::string formId = Curriculum::typeIdToFormId(formTypeId);
+                    if (!formId.empty()) {
+                        requiredForms.push_back(formId);
+                    }
+                }
+            }
+
+            currentCurriculum_.setRequiredForms(requiredForms);
+            std::cerr << "[CurriculumEditorWidget] Loaded " << requiredForms.size()
+                      << " required forms for curriculum " << curriculumId << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[CurriculumEditorWidget] Error loading form requirements: " << e.what() << std::endl;
+    }
+}
+
+void CurriculumEditorWidget::saveCurriculumFormRequirements(const std::string& curriculumId) {
+    if (!apiService_) return;
+
+    try {
+        // First, delete existing form requirements for this curriculum
+        std::string getEndpoint = "/CurriculumFormRequirement?filter[curriculum_id]=" + curriculumId;
+        auto getResponse = apiService_->getApiClient()->get(getEndpoint);
+
+        if (getResponse.success) {
+            auto jsonResponse = nlohmann::json::parse(getResponse.body);
+            nlohmann::json items;
+            if (jsonResponse.is_array()) {
+                items = jsonResponse;
+            } else if (jsonResponse.contains("data")) {
+                items = jsonResponse["data"];
+            }
+
+            // Delete each existing requirement
+            for (const auto& item : items) {
+                std::string reqId;
+                if (item.contains("id")) {
+                    if (item["id"].is_number()) {
+                        reqId = std::to_string(item["id"].get<int>());
+                    } else if (item["id"].is_string()) {
+                        reqId = item["id"].get<std::string>();
+                    }
+                }
+                if (!reqId.empty()) {
+                    apiService_->getApiClient()->del("/CurriculumFormRequirement/" + reqId);
+                }
+            }
+        }
+
+        // Now add the new form requirements
+        int currId = std::stoi(curriculumId);
+        int displayOrder = 1;
+        for (const auto& formId : currentCurriculum_.getRequiredForms()) {
+            int formTypeId = Curriculum::formIdToTypeId(formId);
+            if (formTypeId > 0) {
+                nlohmann::json payload;
+                payload["data"]["type"] = "CurriculumFormRequirement";
+                payload["data"]["attributes"] = {
+                    {"curriculum_id", currId},
+                    {"form_type_id", formTypeId},
+                    {"display_order", displayOrder},
+                    {"is_required", true}
+                };
+
+                apiService_->getApiClient()->post("/CurriculumFormRequirement", payload);
+                displayOrder++;
+            }
+        }
+
+        std::cerr << "[CurriculumEditorWidget] Saved " << currentCurriculum_.getRequiredForms().size()
+                  << " form requirements for curriculum " << curriculumId << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[CurriculumEditorWidget] Error saving form requirements: " << e.what() << std::endl;
     }
 }
 

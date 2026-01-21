@@ -51,6 +51,10 @@ public:
     void removeRequiredForm(const std::string& formId);
     bool requiresForm(const std::string& formId) const;
 
+    // Form type ID mapping (string ID <-> integer ID)
+    static int formIdToTypeId(const std::string& formId);
+    static std::string typeIdToFormId(int typeId);
+
     // Serialization
     nlohmann::json toJson() const;
     static Curriculum fromJson(const nlohmann::json& json);
