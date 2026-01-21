@@ -21,6 +21,8 @@ StudentDetailWidget::StudentDetailWidget()
     , enrolledText_(nullptr)
     , phoneText_(nullptr)
     , addressText_(nullptr)
+    , intakeStatusText_(nullptr)
+    , intakeStatus_("in_progress")
     , actionsContainer_(nullptr)
     , revokeBtn_(nullptr)
     , restoreBtn_(nullptr)
@@ -107,7 +109,15 @@ void StudentDetailWidget::setupUI() {
     addressText_ = addressCard->addWidget(std::make_unique<Wt::WText>("-"));
     addressText_->addStyleClass("admin-info-value");
 
-    // Actions section (Revoke/Restore access)
+    // Intake Status card
+    auto intakeStatusCard = infoContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    intakeStatusCard->addStyleClass("admin-info-card");
+    auto intakeStatusLabel = intakeStatusCard->addWidget(std::make_unique<Wt::WText>("Intake Status"));
+    intakeStatusLabel->addStyleClass("admin-info-label");
+    intakeStatusText_ = intakeStatusCard->addWidget(std::make_unique<Wt::WText>("-"));
+    intakeStatusText_->addStyleClass("admin-info-value");
+
+    // Actions section (Revoke/Reinstate access)
     actionsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     actionsContainer_->addStyleClass("admin-detail-actions");
 
@@ -123,7 +133,7 @@ void StudentDetailWidget::setupUI() {
         onRevokeAccess();
     });
 
-    restoreBtn_ = buttonsContainer->addWidget(std::make_unique<Wt::WPushButton>("Restore Access"));
+    restoreBtn_ = buttonsContainer->addWidget(std::make_unique<Wt::WPushButton>("Reinstate Access"));
     restoreBtn_->addStyleClass("btn btn-success");
     restoreBtn_->clicked().connect([this]() {
         onRestoreAccess();
@@ -207,11 +217,18 @@ void StudentDetailWidget::loadStudent(int studentId) {
                 if (attrs.contains("last_name") && !attrs["last_name"].is_null()) {
                     currentStudent_.setLastName(attrs["last_name"].get<std::string>());
                 }
-                if (attrs.contains("phone") && !attrs["phone"].is_null()) {
-                    currentStudent_.setPhoneNumber(attrs["phone"].get<std::string>());
+                // Load phone_number (database field name)
+                if (attrs.contains("phone_number") && !attrs["phone_number"].is_null()) {
+                    currentStudent_.setPhoneNumber(attrs["phone_number"].get<std::string>());
                 }
                 if (attrs.contains("created_at") && !attrs["created_at"].is_null()) {
                     currentStudent_.setCreatedAt(attrs["created_at"].get<std::string>());
+                }
+                // Load intake_status
+                if (attrs.contains("intake_status") && !attrs["intake_status"].is_null()) {
+                    intakeStatus_ = attrs["intake_status"].get<std::string>();
+                } else {
+                    intakeStatus_ = "in_progress";
                 }
                 if (attrs.contains("is_login_revoked") && !attrs["is_login_revoked"].is_null()) {
                     isRevoked_ = attrs["is_login_revoked"].get<bool>();
@@ -222,12 +239,67 @@ void StudentDetailWidget::loadStudent(int studentId) {
         }
 
         updateDisplay();
+        loadStudentAddress();
         loadFormSubmissions();
         std::cerr << "[StudentDetail] Loaded student: " << currentStudent_.getFullName() << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "[StudentDetail] Exception loading student: " << e.what() << std::endl;
     }
+}
+
+void StudentDetailWidget::loadStudentAddress() {
+    if (!apiService_ || currentStudentId_ <= 0) {
+        addressText_->setText("Not provided");
+        return;
+    }
+
+    try {
+        // Load primary address from StudentAddress table
+        std::string endpoint = "/StudentAddress?filter[student_id]=" + std::to_string(currentStudentId_);
+        auto response = apiService_->getApiClient()->get(endpoint);
+
+        if (response.success) {
+            auto json = nlohmann::json::parse(response.body);
+            nlohmann::json addresses = json.is_array() ? json :
+                (json.contains("data") ? json["data"] : nlohmann::json::array());
+
+            // Find primary address or use first one
+            for (const auto& addr : addresses) {
+                nlohmann::json attrs = addr.contains("attributes") ? addr["attributes"] : addr;
+
+                std::string street1, street2, city, state, postalCode;
+
+                if (attrs.contains("street1") && !attrs["street1"].is_null())
+                    street1 = attrs["street1"].get<std::string>();
+                if (attrs.contains("street2") && !attrs["street2"].is_null())
+                    street2 = attrs["street2"].get<std::string>();
+                if (attrs.contains("city") && !attrs["city"].is_null())
+                    city = attrs["city"].get<std::string>();
+                if (attrs.contains("state") && !attrs["state"].is_null())
+                    state = attrs["state"].get<std::string>();
+                if (attrs.contains("postal_code") && !attrs["postal_code"].is_null())
+                    postalCode = attrs["postal_code"].get<std::string>();
+
+                // Build address string
+                std::string fullAddress;
+                if (!street1.empty()) {
+                    fullAddress = street1;
+                    if (!street2.empty()) fullAddress += ", " + street2;
+                    if (!city.empty()) fullAddress += ", " + city;
+                    if (!state.empty()) fullAddress += ", " + state;
+                    if (!postalCode.empty()) fullAddress += " " + postalCode;
+
+                    addressText_->setText(fullAddress);
+                    return; // Use first valid address found
+                }
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[StudentDetail] Error loading address: " << e.what() << std::endl;
+    }
+
+    addressText_->setText("Not provided");
 }
 
 void StudentDetailWidget::loadFormSubmissions() {
@@ -460,7 +532,16 @@ void StudentDetailWidget::updateDisplay() {
     std::string phone = currentStudent_.getPhoneNumber();
     phoneText_->setText(phone.empty() ? "Not provided" : phone);
 
-    addressText_->setText("Not provided");
+    // Format intake status for display
+    std::string statusDisplay = intakeStatus_;
+    if (statusDisplay == "in_progress") statusDisplay = "In Progress";
+    else if (statusDisplay == "completed") statusDisplay = "Completed";
+    else if (statusDisplay == "pending_review") statusDisplay = "Pending Review";
+    else if (statusDisplay == "approved") statusDisplay = "Approved";
+    else if (!statusDisplay.empty()) {
+        statusDisplay[0] = std::toupper(statusDisplay[0]);
+    }
+    intakeStatusText_->setText(statusDisplay);
 }
 
 void StudentDetailWidget::onRevokeAccess() {
@@ -484,6 +565,7 @@ void StudentDetailWidget::clear() {
     isRevoked_ = false;
     currentStudentId_ = 0;
     formSubmissions_.clear();
+    intakeStatus_ = "in_progress";
 
     studentName_->setText("");
     studentEmail_->setText("");
@@ -492,6 +574,7 @@ void StudentDetailWidget::clear() {
     enrolledText_->setText("-");
     phoneText_->setText("-");
     addressText_->setText("-");
+    intakeStatusText_->setText("-");
 
     submissionsTable_->clear();
     noSubmissionsText_->hide();

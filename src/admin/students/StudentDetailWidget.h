@@ -46,6 +46,7 @@ private:
     void setupUI();
     void updateDisplay();
     void loadFormSubmissions();
+    void loadStudentAddress();
     void updateFormSubmissionsTable();
     void onRevokeAccess();
     void onRestoreAccess();
@@ -73,6 +74,8 @@ private:
     Wt::WText* enrolledText_;
     Wt::WText* phoneText_;
     Wt::WText* addressText_;
+    Wt::WText* intakeStatusText_;
+    std::string intakeStatus_;
 
     Wt::WContainerWidget* actionsContainer_;
     Wt::WPushButton* revokeBtn_;
