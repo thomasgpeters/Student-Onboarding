@@ -513,20 +513,28 @@
 /* Filter Container */
 .admin-filter-container {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    padding: 1rem;
+    flex-wrap: nowrap;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
     background: white;
     border-radius: 8px;
     margin-bottom: 1rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    align-items: flex-end;
+}
+
+@media (max-width: 992px) {
+    .admin-filter-container {
+        flex-wrap: wrap;
+    }
 }
 
 .admin-filter-group {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    min-width: 200px;
+    min-width: 140px;
+    flex: 0 1 auto;
 }
 
 .admin-filter-label {
@@ -537,10 +545,10 @@
 }
 
 .admin-filter-input {
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.6rem;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
     width: 100%;
 }
 
@@ -551,10 +559,10 @@
 }
 
 .admin-filter-select {
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.6rem;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
     font-family: inherit;
     background: white;
     cursor: pointer;
@@ -1402,14 +1410,17 @@ textarea.form-control {
     -moz-appearance: textfield;
 }
 
-/* Filter search wider */
+/* Filter search - constrained width */
 .admin-filter-search {
-    min-width: 300px;
+    min-width: 180px;
+    max-width: 220px;
+    flex: 1 1 180px;
 }
 
 @media (max-width: 768px) {
     .admin-filter-search {
         min-width: 100%;
+        max-width: none;
     }
 }
 
