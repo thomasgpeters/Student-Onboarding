@@ -4,12 +4,19 @@
 -- Use 006_flush_curriculum.sql to clear data before re-seeding
 
 -- =====================================================
--- DEPARTMENTS - Vocational/CDL
+-- DEPARTMENTS - Vocational/Trade Schools
 -- =====================================================
 
 INSERT INTO department (code, name, dean, contact_email)
 VALUES
-    ('CDL', 'Adult Education - Professional Driver Training', 'James Thompson', 'cdl@university.edu')
+    ('CDL', 'Professional Driving', 'James Thompson', 'driving@school.edu'),
+    ('AUTO', 'Automotive Technology', 'Mike Rodriguez', 'automotive@school.edu'),
+    ('FOOD', 'Food Services', 'Sarah Chen', 'culinary@school.edu'),
+    ('TRADE', 'Skilled Trades', 'Robert Wilson', 'trades@school.edu'),
+    ('ELECT', 'Electrical Technology', 'David Martinez', 'electrical@school.edu'),
+    ('WELD', 'Welding Technology', 'John Anderson', 'welding@school.edu'),
+    ('HVAC', 'HVAC Technology', 'Lisa Brown', 'hvac@school.edu'),
+    ('MED', 'Medical Services', 'Dr. Patricia Lee', 'medical@school.edu')
 ON CONFLICT (code) DO UPDATE SET
     name = EXCLUDED.name,
     dean = EXCLUDED.dean,
