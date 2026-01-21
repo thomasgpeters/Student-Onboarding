@@ -1323,10 +1323,11 @@ body {
     display: flex !important;
     justify-content: flex-end !important;
     gap: 0.75rem !important;
-    padding: 1rem 1.5rem !important;
+    padding: 1.25rem 1.5rem 1.5rem 1.5rem !important;
     background: #f8fafc !important;
     border-top: 1px solid #e2e8f0 !important;
     border-radius: 0 0 12px 12px !important;
+    margin-top: 0.5rem !important;
 }
 
 /* Button styling in dialog */
@@ -1412,6 +1413,18 @@ body {
 
 .academic-history-list .table tr:hover td {
     background: #f8fafc;
+}
+
+/* Education icon in table */
+.academic-history-list .table td:first-child {
+    width: 40px;
+    text-align: center;
+    padding-right: 0;
+}
+
+.academic-history-list .education-icon {
+    font-size: 1.25rem;
+    line-height: 1;
 }
 
 .academic-history-list .actions-cell {

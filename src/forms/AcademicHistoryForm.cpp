@@ -157,24 +157,30 @@ void AcademicHistoryForm::updateAcademicHistoryTable() {
     academicHistoryTable_->show();
 
     // Add header row
-    academicHistoryTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Type"));
-    academicHistoryTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Institution"));
-    academicHistoryTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Location"));
-    academicHistoryTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Degree/Major"));
-    academicHistoryTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("GPA"));
-    academicHistoryTable_->elementAt(0, 5)->addWidget(std::make_unique<Wt::WText>("Actions"));
+    academicHistoryTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>(""));  // Icon column
+    academicHistoryTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Type"));
+    academicHistoryTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Institution"));
+    academicHistoryTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Location"));
+    academicHistoryTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Degree/Major"));
+    academicHistoryTable_->elementAt(0, 5)->addWidget(std::make_unique<Wt::WText>("GPA"));
+    academicHistoryTable_->elementAt(0, 6)->addWidget(std::make_unique<Wt::WText>("Actions"));
 
     // Add data rows
     int row = 1;
     for (size_t i = 0; i < academicHistories_.size(); ++i) {
         const auto& history = academicHistories_[i];
 
+        // Icon
+        auto iconText = academicHistoryTable_->elementAt(row, 0)->addWidget(
+            std::make_unique<Wt::WText>("🎓"));
+        iconText->addStyleClass("education-icon");
+
         // Type
-        academicHistoryTable_->elementAt(row, 0)->addWidget(
+        academicHistoryTable_->elementAt(row, 1)->addWidget(
             std::make_unique<Wt::WText>(getInstitutionTypeLabel(history.getInstitutionType())));
 
         // Institution name
-        academicHistoryTable_->elementAt(row, 1)->addWidget(
+        academicHistoryTable_->elementAt(row, 2)->addWidget(
             std::make_unique<Wt::WText>(history.getInstitutionName()));
 
         // Location
@@ -183,7 +189,7 @@ void AcademicHistoryForm::updateAcademicHistoryTable() {
             if (!location.empty()) location += ", ";
             location += history.getInstitutionState();
         }
-        academicHistoryTable_->elementAt(row, 2)->addWidget(
+        academicHistoryTable_->elementAt(row, 3)->addWidget(
             std::make_unique<Wt::WText>(location));
 
         // Degree/Major
@@ -192,7 +198,7 @@ void AcademicHistoryForm::updateAcademicHistoryTable() {
             if (!degreeMajor.empty()) degreeMajor += " - ";
             degreeMajor += history.getMajor();
         }
-        academicHistoryTable_->elementAt(row, 3)->addWidget(
+        academicHistoryTable_->elementAt(row, 4)->addWidget(
             std::make_unique<Wt::WText>(degreeMajor));
 
         // GPA
@@ -202,11 +208,11 @@ void AcademicHistoryForm::updateAcademicHistoryTable() {
             oss << std::fixed << std::setprecision(2) << history.getGpa();
             gpaStr = oss.str();
         }
-        academicHistoryTable_->elementAt(row, 4)->addWidget(
+        academicHistoryTable_->elementAt(row, 5)->addWidget(
             std::make_unique<Wt::WText>(gpaStr));
 
         // Actions (Edit/Delete buttons)
-        auto actionsCell = academicHistoryTable_->elementAt(row, 5);
+        auto actionsCell = academicHistoryTable_->elementAt(row, 6);
         actionsCell->addStyleClass("actions-cell");
 
         auto editBtn = actionsCell->addWidget(std::make_unique<Wt::WPushButton>("Edit"));
@@ -232,7 +238,7 @@ void AcademicHistoryForm::showAddEducationDialog() {
 
 void AcademicHistoryForm::showEditEducationDialog(int index) {
     bool isEdit = (index >= 0 && index < static_cast<int>(academicHistories_.size()));
-    std::string title = isEdit ? "Edit Education" : "Add Education";
+    std::string title = isEdit ? "🎓 Edit Education" : "🎓 Add Education";
 
     auto dialog = this->addChild(std::make_unique<Wt::WDialog>(title));
     dialog->setModal(true);
