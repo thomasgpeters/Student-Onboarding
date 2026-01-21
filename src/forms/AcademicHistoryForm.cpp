@@ -108,7 +108,7 @@ void AcademicHistoryForm::createFormFields() {
     // Honors and Awards
     auto honorsSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     honorsSection->addStyleClass("form-section");
-    auto honorsHeader = honorsSection->addWidget(std::make_unique<Wt::WText>("<h4>Honors & Awards</h4>"));
+    auto honorsHeader = honorsSection->addWidget(std::make_unique<Wt::WText>("<h4>Honors &amp; Awards</h4>"));
     honorsHeader->setTextFormat(Wt::TextFormat::XHTML);
 
     auto honorsGroup = honorsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
