@@ -714,11 +714,8 @@ void AcademicHistoryForm::saveHistoriesToApi() {
 
         auto result = apiService_->saveAcademicHistory(history);
         if (result.success) {
-            std::cout << "[AcademicHistoryForm] Saved record: " << history.getInstitutionName() << std::endl;
-            // Update the ID if it was a new record
-            if (!result.submissionId.empty() && history.getId().empty()) {
-                history.setId(result.submissionId);
-            }
+            std::cout << "[AcademicHistoryForm] Saved record: " << history.getInstitutionName()
+                      << " (" << history.getInstitutionType() << ")" << std::endl;
         } else {
             std::cout << "[AcademicHistoryForm] Failed to save record: " << result.message << std::endl;
         }
