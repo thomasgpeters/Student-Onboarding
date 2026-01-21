@@ -8,6 +8,7 @@
 #include <Wt/WTable.h>
 #include <Wt/WText.h>
 #include <Wt/WSignal.h>
+#include <Wt/WDialog.h>
 #include <vector>
 #include <memory>
 #include <map>
@@ -41,6 +42,7 @@ private:
     void clearFilters();
     void updateTable(const std::vector<::StudentIntake::Models::Student>& students);
     void onStudentRowClicked(int studentId);
+    void showAddStudentDialog();
     std::string formatDate(const std::string& dateStr);
     std::string getStatusBadgeClass(const std::string& status);
 
@@ -54,6 +56,9 @@ private:
     Wt::WText* pendingCountText_;
     Wt::WText* completedCountText_;
     Wt::WText* revokedCountText_;
+
+    // UI Elements - Actions
+    Wt::WPushButton* addStudentBtn_;
 
     // UI Elements - Filters
     Wt::WLineEdit* searchInput_;

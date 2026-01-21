@@ -76,9 +76,6 @@ private:
     void onRestoreAccess();
     void approveSubmission(int submissionId);
     void rejectSubmission(int submissionId);
-    void showAddAcademicHistoryDialog();
-    void saveAcademicHistory(Wt::WDialog* dialog);
-    void deleteAcademicHistory(int historyId);
     std::string formatDate(const std::string& dateStr);
     std::string getStatusBadgeClass(const std::string& status);
 
@@ -122,13 +119,12 @@ private:
     Wt::WTable* submissionsTable_;
     Wt::WText* noSubmissionsText_;
 
-    // Academic history section
+    // Academic history section (read-only for admins)
     Wt::WContainerWidget* academicHistorySectionContainer_;  // Outer container with checkbox
     Wt::WCheckBox* hasPreviousEducationCheckbox_;
     Wt::WContainerWidget* academicHistoryContainer_;  // Inner container (shown/hidden)
     Wt::WContainerWidget* academicHistoryHeader_;
     Wt::WText* academicHistoryTitle_;
-    Wt::WPushButton* addAcademicHistoryBtn_;
     Wt::WTable* academicHistoryTable_;
     Wt::WText* noAcademicHistoryText_;
 
