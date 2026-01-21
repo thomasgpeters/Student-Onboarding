@@ -1138,3 +1138,318 @@ body {
     align-items: center;
     cursor: pointer;
 }
+
+/* =====================================================
+   EDUCATION DIALOG STYLES (Student Academic History Form)
+   ===================================================== */
+
+/* Modal overlay/backdrop - dims and blocks the background */
+.education-dialog ~ .Wt-dialogcover,
+.Wt-dialogcover {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    z-index: 1000 !important;
+}
+
+/* Modal dialog container */
+.education-dialog,
+.Wt-dialog.education-dialog {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 600px !important;
+    max-width: 95vw !important;
+    height: auto !important;
+    max-height: 90vh !important;
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+    border: none !important;
+    z-index: 1001 !important;
+    overflow: hidden !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Dialog title bar - blue background with white text */
+.education-dialog .Wt-dialog-titlebar,
+.education-dialog > .Wt-dialog-titlebar,
+.Wt-dialog.education-dialog .Wt-dialog-titlebar {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    background-color: #2563eb !important;
+    color: white !important;
+    padding: 1rem 1.25rem !important;
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600 !important;
+    font-size: 1.125rem !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    letter-spacing: 0 !important;
+    text-shadow: none !important;
+    display: flex !important;
+    align-items: center !important;
+    position: relative !important;
+}
+
+.education-dialog .Wt-dialog-titlebar *,
+.education-dialog .Wt-dialog-titlebar span {
+    color: white !important;
+    font-weight: 600 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Close X button - positioned top right */
+.education-dialog .Wt-dialog-titlebar .closeicon {
+    position: absolute !important;
+    top: 50% !important;
+    right: 0.75rem !important;
+    transform: translateY(-50%) !important;
+    color: white !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+    transition: background 0.2s ease !important;
+}
+
+.education-dialog .Wt-dialog-titlebar .closeicon::after {
+    content: "✕";
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: white;
+}
+
+.education-dialog .Wt-dialog-titlebar .closeicon:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Dialog body */
+.education-dialog .Wt-dialog-body,
+.education-dialog > .Wt-dialog-body {
+    background: white !important;
+    padding: 0 !important;
+    overflow-y: auto !important;
+    max-height: calc(90vh - 140px) !important;
+}
+
+/* Form content inside dialog */
+.education-dialog .p-3 {
+    padding: 1.5rem !important;
+}
+
+.education-dialog .form-group {
+    margin-bottom: 1rem;
+}
+
+.education-dialog .form-group label,
+.education-dialog .Wt-label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-weight: 500;
+    color: #1e293b;
+    font-size: 0.875rem;
+}
+
+.education-dialog .form-control,
+.education-dialog input[type="text"],
+.education-dialog select,
+.education-dialog .Wt-spinbox {
+    width: 100% !important;
+    padding: 0.625rem 0.875rem !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    font-size: 0.9375rem !important;
+    box-sizing: border-box !important;
+    background: white !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.education-dialog .form-control:focus,
+.education-dialog input[type="text"]:focus,
+.education-dialog select:focus {
+    outline: none !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Form rows for side-by-side fields */
+.education-dialog .form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0;
+}
+
+.education-dialog .col-md-6 {
+    flex: 1;
+    min-width: 0;
+}
+
+.education-dialog .col-md-4 {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Checkbox styling */
+.education-dialog .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.9375rem;
+    color: #374151;
+}
+
+.education-dialog .form-check input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+    accent-color: #2563eb;
+    cursor: pointer;
+}
+
+/* Dialog footer */
+.education-dialog .Wt-dialog-footer,
+.education-dialog > footer {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 0.75rem !important;
+    padding: 1rem 1.5rem !important;
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+    border-radius: 0 0 12px 12px !important;
+}
+
+/* Button styling in dialog */
+.education-dialog .btn {
+    padding: 0.625rem 1.25rem !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    font-size: 0.9375rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    border: none !important;
+}
+
+.education-dialog .btn-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    color: white !important;
+}
+
+.education-dialog .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+.education-dialog .btn-secondary {
+    background: #e2e8f0 !important;
+    color: #475569 !important;
+}
+
+.education-dialog .btn-secondary:hover {
+    background: #cbd5e1 !important;
+}
+
+/* Date edit styling */
+.education-dialog .Wt-dateedit {
+    width: 100% !important;
+}
+
+.education-dialog .Wt-dateedit input {
+    width: 100% !important;
+    padding: 0.625rem 0.875rem !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    font-size: 0.9375rem !important;
+}
+
+/* Academic History List Styles */
+.academic-history-list {
+    margin-top: 1rem;
+}
+
+.academic-history-list .table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.academic-history-list .table th {
+    background: #f1f5f9;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.academic-history-list .table td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    color: #1e293b;
+    font-size: 0.9375rem;
+}
+
+.academic-history-list .table tr:last-child td {
+    border-bottom: none;
+}
+
+.academic-history-list .table tr:hover td {
+    background: #f8fafc;
+}
+
+.academic-history-list .actions-cell {
+    white-space: nowrap;
+}
+
+.academic-history-list .btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    border-radius: 6px;
+    margin-right: 0.375rem;
+}
+
+.academic-history-list .btn-outline-primary {
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+    background: transparent;
+}
+
+.academic-history-list .btn-outline-primary:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+.academic-history-list .btn-outline-danger {
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    background: transparent;
+}
+
+.academic-history-list .btn-outline-danger:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Text-muted helper */
+.text-muted {
+    color: #64748b;
+    font-size: 0.9375rem;
+    font-style: italic;
+}
