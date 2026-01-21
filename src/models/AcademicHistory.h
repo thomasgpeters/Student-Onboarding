@@ -11,6 +11,7 @@ namespace Models {
  * @brief Model class representing an academic history record
  *
  * Each student can have multiple academic history records (high school, colleges, etc.)
+ * Uses compound primary key: (student_id, institution_name, institution_type)
  */
 class AcademicHistory {
 public:
@@ -18,7 +19,6 @@ public:
     AcademicHistory(const std::string& studentId);
 
     // Getters
-    std::string getId() const { return id_; }
     std::string getStudentId() const { return studentId_; }
     std::string getInstitutionName() const { return institutionName_; }
     std::string getInstitutionType() const { return institutionType_; }
@@ -37,7 +37,6 @@ public:
     bool isTranscriptReceived() const { return transcriptReceived_; }
 
     // Setters
-    void setId(const std::string& id) { id_ = id; }
     void setStudentId(const std::string& studentId) { studentId_ = studentId; }
     void setInstitutionName(const std::string& name) { institutionName_ = name; }
     void setInstitutionType(const std::string& type) { institutionType_ = type; }
@@ -62,11 +61,19 @@ public:
     // Utility
     bool isEmpty() const;
 
+    // Compound key check - returns true if all key fields are set
+    bool hasValidKey() const;
+
+    // Get compound key as a string for comparison/lookup (studentId|institutionName|institutionType)
+    std::string getCompoundKey() const;
+
 private:
-    std::string id_;
+    // Compound primary key fields
     std::string studentId_;
     std::string institutionName_;
-    std::string institutionType_;  // "High School", "College", "University", "Trade School", etc.
+    std::string institutionType_;  // "high_school", "undergraduate", "graduate", "vocational_certificate"
+
+    // Other fields
     std::string institutionCity_;
     std::string institutionState_;
     std::string institutionCountry_;

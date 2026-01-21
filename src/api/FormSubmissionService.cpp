@@ -3,9 +3,30 @@
 #include <iostream>
 #include <chrono>
 #include <ctime>
+#include <sstream>
+#include <iomanip>
 
 namespace StudentIntake {
 namespace Api {
+
+// Helper function to URL-encode a string
+static std::string urlEncode(const std::string& value) {
+    std::ostringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for (char c : value) {
+        if (isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_' || c == '.' || c == '~') {
+            escaped << c;
+        } else {
+            escaped << std::uppercase;
+            escaped << '%' << std::setw(2) << int(static_cast<unsigned char>(c));
+            escaped << std::nouppercase;
+        }
+    }
+
+    return escaped.str();
+}
 
 FormSubmissionService::FormSubmissionService()
     : apiClient_(std::make_shared<ApiClient>()) {
@@ -494,6 +515,33 @@ Models::AcademicHistory FormSubmissionService::getAcademicHistoryByType(const st
     return history;
 }
 
+// Helper to find existing academic history by compound key
+Models::AcademicHistory FormSubmissionService::getAcademicHistoryByKey(const std::string& studentId,
+                                                                        const std::string& institutionName,
+                                                                        const std::string& institutionType) {
+    std::string endpoint = "/AcademicHistory?filter[student_id]=" + studentId +
+                           "&filter[institution_name]=" + urlEncode(institutionName) +
+                           "&filter[institution_type]=" + institutionType;
+    ApiResponse response = apiClient_->get(endpoint);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        if (!items.empty()) {
+            return Models::AcademicHistory::fromJson(items[0]);
+        }
+    }
+
+    return Models::AcademicHistory();
+}
+
 SubmissionResult FormSubmissionService::createAcademicHistory(const Models::AcademicHistory& history) {
     nlohmann::json payload;
     payload["data"] = {
@@ -507,36 +555,51 @@ SubmissionResult FormSubmissionService::createAcademicHistory(const Models::Acad
 }
 
 SubmissionResult FormSubmissionService::updateAcademicHistory(const Models::AcademicHistory& history) {
+    // Build compound key for URL: student_id,institution_name,institution_type
+    std::string compoundKey = history.getStudentId() + "," +
+                              urlEncode(history.getInstitutionName()) + "," +
+                              history.getInstitutionType();
+
     nlohmann::json payload;
     payload["data"] = {
         {"type", "AcademicHistory"},
-        {"id", history.getId()},
         {"attributes", history.toJson()}
     };
 
     std::cout << "[FormSubmissionService] updateAcademicHistory payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->patch("/AcademicHistory/" + history.getId(), payload);
+    ApiResponse response = apiClient_->patch("/AcademicHistory/" + compoundKey, payload);
     return parseSubmissionResponse(response);
 }
 
-SubmissionResult FormSubmissionService::deleteAcademicHistory(const std::string& historyId) {
-    ApiResponse response = apiClient_->del("/AcademicHistory/" + historyId);
+SubmissionResult FormSubmissionService::deleteAcademicHistory(const std::string& studentId,
+                                                               const std::string& institutionName,
+                                                               const std::string& institutionType) {
+    // Build compound key for URL
+    std::string compoundKey = studentId + "," +
+                              urlEncode(institutionName) + "," +
+                              institutionType;
+    ApiResponse response = apiClient_->del("/AcademicHistory/" + compoundKey);
     return parseSubmissionResponse(response);
 }
 
 SubmissionResult FormSubmissionService::saveAcademicHistory(const Models::AcademicHistory& history) {
-    // If history has an ID, update it
-    if (!history.getId().empty()) {
-        return updateAcademicHistory(history);
+    // Check if history has a valid compound key
+    if (!history.hasValidKey()) {
+        SubmissionResult result;
+        result.success = false;
+        result.message = "Academic history missing required key fields (student_id, institution_name, institution_type)";
+        return result;
     }
 
-    // Check if a record already exists for this student and institution type
-    Models::AcademicHistory existing = getAcademicHistoryByType(history.getStudentId(), history.getInstitutionType());
-    if (!existing.getId().empty()) {
+    // Check if a record already exists with this compound key
+    Models::AcademicHistory existing = getAcademicHistoryByKey(
+        history.getStudentId(),
+        history.getInstitutionName(),
+        history.getInstitutionType());
+
+    if (!existing.isEmpty()) {
         // Update existing record
-        Models::AcademicHistory updated = history;
-        updated.setId(existing.getId());
-        return updateAcademicHistory(updated);
+        return updateAcademicHistory(history);
     }
 
     // Create new record

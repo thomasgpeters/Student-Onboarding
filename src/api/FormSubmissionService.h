@@ -68,12 +68,17 @@ public:
     SubmissionResult deleteEmergencyContact(const std::string& contactId);
     SubmissionResult saveEmergencyContact(const Models::EmergencyContact& contact);  // Create or update
 
-    // AcademicHistory API endpoints
+    // AcademicHistory API endpoints (uses compound key: student_id, institution_name, institution_type)
     std::vector<Models::AcademicHistory> getAcademicHistories(const std::string& studentId);
     Models::AcademicHistory getAcademicHistoryByType(const std::string& studentId, const std::string& institutionType);
+    Models::AcademicHistory getAcademicHistoryByKey(const std::string& studentId,
+                                                     const std::string& institutionName,
+                                                     const std::string& institutionType);
     SubmissionResult createAcademicHistory(const Models::AcademicHistory& history);
     SubmissionResult updateAcademicHistory(const Models::AcademicHistory& history);
-    SubmissionResult deleteAcademicHistory(const std::string& historyId);
+    SubmissionResult deleteAcademicHistory(const std::string& studentId,
+                                            const std::string& institutionName,
+                                            const std::string& institutionType);
     SubmissionResult saveAcademicHistory(const Models::AcademicHistory& history);  // Create or update
 
     // Curriculum API endpoints

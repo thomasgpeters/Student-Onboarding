@@ -22,6 +22,7 @@ AcademicHistory::AcademicHistory(const std::string& studentId)
 nlohmann::json AcademicHistory::toJson() const {
     nlohmann::json json;
 
+    // Compound primary key fields
     // student_id as integer for database
     if (!studentId_.empty()) {
         try {
@@ -33,6 +34,8 @@ nlohmann::json AcademicHistory::toJson() const {
 
     json["institution_name"] = institutionName_;
     json["institution_type"] = institutionType_;
+
+    // Other fields
     json["institution_city"] = institutionCity_;
     json["institution_state"] = institutionState_;
     json["institution_country"] = institutionCountry_;
@@ -67,16 +70,7 @@ AcademicHistory AcademicHistory::fromJson(const nlohmann::json& json) {
     // Handle JSON:API format (with attributes wrapper) or flat JSON
     const nlohmann::json& data = json.contains("attributes") ? json["attributes"] : json;
 
-    // Get ID from top level
-    if (json.contains("id")) {
-        if (json["id"].is_string()) {
-            history.id_ = json["id"].get<std::string>();
-        } else if (json["id"].is_number()) {
-            history.id_ = std::to_string(json["id"].get<int>());
-        }
-    }
-
-    // Get student_id
+    // Get student_id (part of compound key)
     if (data.contains("student_id")) {
         if (data["student_id"].is_string()) {
             history.studentId_ = data["student_id"].get<std::string>();
@@ -93,8 +87,11 @@ AcademicHistory AcademicHistory::fromJson(const nlohmann::json& json) {
         return "";
     };
 
+    // Compound key fields
     history.institutionName_ = safeGetString("institution_name");
     history.institutionType_ = safeGetString("institution_type");
+
+    // Other fields
     history.institutionCity_ = safeGetString("institution_city");
     history.institutionState_ = safeGetString("institution_state");
     history.institutionCountry_ = safeGetString("institution_country");
@@ -136,6 +133,14 @@ AcademicHistory AcademicHistory::fromJson(const nlohmann::json& json) {
 
 bool AcademicHistory::isEmpty() const {
     return institutionName_.empty();
+}
+
+bool AcademicHistory::hasValidKey() const {
+    return !studentId_.empty() && !institutionName_.empty() && !institutionType_.empty();
+}
+
+std::string AcademicHistory::getCompoundKey() const {
+    return studentId_ + "|" + institutionName_ + "|" + institutionType_;
 }
 
 } // namespace Models
