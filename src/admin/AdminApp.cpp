@@ -484,6 +484,8 @@ void AdminApp::handleRevokeAccess(int studentId) {
 
         if (response.success) {
             std::cerr << "[AdminApp] Access revoked successfully" << std::endl;
+            // Refresh the student list to reflect the change
+            studentListWidget_->refresh();
         } else {
             std::cerr << "[AdminApp] Failed to revoke access: " << response.errorMessage << std::endl;
         }
@@ -512,6 +514,8 @@ void AdminApp::handleRestoreAccess(int studentId) {
 
         if (response.success) {
             std::cerr << "[AdminApp] Access restored successfully" << std::endl;
+            // Refresh the student list to reflect the change
+            studentListWidget_->refresh();
         } else {
             std::cerr << "[AdminApp] Failed to restore access: " << response.errorMessage << std::endl;
         }
