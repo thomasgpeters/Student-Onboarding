@@ -37,4 +37,6 @@ CREATE INDEX idx_academic_history_student ON academic_history(student_id);
 CREATE INDEX idx_academic_history_type ON academic_history(institution_type);
 
 -- Add comment explaining the key structure
+-- Valid institution_type values: highschool, undergraduate, graduate, vocational
+-- (avoid underscores to prevent compound key parsing issues)
 COMMENT ON TABLE academic_history IS 'Student academic history with compound key (student_id, institution_name, institution_type)';

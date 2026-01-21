@@ -625,29 +625,31 @@ std::vector<std::string> AcademicHistoryForm::getUSStates() const {
 
 std::vector<std::string> AcademicHistoryForm::getInstitutionTypes() const {
     return {
-        "high_school",
+        "highschool",
         "undergraduate",
         "graduate",
-        "vocational_certificate"
+        "vocational"
     };
 }
 
 std::string AcademicHistoryForm::getInstitutionTypeLabel(const std::string& type) const {
-    if (type == "high_school") return "High School";
+    if (type == "highschool") return "High School";
     if (type == "undergraduate") return "Undergraduate";
     if (type == "graduate") return "Graduate";
+    if (type == "vocational") return "Vocational/Certificate";
+    // Legacy types (for backwards compatibility)
+    if (type == "high_school") return "High School";
     if (type == "vocational_certificate") return "Vocational/Certificate";
-    // Legacy types
     if (type == "High School") return "High School";
     if (type == "College" || type == "University") return "Undergraduate";
     return type;
 }
 
 std::string AcademicHistoryForm::getInstitutionTypeValue(const std::string& label) const {
-    if (label == "High School") return "high_school";
+    if (label == "High School") return "highschool";
     if (label == "Undergraduate") return "undergraduate";
     if (label == "Graduate") return "graduate";
-    if (label == "Vocational/Certificate") return "vocational_certificate";
+    if (label == "Vocational/Certificate") return "vocational";
     // Return as-is if already a value or unknown
     return label;
 }
@@ -655,12 +657,12 @@ std::string AcademicHistoryForm::getInstitutionTypeValue(const std::string& labe
 std::vector<std::string> AcademicHistoryForm::getDegreeTypesForInstitution(const std::string& institutionType) const {
     // Handle both raw values and labels
     std::string type = institutionType;
-    if (type == "High School") type = "high_school";
+    if (type == "High School") type = "highschool";
     else if (type == "Undergraduate") type = "undergraduate";
     else if (type == "Graduate") type = "graduate";
-    else if (type == "Vocational/Certificate") type = "vocational_certificate";
+    else if (type == "Vocational/Certificate") type = "vocational";
 
-    if (type == "high_school") {
+    if (type == "highschool" || type == "high_school") {
         return {"High School Diploma", "GED"};
     }
     if (type == "undergraduate") {
@@ -669,7 +671,7 @@ std::vector<std::string> AcademicHistoryForm::getDegreeTypesForInstitution(const
     if (type == "graduate") {
         return {"Master's", "Doctoral/PhD", "Professional (JD, MD, etc.)", "In Progress"};
     }
-    if (type == "vocational_certificate") {
+    if (type == "vocational" || type == "vocational_certificate") {
         return {"Certificate", "Diploma", "License", "In Progress"};
     }
     // Default
