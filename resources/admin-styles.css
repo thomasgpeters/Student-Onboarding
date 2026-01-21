@@ -514,8 +514,8 @@
 .admin-filter-container {
     display: flex;
     flex-wrap: nowrap;
-    gap: 1.25rem;
-    padding: 0.75rem 1rem;
+    gap: 1.5rem;
+    padding: 1rem 1.25rem;
     background: white;
     border-radius: 8px;
     margin-bottom: 1rem;
@@ -526,6 +526,7 @@
 @media (max-width: 992px) {
     .admin-filter-container {
         flex-wrap: wrap;
+        gap: 1rem;
     }
 }
 
@@ -535,6 +536,11 @@
     gap: 0.25rem;
     min-width: 140px;
     flex: 0 1 auto;
+    margin-right: 0.5rem;
+}
+
+.admin-filter-group:last-child {
+    margin-right: 0;
 }
 
 .admin-filter-label {
