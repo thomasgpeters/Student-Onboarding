@@ -285,6 +285,54 @@ Define available programs and their required forms:
 }
 ```
 
+### Departments
+
+Departments are loaded dynamically from the database via the `/Department` API endpoint. The system supports two categories of departments:
+
+#### Accredited Academic Departments
+
+Seeded via `database/migrations/005_seed_accredited_curriculum.sql`:
+
+| Code | Department Name | Contact |
+|------|-----------------|---------|
+| CS | Computer Science | cs@university.edu |
+| BUS | Business Administration | business@university.edu |
+| ENG | Engineering | engineering@university.edu |
+| NUR | Nursing | nursing@university.edu |
+| A&S | Arts and Sciences | artsci@university.edu |
+
+#### Vocational/Trade School Departments
+
+Seeded via `database/migrations/005_seed_vocational_curriculum.sql`:
+
+| Code | Department Name | Contact |
+|------|-----------------|---------|
+| CDL | Professional Driving | driving@school.edu |
+| AUTO | Automotive Technology | automotive@school.edu |
+| FOOD | Food Services | culinary@school.edu |
+| TRADE | Skilled Trades | trades@school.edu |
+| ELECT | Electrical Technology | electrical@school.edu |
+| WELD | Welding Technology | welding@school.edu |
+| HVAC | HVAC Technology | hvac@school.edu |
+| MED | Medical Services | medical@school.edu |
+
+#### Seeding Departments
+
+To seed departments, run the appropriate migration file:
+
+```bash
+# For accredited academic programs
+psql -d your_database -f database/migrations/005_seed_accredited_curriculum.sql
+
+# For vocational/trade programs
+psql -d your_database -f database/migrations/005_seed_vocational_curriculum.sql
+
+# To clear all curriculum data before re-seeding
+psql -d your_database -f database/migrations/006_flush_curriculum.sql
+```
+
+The department dropdown in the Curriculum Editor is populated dynamically from the database, allowing institutions to customize their department structure without code changes.
+
 ## API Integration
 
 The application is designed to work with ApiLogicServer backend. Configure the API base URL in `AppConfig.h`:
