@@ -8,6 +8,11 @@
 #include <Wt/WTextArea.h>
 #include <Wt/WCheckBox.h>
 #include <Wt/WDateEdit.h>
+#include <Wt/WTable.h>
+#include <Wt/WPushButton.h>
+#include <Wt/WDialog.h>
+#include <Wt/WDoubleSpinBox.h>
+#include <vector>
 
 namespace StudentIntake {
 namespace Forms {
@@ -26,30 +31,13 @@ protected:
     void handleSubmit() override;
 
 private:
-    // High School
-    Wt::WLineEdit* highSchoolNameInput_;
-    Wt::WLineEdit* highSchoolCityInput_;
-    Wt::WComboBox* highSchoolStateSelect_;
-    Wt::WDateEdit* highSchoolGradDateInput_;
-    Wt::WLineEdit* highSchoolGpaInput_;
-    Wt::WCheckBox* gedCheckbox_;
-
-    // Previous College
-    Wt::WCheckBox* hasPreviousCollegeCheckbox_;
-    Wt::WContainerWidget* previousCollegeContainer_;
-    Wt::WLineEdit* collegeNameInput_;
-    Wt::WLineEdit* collegeCityInput_;
-    Wt::WComboBox* collegeStateSelect_;
-    Wt::WDateEdit* collegeStartDateInput_;
-    Wt::WDateEdit* collegeEndDateInput_;
-    Wt::WLineEdit* collegeMajorInput_;
-    Wt::WLineEdit* collegeGpaInput_;
-    Wt::WComboBox* collegeDegreeSelect_;
-    Wt::WCheckBox* degreeCompletedCheckbox_;
-
-    // Transfer credits
-    Wt::WCheckBox* hasTransferCreditsCheckbox_;
-    Wt::WTextArea* transferCreditsInput_;
+    // Academic History List
+    std::vector<Models::AcademicHistory> academicHistories_;
+    Wt::WCheckBox* hasPreviousEducationCheckbox_;
+    Wt::WContainerWidget* academicHistoryContainer_;
+    Wt::WTable* academicHistoryTable_;
+    Wt::WPushButton* addEducationBtn_;
+    Wt::WText* noEducationText_;
 
     // Test scores
     Wt::WCheckBox* hasTestScoresCheckbox_;
@@ -66,21 +54,37 @@ private:
     // Academic interests
     Wt::WTextArea* academicInterestsInput_;
 
-    void togglePreviousCollege();
+    // UI Toggle methods
+    void togglePreviousEducation();
     void toggleTestScores();
+
+    // Academic History list methods
+    void updateAcademicHistoryTable();
+    void showAddEducationDialog();
+    void showEditEducationDialog(int index);
+    void deleteEducation(int index);
+    void saveEducationFromDialog(Wt::WDialog* dialog,
+                                  Wt::WComboBox* typeSelect,
+                                  Wt::WLineEdit* nameInput,
+                                  Wt::WLineEdit* cityInput,
+                                  Wt::WComboBox* stateSelect,
+                                  Wt::WComboBox* degreeSelect,
+                                  Wt::WLineEdit* majorInput,
+                                  Wt::WDoubleSpinBox* gpaInput,
+                                  Wt::WDateEdit* startDateInput,
+                                  Wt::WDateEdit* endDateInput,
+                                  Wt::WCheckBox* currentlyAttendingCheckbox,
+                                  int editIndex = -1);
+
+    // Utility methods
     std::vector<std::string> getUSStates() const;
+    std::string getInstitutionTypeLabel(const std::string& type) const;
+    std::vector<std::string> getInstitutionTypes() const;
+    std::vector<std::string> getDegreeTypesForInstitution(const std::string& institutionType) const;
 
     // API integration
     void loadHistoriesFromApi();
     void saveHistoriesToApi();
-    void populateHighSchoolFields(const Models::AcademicHistory& history);
-    void populateCollegeFields(const Models::AcademicHistory& history);
-    Models::AcademicHistory buildHighSchoolHistory() const;
-    Models::AcademicHistory buildCollegeHistory() const;
-
-    // Cached record IDs for updates
-    std::string highSchoolRecordId_;
-    std::string collegeRecordId_;
 };
 
 } // namespace Forms
