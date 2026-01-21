@@ -1,7 +1,10 @@
 #include "AcademicHistoryForm.h"
 #include "api/FormSubmissionService.h"
 #include <Wt/WLabel.h>
+#include <Wt/WBreak.h>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 namespace StudentIntake {
 namespace Forms {
@@ -14,156 +17,44 @@ AcademicHistoryForm::~AcademicHistoryForm() {
 }
 
 void AcademicHistoryForm::createFormFields() {
-    // High School Section
-    auto hsSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    hsSection->addStyleClass("form-section");
-    auto hsHeader = hsSection->addWidget(std::make_unique<Wt::WText>("<h4>High School Education</h4>"));
-    hsHeader->setTextFormat(Wt::TextFormat::XHTML);
+    // Previous Education Section (checkbox toggles visibility)
+    auto eduSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    eduSection->addStyleClass("form-section");
+    auto eduHeader = eduSection->addWidget(std::make_unique<Wt::WText>("<h4>Previous Education</h4>"));
+    eduHeader->setTextFormat(Wt::TextFormat::XHTML);
 
-    auto hsRow1 = hsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    hsRow1->addStyleClass("form-row");
+    hasPreviousEducationCheckbox_ = eduSection->addWidget(std::make_unique<Wt::WCheckBox>(
+        " I have previous education to report"));
+    hasPreviousEducationCheckbox_->addStyleClass("form-check");
+    hasPreviousEducationCheckbox_->changed().connect(this, &AcademicHistoryForm::togglePreviousEducation);
 
-    auto hsNameGroup = hsRow1->addWidget(std::make_unique<Wt::WContainerWidget>());
-    hsNameGroup->addStyleClass("form-group col-md-6");
-    hsNameGroup->addWidget(std::make_unique<Wt::WLabel>("High School Name *"));
-    highSchoolNameInput_ = hsNameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
-    highSchoolNameInput_->addStyleClass("form-control");
+    // Container for academic history list (hidden by default)
+    academicHistoryContainer_ = eduSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    academicHistoryContainer_->addStyleClass("academic-history-list mt-3");
+    academicHistoryContainer_->hide();
 
-    auto hsCityGroup = hsRow1->addWidget(std::make_unique<Wt::WContainerWidget>());
-    hsCityGroup->addStyleClass("form-group col-md-3");
-    hsCityGroup->addWidget(std::make_unique<Wt::WLabel>("City"));
-    highSchoolCityInput_ = hsCityGroup->addWidget(std::make_unique<Wt::WLineEdit>());
-    highSchoolCityInput_->addStyleClass("form-control");
+    // Header with Add button
+    auto listHeader = academicHistoryContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    listHeader->addStyleClass("d-flex justify-content-between align-items-center mb-3");
 
-    auto hsStateGroup = hsRow1->addWidget(std::make_unique<Wt::WContainerWidget>());
-    hsStateGroup->addStyleClass("form-group col-md-3");
-    hsStateGroup->addWidget(std::make_unique<Wt::WLabel>("State"));
-    highSchoolStateSelect_ = hsStateGroup->addWidget(std::make_unique<Wt::WComboBox>());
-    highSchoolStateSelect_->addStyleClass("form-control");
-    highSchoolStateSelect_->addItem("Select...");
-    for (const auto& state : getUSStates()) {
-        highSchoolStateSelect_->addItem(state);
-    }
+    auto listTitle = listHeader->addWidget(std::make_unique<Wt::WText>("<strong>Education History</strong>"));
+    listTitle->setTextFormat(Wt::TextFormat::XHTML);
 
-    auto hsRow2 = hsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    hsRow2->addStyleClass("form-row");
+    addEducationBtn_ = listHeader->addWidget(std::make_unique<Wt::WPushButton>("+ Add Education"));
+    addEducationBtn_->addStyleClass("btn btn-primary btn-sm");
+    addEducationBtn_->clicked().connect(this, &AcademicHistoryForm::showAddEducationDialog);
 
-    auto hsGradGroup = hsRow2->addWidget(std::make_unique<Wt::WContainerWidget>());
-    hsGradGroup->addStyleClass("form-group col-md-6");
-    hsGradGroup->addWidget(std::make_unique<Wt::WLabel>("Graduation Date *"));
-    highSchoolGradDateInput_ = hsGradGroup->addWidget(std::make_unique<Wt::WDateEdit>());
-    highSchoolGradDateInput_->addStyleClass("form-control");
+    // Table for displaying academic history entries
+    academicHistoryTable_ = academicHistoryContainer_->addWidget(std::make_unique<Wt::WTable>());
+    academicHistoryTable_->addStyleClass("table table-striped table-hover");
+    academicHistoryTable_->setHeaderCount(1);
 
-    auto hsGpaGroup = hsRow2->addWidget(std::make_unique<Wt::WContainerWidget>());
-    hsGpaGroup->addStyleClass("form-group col-md-6");
-    hsGpaGroup->addWidget(std::make_unique<Wt::WLabel>("GPA (4.0 scale)"));
-    highSchoolGpaInput_ = hsGpaGroup->addWidget(std::make_unique<Wt::WLineEdit>());
-    highSchoolGpaInput_->setPlaceholderText("e.g., 3.5");
-    highSchoolGpaInput_->addStyleClass("form-control");
+    // No education text (shown when list is empty)
+    noEducationText_ = academicHistoryContainer_->addWidget(
+        std::make_unique<Wt::WText>("No education history added. Click '+ Add Education' to add your educational background."));
+    noEducationText_->addStyleClass("text-muted");
 
-    gedCheckbox_ = hsSection->addWidget(std::make_unique<Wt::WCheckBox>(" I have a GED instead of high school diploma"));
-    gedCheckbox_->addStyleClass("form-check");
-
-    // Previous College Section
-    auto collegeSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    collegeSection->addStyleClass("form-section");
-    auto collegeHeader = collegeSection->addWidget(std::make_unique<Wt::WText>("<h4>Previous College Education</h4>"));
-    collegeHeader->setTextFormat(Wt::TextFormat::XHTML);
-
-    hasPreviousCollegeCheckbox_ = collegeSection->addWidget(std::make_unique<Wt::WCheckBox>(
-        " I have attended college previously"));
-    hasPreviousCollegeCheckbox_->addStyleClass("form-check");
-    hasPreviousCollegeCheckbox_->changed().connect(this, &AcademicHistoryForm::togglePreviousCollege);
-
-    previousCollegeContainer_ = collegeSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    previousCollegeContainer_->addStyleClass("previous-college-fields");
-    previousCollegeContainer_->hide();
-
-    auto colRow1 = previousCollegeContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    colRow1->addStyleClass("form-row");
-
-    auto colNameGroup = colRow1->addWidget(std::make_unique<Wt::WContainerWidget>());
-    colNameGroup->addStyleClass("form-group col-md-6");
-    colNameGroup->addWidget(std::make_unique<Wt::WLabel>("College/University Name"));
-    collegeNameInput_ = colNameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
-    collegeNameInput_->addStyleClass("form-control");
-
-    auto colMajorGroup = colRow1->addWidget(std::make_unique<Wt::WContainerWidget>());
-    colMajorGroup->addStyleClass("form-group col-md-6");
-    colMajorGroup->addWidget(std::make_unique<Wt::WLabel>("Major/Field of Study"));
-    collegeMajorInput_ = colMajorGroup->addWidget(std::make_unique<Wt::WLineEdit>());
-    collegeMajorInput_->addStyleClass("form-control");
-
-    auto colRow2 = previousCollegeContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    colRow2->addStyleClass("form-row");
-
-    auto colCityGroup = colRow2->addWidget(std::make_unique<Wt::WContainerWidget>());
-    colCityGroup->addStyleClass("form-group col-md-4");
-    colCityGroup->addWidget(std::make_unique<Wt::WLabel>("City"));
-    collegeCityInput_ = colCityGroup->addWidget(std::make_unique<Wt::WLineEdit>());
-    collegeCityInput_->addStyleClass("form-control");
-
-    auto colStateGroup = colRow2->addWidget(std::make_unique<Wt::WContainerWidget>());
-    colStateGroup->addStyleClass("form-group col-md-4");
-    colStateGroup->addWidget(std::make_unique<Wt::WLabel>("State"));
-    collegeStateSelect_ = colStateGroup->addWidget(std::make_unique<Wt::WComboBox>());
-    collegeStateSelect_->addStyleClass("form-control");
-    collegeStateSelect_->addItem("Select...");
-    for (const auto& state : getUSStates()) {
-        collegeStateSelect_->addItem(state);
-    }
-
-    auto colGpaGroup = colRow2->addWidget(std::make_unique<Wt::WContainerWidget>());
-    colGpaGroup->addStyleClass("form-group col-md-4");
-    colGpaGroup->addWidget(std::make_unique<Wt::WLabel>("GPA"));
-    collegeGpaInput_ = colGpaGroup->addWidget(std::make_unique<Wt::WLineEdit>());
-    collegeGpaInput_->addStyleClass("form-control");
-
-    auto colRow3 = previousCollegeContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    colRow3->addStyleClass("form-row");
-
-    auto startGroup = colRow3->addWidget(std::make_unique<Wt::WContainerWidget>());
-    startGroup->addStyleClass("form-group col-md-4");
-    startGroup->addWidget(std::make_unique<Wt::WLabel>("Start Date"));
-    collegeStartDateInput_ = startGroup->addWidget(std::make_unique<Wt::WDateEdit>());
-    collegeStartDateInput_->addStyleClass("form-control");
-
-    auto endGroup = colRow3->addWidget(std::make_unique<Wt::WContainerWidget>());
-    endGroup->addStyleClass("form-group col-md-4");
-    endGroup->addWidget(std::make_unique<Wt::WLabel>("End Date"));
-    collegeEndDateInput_ = endGroup->addWidget(std::make_unique<Wt::WDateEdit>());
-    collegeEndDateInput_->addStyleClass("form-control");
-
-    auto degreeGroup = colRow3->addWidget(std::make_unique<Wt::WContainerWidget>());
-    degreeGroup->addStyleClass("form-group col-md-4");
-    degreeGroup->addWidget(std::make_unique<Wt::WLabel>("Degree Type"));
-    collegeDegreeSelect_ = degreeGroup->addWidget(std::make_unique<Wt::WComboBox>());
-    collegeDegreeSelect_->addStyleClass("form-control");
-    collegeDegreeSelect_->addItem("Select...");
-    collegeDegreeSelect_->addItem("Associate's");
-    collegeDegreeSelect_->addItem("Bachelor's");
-    collegeDegreeSelect_->addItem("Master's");
-    collegeDegreeSelect_->addItem("Doctoral");
-    collegeDegreeSelect_->addItem("Certificate");
-
-    degreeCompletedCheckbox_ = previousCollegeContainer_->addWidget(
-        std::make_unique<Wt::WCheckBox>(" Degree completed"));
-    degreeCompletedCheckbox_->addStyleClass("form-check");
-
-    // Transfer Credits
-    hasTransferCreditsCheckbox_ = previousCollegeContainer_->addWidget(
-        std::make_unique<Wt::WCheckBox>(" I would like to transfer credits"));
-    hasTransferCreditsCheckbox_->addStyleClass("form-check");
-
-    auto transferGroup = previousCollegeContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    transferGroup->addStyleClass("form-group");
-    transferGroup->addWidget(std::make_unique<Wt::WLabel>("Transfer Credits Details"));
-    transferCreditsInput_ = transferGroup->addWidget(std::make_unique<Wt::WTextArea>());
-    transferCreditsInput_->setPlaceholderText("List courses you'd like to transfer...");
-    transferCreditsInput_->addStyleClass("form-control");
-    transferCreditsInput_->setRows(3);
-
-    // Test Scores
+    // Test Scores Section
     auto testSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     testSection->addStyleClass("form-section");
     auto testHeader = testSection->addWidget(std::make_unique<Wt::WText>("<h4>Standardized Test Scores</h4>"));
@@ -175,7 +66,7 @@ void AcademicHistoryForm::createFormFields() {
     hasTestScoresCheckbox_->changed().connect(this, &AcademicHistoryForm::toggleTestScores);
 
     testScoresContainer_ = testSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    testScoresContainer_->addStyleClass("test-scores-fields");
+    testScoresContainer_->addStyleClass("test-scores-fields mt-3");
     testScoresContainer_->hide();
 
     auto testRow = testScoresContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -244,50 +135,428 @@ void AcademicHistoryForm::createFormFields() {
     loadHistoriesFromApi();
 }
 
-void AcademicHistoryForm::togglePreviousCollege() {
-    previousCollegeContainer_->setHidden(!hasPreviousCollegeCheckbox_->isChecked());
+void AcademicHistoryForm::togglePreviousEducation() {
+    academicHistoryContainer_->setHidden(!hasPreviousEducationCheckbox_->isChecked());
 }
 
 void AcademicHistoryForm::toggleTestScores() {
     testScoresContainer_->setHidden(!hasTestScoresCheckbox_->isChecked());
 }
 
+void AcademicHistoryForm::updateAcademicHistoryTable() {
+    // Clear existing table content
+    academicHistoryTable_->clear();
+
+    if (academicHistories_.empty()) {
+        academicHistoryTable_->hide();
+        noEducationText_->show();
+        return;
+    }
+
+    noEducationText_->hide();
+    academicHistoryTable_->show();
+
+    // Add header row
+    academicHistoryTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Type"));
+    academicHistoryTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Institution"));
+    academicHistoryTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Location"));
+    academicHistoryTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Degree/Major"));
+    academicHistoryTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("GPA"));
+    academicHistoryTable_->elementAt(0, 5)->addWidget(std::make_unique<Wt::WText>("Actions"));
+
+    // Add data rows
+    int row = 1;
+    for (size_t i = 0; i < academicHistories_.size(); ++i) {
+        const auto& history = academicHistories_[i];
+
+        // Type
+        academicHistoryTable_->elementAt(row, 0)->addWidget(
+            std::make_unique<Wt::WText>(getInstitutionTypeLabel(history.getInstitutionType())));
+
+        // Institution name
+        academicHistoryTable_->elementAt(row, 1)->addWidget(
+            std::make_unique<Wt::WText>(history.getInstitutionName()));
+
+        // Location
+        std::string location = history.getInstitutionCity();
+        if (!history.getInstitutionState().empty()) {
+            if (!location.empty()) location += ", ";
+            location += history.getInstitutionState();
+        }
+        academicHistoryTable_->elementAt(row, 2)->addWidget(
+            std::make_unique<Wt::WText>(location));
+
+        // Degree/Major
+        std::string degreeMajor = history.getDegreeEarned();
+        if (!history.getMajor().empty()) {
+            if (!degreeMajor.empty()) degreeMajor += " - ";
+            degreeMajor += history.getMajor();
+        }
+        academicHistoryTable_->elementAt(row, 3)->addWidget(
+            std::make_unique<Wt::WText>(degreeMajor));
+
+        // GPA
+        std::string gpaStr = "-";
+        if (history.getGpa() > 0) {
+            std::ostringstream oss;
+            oss << std::fixed << std::setprecision(2) << history.getGpa();
+            gpaStr = oss.str();
+        }
+        academicHistoryTable_->elementAt(row, 4)->addWidget(
+            std::make_unique<Wt::WText>(gpaStr));
+
+        // Actions (Edit/Delete buttons)
+        auto actionsCell = academicHistoryTable_->elementAt(row, 5);
+        actionsCell->addStyleClass("actions-cell");
+
+        auto editBtn = actionsCell->addWidget(std::make_unique<Wt::WPushButton>("Edit"));
+        editBtn->addStyleClass("btn btn-sm btn-outline-primary mr-1");
+        int index = static_cast<int>(i);
+        editBtn->clicked().connect([this, index]() {
+            showEditEducationDialog(index);
+        });
+
+        auto deleteBtn = actionsCell->addWidget(std::make_unique<Wt::WPushButton>("Delete"));
+        deleteBtn->addStyleClass("btn btn-sm btn-outline-danger");
+        deleteBtn->clicked().connect([this, index]() {
+            deleteEducation(index);
+        });
+
+        ++row;
+    }
+}
+
+void AcademicHistoryForm::showAddEducationDialog() {
+    showEditEducationDialog(-1);  // -1 indicates new entry
+}
+
+void AcademicHistoryForm::showEditEducationDialog(int index) {
+    bool isEdit = (index >= 0 && index < static_cast<int>(academicHistories_.size()));
+    std::string title = isEdit ? "Edit Education" : "Add Education";
+
+    auto dialog = this->addChild(std::make_unique<Wt::WDialog>(title));
+    dialog->setModal(true);
+    dialog->setClosable(true);
+    dialog->setResizable(false);
+    dialog->addStyleClass("education-dialog");
+    dialog->setWidth(Wt::WLength(600, Wt::LengthUnit::Pixel));
+
+    auto content = dialog->contents();
+    content->addStyleClass("p-3");
+
+    // Institution Type
+    auto typeGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    typeGroup->addStyleClass("form-group");
+    typeGroup->addWidget(std::make_unique<Wt::WLabel>("Institution Type *"));
+    auto typeSelect = typeGroup->addWidget(std::make_unique<Wt::WComboBox>());
+    typeSelect->addStyleClass("form-control");
+    typeSelect->addItem("Select...");
+    for (const auto& type : getInstitutionTypes()) {
+        typeSelect->addItem(type);
+    }
+
+    // Institution Name
+    auto nameGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    nameGroup->addStyleClass("form-group");
+    nameGroup->addWidget(std::make_unique<Wt::WLabel>("Institution Name *"));
+    auto nameInput = nameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    nameInput->addStyleClass("form-control");
+    nameInput->setPlaceholderText("e.g., Lincoln High School, State University");
+
+    // Location Row
+    auto locationRow = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    locationRow->addStyleClass("form-row");
+
+    auto cityGroup = locationRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    cityGroup->addStyleClass("form-group col-md-6");
+    cityGroup->addWidget(std::make_unique<Wt::WLabel>("City"));
+    auto cityInput = cityGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    cityInput->addStyleClass("form-control");
+
+    auto stateGroup = locationRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    stateGroup->addStyleClass("form-group col-md-6");
+    stateGroup->addWidget(std::make_unique<Wt::WLabel>("State"));
+    auto stateSelect = stateGroup->addWidget(std::make_unique<Wt::WComboBox>());
+    stateSelect->addStyleClass("form-control");
+    stateSelect->addItem("Select...");
+    for (const auto& state : getUSStates()) {
+        stateSelect->addItem(state);
+    }
+
+    // Degree Type (changes based on institution type)
+    auto degreeGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    degreeGroup->addStyleClass("form-group");
+    degreeGroup->addWidget(std::make_unique<Wt::WLabel>("Degree/Credential Earned"));
+    auto degreeSelect = degreeGroup->addWidget(std::make_unique<Wt::WComboBox>());
+    degreeSelect->addStyleClass("form-control");
+    degreeSelect->addItem("Select...");
+
+    // Update degree options when institution type changes
+    typeSelect->changed().connect([this, typeSelect, degreeSelect]() {
+        std::string currentType = typeSelect->currentText().toUTF8();
+        degreeSelect->clear();
+        degreeSelect->addItem("Select...");
+        for (const auto& degree : getDegreeTypesForInstitution(currentType)) {
+            degreeSelect->addItem(degree);
+        }
+    });
+
+    // Major/Field of Study
+    auto majorGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    majorGroup->addStyleClass("form-group");
+    majorGroup->addWidget(std::make_unique<Wt::WLabel>("Major/Field of Study"));
+    auto majorInput = majorGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    majorInput->addStyleClass("form-control");
+
+    // GPA
+    auto gpaGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    gpaGroup->addStyleClass("form-group");
+    gpaGroup->addWidget(std::make_unique<Wt::WLabel>("GPA (4.0 scale)"));
+    auto gpaInput = gpaGroup->addWidget(std::make_unique<Wt::WDoubleSpinBox>());
+    gpaInput->addStyleClass("form-control");
+    gpaInput->setRange(0.0, 4.0);
+    gpaInput->setSingleStep(0.1);
+    gpaInput->setDecimals(2);
+    gpaInput->setValue(0.0);
+
+    // Dates Row
+    auto datesRow = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    datesRow->addStyleClass("form-row");
+
+    auto startGroup = datesRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    startGroup->addStyleClass("form-group col-md-6");
+    startGroup->addWidget(std::make_unique<Wt::WLabel>("Start Date"));
+    auto startDateInput = startGroup->addWidget(std::make_unique<Wt::WDateEdit>());
+    startDateInput->addStyleClass("form-control");
+
+    auto endGroup = datesRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    endGroup->addStyleClass("form-group col-md-6");
+    endGroup->addWidget(std::make_unique<Wt::WLabel>("End Date / Graduation Date"));
+    auto endDateInput = endGroup->addWidget(std::make_unique<Wt::WDateEdit>());
+    endDateInput->addStyleClass("form-control");
+
+    // Currently Attending
+    auto currentlyAttendingCheckbox = content->addWidget(
+        std::make_unique<Wt::WCheckBox>(" I am currently attending this institution"));
+    currentlyAttendingCheckbox->addStyleClass("form-check mb-3");
+
+    // Populate fields if editing
+    if (isEdit) {
+        const auto& history = academicHistories_[index];
+
+        // Set institution type
+        std::string instType = history.getInstitutionType();
+        for (int i = 0; i < typeSelect->count(); ++i) {
+            if (typeSelect->itemText(i).toUTF8() == instType) {
+                typeSelect->setCurrentIndex(i);
+                break;
+            }
+        }
+
+        // Update degree options for this institution type
+        degreeSelect->clear();
+        degreeSelect->addItem("Select...");
+        for (const auto& degree : getDegreeTypesForInstitution(instType)) {
+            degreeSelect->addItem(degree);
+        }
+
+        nameInput->setText(history.getInstitutionName());
+        cityInput->setText(history.getInstitutionCity());
+
+        // Set state
+        std::string state = history.getInstitutionState();
+        if (!state.empty()) {
+            for (int i = 0; i < stateSelect->count(); ++i) {
+                if (stateSelect->itemText(i).toUTF8() == state) {
+                    stateSelect->setCurrentIndex(i);
+                    break;
+                }
+            }
+        }
+
+        // Set degree
+        std::string degree = history.getDegreeEarned();
+        if (!degree.empty()) {
+            for (int i = 0; i < degreeSelect->count(); ++i) {
+                if (degreeSelect->itemText(i).toUTF8() == degree) {
+                    degreeSelect->setCurrentIndex(i);
+                    break;
+                }
+            }
+        }
+
+        majorInput->setText(history.getMajor());
+
+        if (history.getGpa() > 0) {
+            gpaInput->setValue(history.getGpa());
+        }
+
+        // Set dates
+        if (!history.getStartDate().empty()) {
+            Wt::WDate startDate = Wt::WDate::fromString(history.getStartDate(), "yyyy-MM-dd");
+            if (startDate.isValid()) {
+                startDateInput->setDate(startDate);
+            }
+        }
+
+        std::string endDateStr = history.getEndDate();
+        if (endDateStr.empty()) {
+            endDateStr = history.getGraduationDate();
+        }
+        if (!endDateStr.empty()) {
+            Wt::WDate endDate = Wt::WDate::fromString(endDateStr, "yyyy-MM-dd");
+            if (endDate.isValid()) {
+                endDateInput->setDate(endDate);
+            }
+        }
+
+        currentlyAttendingCheckbox->setChecked(history.isCurrentlyAttending());
+    }
+
+    // Footer buttons
+    auto footer = dialog->footer();
+    footer->addStyleClass("p-2");
+
+    auto cancelBtn = footer->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
+    cancelBtn->addStyleClass("btn btn-secondary mr-2");
+    cancelBtn->clicked().connect(dialog, &Wt::WDialog::reject);
+
+    auto saveBtn = footer->addWidget(std::make_unique<Wt::WPushButton>(isEdit ? "Update" : "Add"));
+    saveBtn->addStyleClass("btn btn-primary");
+    saveBtn->clicked().connect([this, dialog, typeSelect, nameInput, cityInput, stateSelect,
+                                degreeSelect, majorInput, gpaInput, startDateInput, endDateInput,
+                                currentlyAttendingCheckbox, index]() {
+        saveEducationFromDialog(dialog, typeSelect, nameInput, cityInput, stateSelect,
+                               degreeSelect, majorInput, gpaInput, startDateInput, endDateInput,
+                               currentlyAttendingCheckbox, index);
+    });
+
+    dialog->finished().connect([dialog]() {
+        dialog->removeFromParent();
+    });
+
+    dialog->show();
+}
+
+void AcademicHistoryForm::saveEducationFromDialog(Wt::WDialog* dialog,
+                                                   Wt::WComboBox* typeSelect,
+                                                   Wt::WLineEdit* nameInput,
+                                                   Wt::WLineEdit* cityInput,
+                                                   Wt::WComboBox* stateSelect,
+                                                   Wt::WComboBox* degreeSelect,
+                                                   Wt::WLineEdit* majorInput,
+                                                   Wt::WDoubleSpinBox* gpaInput,
+                                                   Wt::WDateEdit* startDateInput,
+                                                   Wt::WDateEdit* endDateInput,
+                                                   Wt::WCheckBox* currentlyAttendingCheckbox,
+                                                   int editIndex) {
+    // Validate required fields
+    std::string instType = typeSelect->currentText().toUTF8();
+    std::string instName = nameInput->text().toUTF8();
+
+    if (instType == "Select..." || instType.empty()) {
+        // Show validation error
+        return;
+    }
+
+    if (instName.empty()) {
+        // Show validation error
+        return;
+    }
+
+    // Build the academic history record
+    Models::AcademicHistory history;
+
+    if (editIndex >= 0 && editIndex < static_cast<int>(academicHistories_.size())) {
+        // Preserve existing ID for updates
+        history = academicHistories_[editIndex];
+    }
+
+    history.setInstitutionType(instType);
+    history.setInstitutionName(instName);
+    history.setInstitutionCity(cityInput->text().toUTF8());
+
+    std::string state = stateSelect->currentText().toUTF8();
+    if (state != "Select...") {
+        history.setInstitutionState(state);
+    } else {
+        history.setInstitutionState("");
+    }
+
+    std::string degree = degreeSelect->currentText().toUTF8();
+    if (degree != "Select...") {
+        history.setDegreeEarned(degree);
+    } else {
+        history.setDegreeEarned("");
+    }
+
+    history.setMajor(majorInput->text().toUTF8());
+
+    if (gpaInput->value() > 0) {
+        history.setGpa(gpaInput->value());
+    }
+    history.setGpaScale(4.0);
+
+    if (startDateInput->date().isValid()) {
+        history.setStartDate(startDateInput->date().toString("yyyy-MM-dd").toUTF8());
+    }
+
+    if (endDateInput->date().isValid()) {
+        std::string endDateStr = endDateInput->date().toString("yyyy-MM-dd").toUTF8();
+        history.setEndDate(endDateStr);
+        if (!currentlyAttendingCheckbox->isChecked()) {
+            history.setGraduationDate(endDateStr);
+        }
+    }
+
+    history.setCurrentlyAttending(currentlyAttendingCheckbox->isChecked());
+
+    // Set student ID if available
+    if (session_) {
+        history.setStudentId(session_->getStudent().getId());
+    }
+
+    // Add or update the record
+    if (editIndex >= 0 && editIndex < static_cast<int>(academicHistories_.size())) {
+        academicHistories_[editIndex] = history;
+    } else {
+        academicHistories_.push_back(history);
+    }
+
+    // Update the table display
+    updateAcademicHistoryTable();
+
+    // Close the dialog
+    dialog->accept();
+}
+
+void AcademicHistoryForm::deleteEducation(int index) {
+    if (index >= 0 && index < static_cast<int>(academicHistories_.size())) {
+        // If the record has an ID, we'll mark it for deletion on save
+        // For now, just remove from local list
+        academicHistories_.erase(academicHistories_.begin() + index);
+        updateAcademicHistoryTable();
+    }
+}
+
 bool AcademicHistoryForm::validate() {
     validationErrors_.clear();
     isValid_ = true;
 
-    validateRequired(highSchoolNameInput_->text().toUTF8(), "High school name");
-
-    if (!gedCheckbox_->isChecked() && !highSchoolGradDateInput_->date().isValid()) {
-        validationErrors_.push_back("Please enter high school graduation date");
+    // If checkbox is checked, at least one education entry is required
+    if (hasPreviousEducationCheckbox_->isChecked() && academicHistories_.empty()) {
+        validationErrors_.push_back("Please add at least one education history entry");
         isValid_ = false;
-    }
-
-    if (hasPreviousCollegeCheckbox_->isChecked()) {
-        validateRequired(collegeNameInput_->text().toUTF8(), "College name");
     }
 
     return isValid_;
 }
 
 void AcademicHistoryForm::collectFormData(Models::FormData& data) const {
-    data.setField("highSchoolName", highSchoolNameInput_->text().toUTF8());
-    data.setField("highSchoolCity", highSchoolCityInput_->text().toUTF8());
-    data.setField("highSchoolState", highSchoolStateSelect_->currentText().toUTF8());
-    data.setField("highSchoolGradDate", highSchoolGradDateInput_->date().toString("yyyy-MM-dd").toUTF8());
-    data.setField("highSchoolGpa", highSchoolGpaInput_->text().toUTF8());
-    data.setField("hasGed", gedCheckbox_->isChecked());
+    data.setField("hasPreviousEducation", hasPreviousEducationCheckbox_->isChecked());
 
-    data.setField("hasPreviousCollege", hasPreviousCollegeCheckbox_->isChecked());
-    data.setField("collegeName", collegeNameInput_->text().toUTF8());
-    data.setField("collegeCity", collegeCityInput_->text().toUTF8());
-    data.setField("collegeState", collegeStateSelect_->currentText().toUTF8());
-    data.setField("collegeMajor", collegeMajorInput_->text().toUTF8());
-    data.setField("collegeGpa", collegeGpaInput_->text().toUTF8());
-    data.setField("collegeDegree", collegeDegreeSelect_->currentText().toUTF8());
-    data.setField("degreeCompleted", degreeCompletedCheckbox_->isChecked());
-    data.setField("hasTransferCredits", hasTransferCreditsCheckbox_->isChecked());
-    data.setField("transferCredits", transferCreditsInput_->text().toUTF8());
+    // Store count of academic histories
+    data.setField("academicHistoryCount", static_cast<int>(academicHistories_.size()));
 
     data.setField("hasTestScores", hasTestScoresCheckbox_->isChecked());
     data.setField("satScore", satScoreInput_->text().toUTF8());
@@ -301,28 +570,10 @@ void AcademicHistoryForm::collectFormData(Models::FormData& data) const {
 }
 
 void AcademicHistoryForm::populateFormFields(const Models::FormData& data) {
-    if (data.hasField("highSchoolName"))
-        highSchoolNameInput_->setText(data.getField("highSchoolName").stringValue);
-    if (data.hasField("highSchoolCity"))
-        highSchoolCityInput_->setText(data.getField("highSchoolCity").stringValue);
-    if (data.hasField("highSchoolGpa"))
-        highSchoolGpaInput_->setText(data.getField("highSchoolGpa").stringValue);
-    if (data.hasField("hasGed"))
-        gedCheckbox_->setChecked(data.getField("hasGed").boolValue);
-
-    if (data.hasField("hasPreviousCollege")) {
-        hasPreviousCollegeCheckbox_->setChecked(data.getField("hasPreviousCollege").boolValue);
-        togglePreviousCollege();
+    if (data.hasField("hasPreviousEducation")) {
+        hasPreviousEducationCheckbox_->setChecked(data.getField("hasPreviousEducation").boolValue);
+        togglePreviousEducation();
     }
-
-    if (data.hasField("collegeName"))
-        collegeNameInput_->setText(data.getField("collegeName").stringValue);
-    if (data.hasField("collegeCity"))
-        collegeCityInput_->setText(data.getField("collegeCity").stringValue);
-    if (data.hasField("collegeMajor"))
-        collegeMajorInput_->setText(data.getField("collegeMajor").stringValue);
-    if (data.hasField("collegeGpa"))
-        collegeGpaInput_->setText(data.getField("collegeGpa").stringValue);
 
     if (data.hasField("hasTestScores")) {
         hasTestScoresCheckbox_->setChecked(data.getField("hasTestScores").boolValue);
@@ -335,6 +586,10 @@ void AcademicHistoryForm::populateFormFields(const Models::FormData& data) {
         actScoreInput_->setText(data.getField("actScore").stringValue);
     if (data.hasField("greScore"))
         greScoreInput_->setText(data.getField("greScore").stringValue);
+    if (data.hasField("gmatScore"))
+        gmatScoreInput_->setText(data.getField("gmatScore").stringValue);
+    if (data.hasField("toeflScore"))
+        toeflScoreInput_->setText(data.getField("toeflScore").stringValue);
 
     if (data.hasField("honorsAwards"))
         honorsAwardsInput_->setText(data.getField("honorsAwards").stringValue);
@@ -356,6 +611,43 @@ std::vector<std::string> AcademicHistoryForm::getUSStates() const {
         "West Virginia", "Wisconsin", "Wyoming", "District of Columbia",
         "International"
     };
+}
+
+std::vector<std::string> AcademicHistoryForm::getInstitutionTypes() const {
+    return {
+        "high_school",
+        "undergraduate",
+        "graduate",
+        "vocational_certificate"
+    };
+}
+
+std::string AcademicHistoryForm::getInstitutionTypeLabel(const std::string& type) const {
+    if (type == "high_school") return "High School";
+    if (type == "undergraduate") return "Undergraduate";
+    if (type == "graduate") return "Graduate";
+    if (type == "vocational_certificate") return "Vocational/Certificate";
+    // Legacy types
+    if (type == "High School") return "High School";
+    if (type == "College" || type == "University") return "Undergraduate";
+    return type;
+}
+
+std::vector<std::string> AcademicHistoryForm::getDegreeTypesForInstitution(const std::string& institutionType) const {
+    if (institutionType == "high_school") {
+        return {"High School Diploma", "GED"};
+    }
+    if (institutionType == "undergraduate") {
+        return {"Associate's", "Bachelor's", "In Progress"};
+    }
+    if (institutionType == "graduate") {
+        return {"Master's", "Doctoral/PhD", "Professional (JD, MD, etc.)", "In Progress"};
+    }
+    if (institutionType == "vocational_certificate") {
+        return {"Certificate", "Diploma", "License", "In Progress"};
+    }
+    // Default
+    return {"Certificate", "Diploma", "Associate's", "Bachelor's", "Master's", "Doctoral"};
 }
 
 void AcademicHistoryForm::handleSubmit() {
@@ -383,20 +675,18 @@ void AcademicHistoryForm::loadHistoriesFromApi() {
     auto histories = apiService_->getAcademicHistories(studentId);
     std::cout << "[AcademicHistoryForm] Found " << histories.size() << " history records" << std::endl;
 
+    academicHistories_.clear();
     for (const auto& history : histories) {
         std::cout << "[AcademicHistoryForm] Record type: " << history.getInstitutionType()
                   << ", name: " << history.getInstitutionName() << std::endl;
+        academicHistories_.push_back(history);
+    }
 
-        if (history.getInstitutionType() == "High School") {
-            populateHighSchoolFields(history);
-            highSchoolRecordId_ = history.getId();
-        } else if (history.getInstitutionType() == "College" ||
-                   history.getInstitutionType() == "University") {
-            populateCollegeFields(history);
-            collegeRecordId_ = history.getId();
-            hasPreviousCollegeCheckbox_->setChecked(true);
-            togglePreviousCollege();
-        }
+    // If there are histories, show the section
+    if (!academicHistories_.empty()) {
+        hasPreviousEducationCheckbox_->setChecked(true);
+        togglePreviousEducation();
+        updateAcademicHistoryTable();
     }
 }
 
@@ -410,196 +700,23 @@ void AcademicHistoryForm::saveHistoriesToApi() {
         return;
     }
 
-    std::cout << "[AcademicHistoryForm] Saving academic histories for student: " << studentId << std::endl;
+    std::cout << "[AcademicHistoryForm] Saving " << academicHistories_.size()
+              << " academic histories for student: " << studentId << std::endl;
 
-    // Save high school record
-    if (!highSchoolNameInput_->text().empty()) {
-        Models::AcademicHistory hsHistory = buildHighSchoolHistory();
-        hsHistory.setStudentId(studentId);
-        if (!highSchoolRecordId_.empty()) {
-            hsHistory.setId(highSchoolRecordId_);
-        }
-        auto result = apiService_->saveAcademicHistory(hsHistory);
+    for (auto& history : academicHistories_) {
+        history.setStudentId(studentId);
+
+        auto result = apiService_->saveAcademicHistory(history);
         if (result.success) {
-            std::cout << "[AcademicHistoryForm] High school record saved successfully" << std::endl;
-            if (!result.submissionId.empty()) {
-                highSchoolRecordId_ = result.submissionId;
+            std::cout << "[AcademicHistoryForm] Saved record: " << history.getInstitutionName() << std::endl;
+            // Update the ID if it was a new record
+            if (!result.submissionId.empty() && history.getId().empty()) {
+                history.setId(result.submissionId);
             }
         } else {
-            std::cout << "[AcademicHistoryForm] Failed to save high school record: " << result.message << std::endl;
+            std::cout << "[AcademicHistoryForm] Failed to save record: " << result.message << std::endl;
         }
     }
-
-    // Save college record if applicable
-    if (hasPreviousCollegeCheckbox_->isChecked() && !collegeNameInput_->text().empty()) {
-        Models::AcademicHistory collegeHistory = buildCollegeHistory();
-        collegeHistory.setStudentId(studentId);
-        if (!collegeRecordId_.empty()) {
-            collegeHistory.setId(collegeRecordId_);
-        }
-        auto result = apiService_->saveAcademicHistory(collegeHistory);
-        if (result.success) {
-            std::cout << "[AcademicHistoryForm] College record saved successfully" << std::endl;
-            if (!result.submissionId.empty()) {
-                collegeRecordId_ = result.submissionId;
-            }
-        } else {
-            std::cout << "[AcademicHistoryForm] Failed to save college record: " << result.message << std::endl;
-        }
-    }
-}
-
-void AcademicHistoryForm::populateHighSchoolFields(const Models::AcademicHistory& history) {
-    highSchoolNameInput_->setText(history.getInstitutionName());
-    highSchoolCityInput_->setText(history.getInstitutionCity());
-
-    // Set state in combo box
-    std::string state = history.getInstitutionState();
-    if (!state.empty()) {
-        for (int i = 0; i < highSchoolStateSelect_->count(); ++i) {
-            if (highSchoolStateSelect_->itemText(i).toUTF8() == state) {
-                highSchoolStateSelect_->setCurrentIndex(i);
-                break;
-            }
-        }
-    }
-
-    // Set graduation date
-    if (!history.getGraduationDate().empty()) {
-        Wt::WDate gradDate = Wt::WDate::fromString(history.getGraduationDate(), "yyyy-MM-dd");
-        if (gradDate.isValid()) {
-            highSchoolGradDateInput_->setDate(gradDate);
-        }
-    }
-
-    // Set GPA
-    if (history.getGpa() > 0) {
-        highSchoolGpaInput_->setText(std::to_string(history.getGpa()));
-    }
-
-    // Check if GED
-    if (history.getDegreeEarned() == "GED") {
-        gedCheckbox_->setChecked(true);
-    }
-}
-
-void AcademicHistoryForm::populateCollegeFields(const Models::AcademicHistory& history) {
-    collegeNameInput_->setText(history.getInstitutionName());
-    collegeCityInput_->setText(history.getInstitutionCity());
-    collegeMajorInput_->setText(history.getMajor());
-
-    // Set state in combo box
-    std::string state = history.getInstitutionState();
-    if (!state.empty()) {
-        for (int i = 0; i < collegeStateSelect_->count(); ++i) {
-            if (collegeStateSelect_->itemText(i).toUTF8() == state) {
-                collegeStateSelect_->setCurrentIndex(i);
-                break;
-            }
-        }
-    }
-
-    // Set GPA
-    if (history.getGpa() > 0) {
-        collegeGpaInput_->setText(std::to_string(history.getGpa()));
-    }
-
-    // Set dates
-    if (!history.getStartDate().empty()) {
-        Wt::WDate startDate = Wt::WDate::fromString(history.getStartDate(), "yyyy-MM-dd");
-        if (startDate.isValid()) {
-            collegeStartDateInput_->setDate(startDate);
-        }
-    }
-    if (!history.getEndDate().empty()) {
-        Wt::WDate endDate = Wt::WDate::fromString(history.getEndDate(), "yyyy-MM-dd");
-        if (endDate.isValid()) {
-            collegeEndDateInput_->setDate(endDate);
-        }
-    }
-
-    // Set degree type in combo box
-    std::string degree = history.getDegreeEarned();
-    if (!degree.empty()) {
-        for (int i = 0; i < collegeDegreeSelect_->count(); ++i) {
-            if (collegeDegreeSelect_->itemText(i).toUTF8() == degree) {
-                collegeDegreeSelect_->setCurrentIndex(i);
-                break;
-            }
-        }
-    }
-
-    // Set degree completed checkbox
-    degreeCompletedCheckbox_->setChecked(!history.isCurrentlyAttending() && !history.getDegreeEarned().empty());
-}
-
-Models::AcademicHistory AcademicHistoryForm::buildHighSchoolHistory() const {
-    Models::AcademicHistory history;
-
-    history.setInstitutionType("High School");
-    history.setInstitutionName(highSchoolNameInput_->text().toUTF8());
-    history.setInstitutionCity(highSchoolCityInput_->text().toUTF8());
-
-    std::string state = highSchoolStateSelect_->currentText().toUTF8();
-    if (state != "Select...") {
-        history.setInstitutionState(state);
-    }
-
-    if (highSchoolGradDateInput_->date().isValid()) {
-        history.setGraduationDate(highSchoolGradDateInput_->date().toString("yyyy-MM-dd").toUTF8());
-    }
-
-    std::string gpaStr = highSchoolGpaInput_->text().toUTF8();
-    if (!gpaStr.empty()) {
-        try {
-            history.setGpa(std::stod(gpaStr));
-        } catch (...) {}
-    }
-
-    history.setGpaScale(4.0);
-    history.setDegreeEarned(gedCheckbox_->isChecked() ? "GED" : "High School Diploma");
-    history.setCurrentlyAttending(false);
-
-    return history;
-}
-
-Models::AcademicHistory AcademicHistoryForm::buildCollegeHistory() const {
-    Models::AcademicHistory history;
-
-    history.setInstitutionType("College");
-    history.setInstitutionName(collegeNameInput_->text().toUTF8());
-    history.setInstitutionCity(collegeCityInput_->text().toUTF8());
-    history.setMajor(collegeMajorInput_->text().toUTF8());
-
-    std::string state = collegeStateSelect_->currentText().toUTF8();
-    if (state != "Select...") {
-        history.setInstitutionState(state);
-    }
-
-    std::string gpaStr = collegeGpaInput_->text().toUTF8();
-    if (!gpaStr.empty()) {
-        try {
-            history.setGpa(std::stod(gpaStr));
-        } catch (...) {}
-    }
-
-    history.setGpaScale(4.0);
-
-    if (collegeStartDateInput_->date().isValid()) {
-        history.setStartDate(collegeStartDateInput_->date().toString("yyyy-MM-dd").toUTF8());
-    }
-    if (collegeEndDateInput_->date().isValid()) {
-        history.setEndDate(collegeEndDateInput_->date().toString("yyyy-MM-dd").toUTF8());
-    }
-
-    std::string degree = collegeDegreeSelect_->currentText().toUTF8();
-    if (degree != "Select...") {
-        history.setDegreeEarned(degree);
-    }
-
-    history.setCurrentlyAttending(!degreeCompletedCheckbox_->isChecked());
-
-    return history;
 }
 
 } // namespace Forms
