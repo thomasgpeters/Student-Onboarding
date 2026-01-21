@@ -74,6 +74,7 @@ private:
     Wt::WText* enrolledText_;
     Wt::WText* phoneText_;
     Wt::WText* addressText_;
+    Wt::WText* intakeStatusLabel_;
     Wt::WText* intakeStatusText_;
     std::string intakeStatus_;
 

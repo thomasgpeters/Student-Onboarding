@@ -21,6 +21,7 @@ StudentDetailWidget::StudentDetailWidget()
     , enrolledText_(nullptr)
     , phoneText_(nullptr)
     , addressText_(nullptr)
+    , intakeStatusLabel_(nullptr)
     , intakeStatusText_(nullptr)
     , intakeStatus_("in_progress")
     , actionsContainer_(nullptr)
@@ -88,7 +89,7 @@ void StudentDetailWidget::setupUI() {
     // Enrolled card
     auto enrolledCard = infoContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     enrolledCard->addStyleClass("admin-info-card");
-    auto enrolledLabel = enrolledCard->addWidget(std::make_unique<Wt::WText>("Enrolled Date"));
+    auto enrolledLabel = enrolledCard->addWidget(std::make_unique<Wt::WText>("📅 Enrolled Date"));
     enrolledLabel->addStyleClass("admin-info-label");
     enrolledText_ = enrolledCard->addWidget(std::make_unique<Wt::WText>("-"));
     enrolledText_->addStyleClass("admin-info-value");
@@ -96,7 +97,7 @@ void StudentDetailWidget::setupUI() {
     // Phone card
     auto phoneCard = infoContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     phoneCard->addStyleClass("admin-info-card");
-    auto phoneLabel = phoneCard->addWidget(std::make_unique<Wt::WText>("Phone"));
+    auto phoneLabel = phoneCard->addWidget(std::make_unique<Wt::WText>("📞 Phone"));
     phoneLabel->addStyleClass("admin-info-label");
     phoneText_ = phoneCard->addWidget(std::make_unique<Wt::WText>("-"));
     phoneText_->addStyleClass("admin-info-value");
@@ -104,7 +105,7 @@ void StudentDetailWidget::setupUI() {
     // Address card
     auto addressCard = infoContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     addressCard->addStyleClass("admin-info-card");
-    auto addressLabel = addressCard->addWidget(std::make_unique<Wt::WText>("Address"));
+    auto addressLabel = addressCard->addWidget(std::make_unique<Wt::WText>("📍 Address"));
     addressLabel->addStyleClass("admin-info-label");
     addressText_ = addressCard->addWidget(std::make_unique<Wt::WText>("-"));
     addressText_->addStyleClass("admin-info-value");
@@ -112,8 +113,8 @@ void StudentDetailWidget::setupUI() {
     // Intake Status card
     auto intakeStatusCard = infoContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     intakeStatusCard->addStyleClass("admin-info-card");
-    auto intakeStatusLabel = intakeStatusCard->addWidget(std::make_unique<Wt::WText>("Intake Status"));
-    intakeStatusLabel->addStyleClass("admin-info-label");
+    intakeStatusLabel_ = intakeStatusCard->addWidget(std::make_unique<Wt::WText>("Intake Status"));
+    intakeStatusLabel_->addStyleClass("admin-info-label");
     intakeStatusText_ = intakeStatusCard->addWidget(std::make_unique<Wt::WText>("-"));
     intakeStatusText_->addStyleClass("admin-info-value");
 
@@ -532,15 +533,25 @@ void StudentDetailWidget::updateDisplay() {
     std::string phone = currentStudent_.getPhoneNumber();
     phoneText_->setText(phone.empty() ? "Not provided" : phone);
 
-    // Format intake status for display
+    // Format intake status for display with appropriate icon
     std::string statusDisplay = intakeStatus_;
-    if (statusDisplay == "in_progress") statusDisplay = "In Progress";
-    else if (statusDisplay == "completed") statusDisplay = "Completed";
-    else if (statusDisplay == "pending_review") statusDisplay = "Pending Review";
-    else if (statusDisplay == "approved") statusDisplay = "Approved";
-    else if (!statusDisplay.empty()) {
+    std::string statusIcon = "📋"; // Default icon
+    if (statusDisplay == "in_progress") {
+        statusDisplay = "In Progress";
+        statusIcon = "⏳";
+    } else if (statusDisplay == "completed") {
+        statusDisplay = "Completed";
+        statusIcon = "✅";
+    } else if (statusDisplay == "pending_review") {
+        statusDisplay = "Pending Review";
+        statusIcon = "📝";
+    } else if (statusDisplay == "approved") {
+        statusDisplay = "Approved";
+        statusIcon = "✅";
+    } else if (!statusDisplay.empty()) {
         statusDisplay[0] = std::toupper(statusDisplay[0]);
     }
+    intakeStatusLabel_->setText(statusIcon + " Intake Status");
     intakeStatusText_->setText(statusDisplay);
 }
 
