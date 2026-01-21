@@ -116,7 +116,7 @@ void StudentListWidget::setupFilters() {
 
     // Search input
     auto searchGroup = filterContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
-    searchGroup->addStyleClass("admin-filter-group");
+    searchGroup->addStyleClass("admin-filter-group admin-filter-search");
 
     auto searchLabel = searchGroup->addWidget(std::make_unique<Wt::WText>("Search"));
     searchLabel->addStyleClass("admin-filter-label");

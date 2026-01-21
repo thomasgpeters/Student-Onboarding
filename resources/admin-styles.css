@@ -514,7 +514,7 @@
 .admin-filter-container {
     display: flex;
     flex-wrap: nowrap;
-    gap: 0.75rem;
+    gap: 1.25rem;
     padding: 0.75rem 1rem;
     background: white;
     border-radius: 8px;
