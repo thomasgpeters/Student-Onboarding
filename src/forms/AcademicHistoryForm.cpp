@@ -677,13 +677,33 @@ std::vector<std::string> AcademicHistoryForm::getDegreeTypesForInstitution(const
 }
 
 void AcademicHistoryForm::handleSubmit() {
-    if (validate()) {
-        // Save academic histories to API before base form submission
-        saveHistoriesToApi();
-
-        // Continue with base class submission
-        BaseForm::handleSubmit();
+    if (!validate()) {
+        // Show validation errors
+        return;
     }
+
+    // Save academic histories to API (the new list-based approach)
+    saveHistoriesToApi();
+
+    // Mark form as completed and navigate to next
+    // (Don't call BaseForm::handleSubmit as it would try to use the old FormData submission)
+    if (session_) {
+        // Save form data to session
+        Models::FormData data = getFormData();
+        data.setStatus("submitted");
+        session_->setFormData(formId_, data);
+
+        // Mark form as completed
+        session_->getStudent().markFormCompleted(formId_);
+
+        // Update student profile to persist completion status
+        if (apiService_) {
+            apiService_->updateStudentProfile(session_->getStudent());
+        }
+    }
+
+    // Emit success signal to move to next form
+    formCompleted_.emit();
 }
 
 void AcademicHistoryForm::loadHistoriesFromApi() {
