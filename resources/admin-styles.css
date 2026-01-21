@@ -2419,3 +2419,52 @@ textarea.form-control {
     border-top: 1px solid #e2e8f0;
     border-radius: 0 0 12px 12px;
 }
+
+/* =====================================================
+   ACADEMIC HISTORY SECTION WITH CHECKBOX TOGGLE
+   ===================================================== */
+
+.admin-academic-section {
+    margin-top: 1.5rem;
+}
+
+.admin-academic-checkbox-container {
+    padding: 0.75rem 0;
+    margin-bottom: 0.5rem;
+}
+
+.admin-academic-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #1e3a5f;
+    cursor: pointer;
+}
+
+.admin-academic-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.admin-academic-content {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.admin-primary-text {
+    display: block;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.admin-secondary-text {
+    display: block;
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-top: 0.125rem;
+}

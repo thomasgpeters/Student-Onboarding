@@ -36,6 +36,8 @@ StudentDetailWidget::StudentDetailWidget()
     , printAllBtn_(nullptr)
     , submissionsTable_(nullptr)
     , noSubmissionsText_(nullptr)
+    , academicHistorySectionContainer_(nullptr)
+    , hasPreviousEducationCheckbox_(nullptr)
     , academicHistoryContainer_(nullptr)
     , academicHistoryHeader_(nullptr)
     , academicHistoryTitle_(nullptr)
@@ -180,9 +182,29 @@ void StudentDetailWidget::setupUI() {
     noSubmissionsText_->addStyleClass("text-muted admin-no-data");
     noSubmissionsText_->hide();
 
-    // Academic History section
-    academicHistoryContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    academicHistoryContainer_->addStyleClass("admin-submissions-section");
+    // Academic History section - outer container with checkbox
+    academicHistorySectionContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    academicHistorySectionContainer_->addStyleClass("admin-submissions-section admin-academic-section");
+
+    // Checkbox to toggle academic history visibility
+    auto checkboxContainer = academicHistorySectionContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    checkboxContainer->addStyleClass("admin-academic-checkbox-container");
+
+    hasPreviousEducationCheckbox_ = checkboxContainer->addWidget(std::make_unique<Wt::WCheckBox>("Has Previous Education"));
+    hasPreviousEducationCheckbox_->addStyleClass("admin-academic-checkbox");
+    hasPreviousEducationCheckbox_->changed().connect([this]() {
+        if (hasPreviousEducationCheckbox_->isChecked()) {
+            academicHistoryContainer_->show();
+            loadAcademicHistory();
+        } else {
+            academicHistoryContainer_->hide();
+        }
+    });
+
+    // Inner container for academic history content (hidden by default)
+    academicHistoryContainer_ = academicHistorySectionContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    academicHistoryContainer_->addStyleClass("admin-academic-content");
+    academicHistoryContainer_->hide();  // Hidden by default
 
     // Academic History header with title and Add button
     academicHistoryHeader_ = academicHistoryContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -279,7 +301,10 @@ void StudentDetailWidget::loadStudent(int studentId) {
         updateDisplay();
         loadStudentAddress();
         loadFormSubmissions();
-        loadAcademicHistory();
+        // Academic history is loaded when checkbox is checked
+        // Reset checkbox state - it will be unchecked by default
+        hasPreviousEducationCheckbox_->setChecked(false);
+        academicHistoryContainer_->hide();
         std::cerr << "[StudentDetail] Loaded student: " << currentStudent_.getFullName() << std::endl;
 
     } catch (const std::exception& e) {
@@ -977,6 +1002,9 @@ void StudentDetailWidget::clear() {
     submissionsTable_->clear();
     noSubmissionsText_->hide();
 
+    // Reset academic history section
+    hasPreviousEducationCheckbox_->setChecked(false);
+    academicHistoryContainer_->hide();
     academicHistoryTable_->clear();
     noAcademicHistoryText_->hide();
 }

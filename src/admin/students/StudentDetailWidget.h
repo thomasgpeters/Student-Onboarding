@@ -123,7 +123,9 @@ private:
     Wt::WText* noSubmissionsText_;
 
     // Academic history section
-    Wt::WContainerWidget* academicHistoryContainer_;
+    Wt::WContainerWidget* academicHistorySectionContainer_;  // Outer container with checkbox
+    Wt::WCheckBox* hasPreviousEducationCheckbox_;
+    Wt::WContainerWidget* academicHistoryContainer_;  // Inner container (shown/hidden)
     Wt::WContainerWidget* academicHistoryHeader_;
     Wt::WText* academicHistoryTitle_;
     Wt::WPushButton* addAcademicHistoryBtn_;
