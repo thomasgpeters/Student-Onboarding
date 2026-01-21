@@ -63,6 +63,15 @@ private:
     };
     std::vector<FormTypeOption> availableForms_;
 
+    // Available departments (loaded from API)
+    struct DepartmentOption {
+        int id;
+        std::string code;
+        std::string name;
+    };
+    std::vector<DepartmentOption> departments_;
+    void loadDepartments();
+
     // UI Elements - Header
     Wt::WContainerWidget* headerSection_;
     Wt::WText* headerTitle_;

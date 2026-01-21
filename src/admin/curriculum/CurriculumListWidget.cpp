@@ -204,7 +204,56 @@ void CurriculumListWidget::setupStats() {
 }
 
 void CurriculumListWidget::loadData() {
+    loadDepartments();
     loadCurriculums();
+}
+
+void CurriculumListWidget::loadDepartments() {
+    departmentMap_.clear();
+
+    if (!apiService_) return;
+
+    try {
+        auto response = apiService_->getApiClient()->get("/Department");
+        if (response.success) {
+            auto jsonResponse = nlohmann::json::parse(response.body);
+
+            nlohmann::json items;
+            if (jsonResponse.is_array()) {
+                items = jsonResponse;
+            } else if (jsonResponse.contains("data")) {
+                items = jsonResponse["data"];
+            }
+
+            for (const auto& item : items) {
+                nlohmann::json attrs = item.contains("attributes") ? item["attributes"] : item;
+
+                int deptId = 0;
+                std::string deptName;
+
+                // Get ID
+                if (item.contains("id")) {
+                    if (item["id"].is_number()) {
+                        deptId = item["id"].get<int>();
+                    } else if (item["id"].is_string()) {
+                        deptId = std::stoi(item["id"].get<std::string>());
+                    }
+                }
+                // Get name
+                if (attrs.contains("name") && !attrs["name"].is_null()) {
+                    deptName = attrs["name"].get<std::string>();
+                }
+
+                if (deptId > 0 && !deptName.empty()) {
+                    departmentMap_[deptId] = deptName;
+                }
+            }
+
+            std::cerr << "[CurriculumListWidget] Loaded " << departmentMap_.size() << " departments" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[CurriculumListWidget] Error loading departments: " << e.what() << std::endl;
+    }
 }
 
 void CurriculumListWidget::clearData() {
@@ -318,6 +367,14 @@ void CurriculumListWidget::loadCurriculums() {
             }
         }
         std::cerr << "[CurriculumListWidget] Loaded " << curriculums_.size() << " curriculums" << std::endl;
+
+        // Map department_id to department name using loaded departments
+        for (auto& curriculum : curriculums_) {
+            int deptId = curriculum.getDepartmentId();
+            if (deptId > 0 && departmentMap_.count(deptId) > 0) {
+                curriculum.setDepartment(departmentMap_[deptId]);
+            }
+        }
 
         // Load all form requirements from junction table and map to curriculums
         loadAllFormRequirements();

@@ -35,6 +35,7 @@ public:
 private:
     void setupUI();
     void setupStats();
+    void loadDepartments();
     void loadCurriculums();
     void loadAllFormRequirements();
     void updateTable();
@@ -47,6 +48,7 @@ private:
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     std::vector<StudentIntake::Models::Curriculum> curriculums_;
     std::vector<StudentIntake::Models::Curriculum> filteredCurriculums_;
+    std::map<int, std::string> departmentMap_; // Maps department_id -> name
 
     // UI Elements - Stats
     Wt::WContainerWidget* statsContainer_;

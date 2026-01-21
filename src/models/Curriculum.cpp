@@ -81,19 +81,12 @@ std::string Curriculum::typeIdToFormId(int typeId) {
 }
 
 std::string Curriculum::departmentIdToName(int departmentId) {
-    // Maps department_id to department display name
-    // Must match the order in CurriculumEditorWidget departmentSelect_ dropdown
-    static const std::map<int, std::string> mapping = {
-        {1, "Professional Driving School"},
-        {2, "Information Technology"},
-        {3, "Electrical Technology"},
-        {4, "Carpentry"},
-        {5, "Automotive"},
-        {6, "Food Services"},
-        {7, "Nursing"}
-    };
-    auto it = mapping.find(departmentId);
-    return (it != mapping.end()) ? it->second : "";
+    // Departments are now loaded dynamically from the API
+    // The CurriculumListWidget and CurriculumEditorWidget load departments
+    // and map department_id to names themselves
+    // This function returns empty to indicate no static mapping is available
+    (void)departmentId; // Suppress unused parameter warning
+    return "";
 }
 
 nlohmann::json Curriculum::toJson() const {

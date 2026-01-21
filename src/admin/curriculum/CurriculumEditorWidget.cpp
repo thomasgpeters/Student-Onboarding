@@ -44,6 +44,8 @@ CurriculumEditorWidget::~CurriculumEditorWidget() {
 
 void CurriculumEditorWidget::setApiService(std::shared_ptr<Api::FormSubmissionService> apiService) {
     apiService_ = apiService;
+    // Load departments from API
+    loadDepartments();
 }
 
 void CurriculumEditorWidget::setupUI() {
@@ -136,13 +138,7 @@ void CurriculumEditorWidget::setupUI() {
     departmentSelect_ = deptGroup->addWidget(std::make_unique<Wt::WComboBox>());
     departmentSelect_->addStyleClass("form-control");
     departmentSelect_->addItem("Select Department");
-    departmentSelect_->addItem("Professional Driving School");
-    departmentSelect_->addItem("Information Technology");
-    departmentSelect_->addItem("Electrical Technology");
-    departmentSelect_->addItem("Carpentry");
-    departmentSelect_->addItem("Automotive");
-    departmentSelect_->addItem("Food Services");
-    departmentSelect_->addItem("Nursing");
+    // Departments will be loaded dynamically from API
 
     // Degree Type
     auto degreeGroup = twoColRow->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -274,6 +270,65 @@ void CurriculumEditorWidget::loadAvailableForms() {
     }
 }
 
+void CurriculumEditorWidget::loadDepartments() {
+    if (!apiService_) return;
+
+    departments_.clear();
+
+    try {
+        auto response = apiService_->getApiClient()->get("/Department");
+        if (response.success) {
+            auto jsonResponse = nlohmann::json::parse(response.body);
+
+            nlohmann::json items;
+            if (jsonResponse.is_array()) {
+                items = jsonResponse;
+            } else if (jsonResponse.contains("data")) {
+                items = jsonResponse["data"];
+            }
+
+            for (const auto& item : items) {
+                nlohmann::json attrs = item.contains("attributes") ? item["attributes"] : item;
+
+                DepartmentOption dept;
+                // Get ID
+                if (item.contains("id")) {
+                    if (item["id"].is_number()) {
+                        dept.id = item["id"].get<int>();
+                    } else if (item["id"].is_string()) {
+                        dept.id = std::stoi(item["id"].get<std::string>());
+                    }
+                }
+                // Get code
+                if (attrs.contains("code") && !attrs["code"].is_null()) {
+                    dept.code = attrs["code"].get<std::string>();
+                }
+                // Get name
+                if (attrs.contains("name") && !attrs["name"].is_null()) {
+                    dept.name = attrs["name"].get<std::string>();
+                }
+
+                if (dept.id > 0 && !dept.name.empty()) {
+                    departments_.push_back(dept);
+                }
+            }
+
+            std::cerr << "[CurriculumEditorWidget] Loaded " << departments_.size() << " departments" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[CurriculumEditorWidget] Error loading departments: " << e.what() << std::endl;
+    }
+
+    // Populate the dropdown (clear except "Select Department")
+    while (departmentSelect_->count() > 1) {
+        departmentSelect_->removeItem(1);
+    }
+
+    for (const auto& dept : departments_) {
+        departmentSelect_->addItem(dept.name);
+    }
+}
+
 void CurriculumEditorWidget::loadCurriculum(const std::string& curriculumId) {
     clearMessages();
     isNewCurriculum_ = false;
@@ -352,20 +407,15 @@ void CurriculumEditorWidget::populateForm(const Curriculum& curriculum) {
     nameInput_->setText(curriculum.getName());
     descriptionInput_->setText(curriculum.getDescription());
 
-    // Set department - try by name first, then by ID
-    std::string dept = curriculum.getDepartment();
-    bool found = false;
-    for (int i = 0; i < departmentSelect_->count(); i++) {
-        if (departmentSelect_->itemText(i).toUTF8() == dept) {
-            departmentSelect_->setCurrentIndex(i);
-            found = true;
+    // Set department by ID - find the index in our departments_ list
+    int deptId = curriculum.getDepartmentId();
+    departmentSelect_->setCurrentIndex(0); // Default to "Select Department"
+    for (size_t i = 0; i < departments_.size(); i++) {
+        if (departments_[i].id == deptId) {
+            // Index in dropdown is i+1 (because index 0 is "Select Department")
+            departmentSelect_->setCurrentIndex(static_cast<int>(i + 1));
             break;
         }
-    }
-    // Fallback to department ID if name not found
-    if (!found && curriculum.getDepartmentId() > 0 &&
-        curriculum.getDepartmentId() < departmentSelect_->count()) {
-        departmentSelect_->setCurrentIndex(curriculum.getDepartmentId());
     }
 
     // Set degree type - capitalize first letter for matching
@@ -421,9 +471,12 @@ void CurriculumEditorWidget::saveCurriculum() {
     currentCurriculum_.setDescription(descriptionInput_->text().toUTF8());
 
     if (departmentSelect_->currentIndex() > 0) {
-        currentCurriculum_.setDepartment(departmentSelect_->currentText().toUTF8());
-        // Department ID maps to dropdown index (1=Professional Driving School, etc.)
-        currentCurriculum_.setDepartmentId(departmentSelect_->currentIndex());
+        // Get the actual department ID from our departments_ list
+        int selectedIdx = departmentSelect_->currentIndex() - 1; // Adjust for "Select Department" at index 0
+        if (selectedIdx >= 0 && selectedIdx < static_cast<int>(departments_.size())) {
+            currentCurriculum_.setDepartment(departments_[selectedIdx].name);
+            currentCurriculum_.setDepartmentId(departments_[selectedIdx].id);
+        }
     }
 
     if (degreeTypeSelect_->currentIndex() > 0) {
