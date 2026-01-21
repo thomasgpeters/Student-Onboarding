@@ -93,6 +93,7 @@ private:
     // Form fields - Program Details
     Wt::WSpinBox* creditHoursInput_;
     Wt::WSpinBox* durationInput_;
+    Wt::WComboBox* durationIntervalSelect_;
     Wt::WCheckBox* isActiveCheck_;
     Wt::WCheckBox* isOnlineCheck_;
 

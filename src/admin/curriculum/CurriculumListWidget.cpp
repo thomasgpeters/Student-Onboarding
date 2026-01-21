@@ -561,9 +561,8 @@ void CurriculumListWidget::updateTable() {
         curriculumTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>(std::to_string(curriculum.getCreditHours())));
         curriculumTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
 
-        // Duration
-        std::string duration = std::to_string(curriculum.getDurationSemesters()) + " semesters";
-        curriculumTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>(duration));
+        // Duration - use formatted duration with proper interval and pluralization
+        curriculumTable_->elementAt(row, col)->addWidget(std::make_unique<Wt::WText>(curriculum.getFormattedDuration()));
         curriculumTable_->elementAt(row, col++)->addStyleClass("admin-table-cell");
 
         // Required Forms count

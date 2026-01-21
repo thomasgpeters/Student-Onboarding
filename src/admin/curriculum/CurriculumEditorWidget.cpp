@@ -28,6 +28,7 @@ CurriculumEditorWidget::CurriculumEditorWidget()
     , degreeTypeSelect_(nullptr)
     , creditHoursInput_(nullptr)
     , durationInput_(nullptr)
+    , durationIntervalSelect_(nullptr)
     , isActiveCheck_(nullptr)
     , isOnlineCheck_(nullptr)
     , formsSection_(nullptr)
@@ -181,12 +182,21 @@ void CurriculumEditorWidget::setupUI() {
     // Duration
     auto durationGroup = numericRow->addWidget(std::make_unique<Wt::WContainerWidget>());
     durationGroup->addStyleClass("form-group");
-    auto durationLabel = durationGroup->addWidget(std::make_unique<Wt::WText>("Duration (Semesters) *"));
+    auto durationLabel = durationGroup->addWidget(std::make_unique<Wt::WText>("Duration *"));
     durationLabel->addStyleClass("form-label");
-    durationInput_ = durationGroup->addWidget(std::make_unique<Wt::WSpinBox>());
-    durationInput_->setRange(1, 20);
-    durationInput_->setValue(8);
-    durationInput_->addStyleClass("form-control");
+    auto durationRow = durationGroup->addWidget(std::make_unique<Wt::WContainerWidget>());
+    durationRow->addStyleClass("admin-duration-row");
+    durationInput_ = durationRow->addWidget(std::make_unique<Wt::WSpinBox>());
+    durationInput_->setRange(1, 100);
+    durationInput_->setValue(1);
+    durationInput_->addStyleClass("form-control admin-duration-number");
+    durationIntervalSelect_ = durationRow->addWidget(std::make_unique<Wt::WComboBox>());
+    durationIntervalSelect_->addStyleClass("form-control admin-duration-interval");
+    durationIntervalSelect_->addItem("Semester");
+    durationIntervalSelect_->addItem("Month");
+    durationIntervalSelect_->addItem("Week");
+    durationIntervalSelect_->addItem("Day");
+    durationIntervalSelect_->setCurrentIndex(0);
 
     // Checkboxes row
     auto checkRow = detailsFields->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -432,6 +442,15 @@ void CurriculumEditorWidget::populateForm(const Curriculum& curriculum) {
 
     creditHoursInput_->setValue(curriculum.getCreditHours());
     durationInput_->setValue(curriculum.getDurationSemesters());
+
+    // Set duration interval - match lowercase interval to dropdown
+    std::string interval = curriculum.getDurationInterval();
+    if (interval == "semester") durationIntervalSelect_->setCurrentIndex(0);
+    else if (interval == "month") durationIntervalSelect_->setCurrentIndex(1);
+    else if (interval == "week") durationIntervalSelect_->setCurrentIndex(2);
+    else if (interval == "day") durationIntervalSelect_->setCurrentIndex(3);
+    else durationIntervalSelect_->setCurrentIndex(0); // Default to semester
+
     isActiveCheck_->setChecked(curriculum.isActive());
     isOnlineCheck_->setChecked(curriculum.isOnline());
 
@@ -450,6 +469,7 @@ void CurriculumEditorWidget::clearForm() {
     degreeTypeSelect_->setCurrentIndex(0);
     creditHoursInput_->setValue(120);
     durationInput_->setValue(2);
+    durationIntervalSelect_->setCurrentIndex(0);  // Reset to Semester
     isActiveCheck_->setChecked(true);
     isOnlineCheck_->setChecked(false);
     for (auto& [id, checkbox] : formCheckboxes_) {
@@ -487,6 +507,18 @@ void CurriculumEditorWidget::saveCurriculum() {
 
     currentCurriculum_.setCreditHours(creditHoursInput_->value());
     currentCurriculum_.setDurationSemesters(durationInput_->value());
+
+    // Get duration interval from dropdown
+    std::string interval;
+    switch (durationIntervalSelect_->currentIndex()) {
+        case 0: interval = "semester"; break;
+        case 1: interval = "month"; break;
+        case 2: interval = "week"; break;
+        case 3: interval = "day"; break;
+        default: interval = "semester";
+    }
+    currentCurriculum_.setDurationInterval(interval);
+
     currentCurriculum_.setActive(isActiveCheck_->isChecked());
     currentCurriculum_.setOnline(isOnlineCheck_->isChecked());
 

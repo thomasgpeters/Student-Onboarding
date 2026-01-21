@@ -26,6 +26,8 @@ public:
     std::string getDegreeType() const { return degreeType_; }
     int getCreditHours() const { return creditHours_; }
     int getDurationSemesters() const { return durationSemesters_; }
+    std::string getDurationInterval() const { return durationInterval_; }
+    std::string getFormattedDuration() const;  // Returns "2 Semesters", "1 Month", etc.
     std::vector<std::string> getRequiredForms() const { return requiredForms_; }
     std::vector<std::string> getPrerequisites() const { return prerequisites_; }
     bool isActive() const { return isActive_; }
@@ -41,6 +43,7 @@ public:
     void setDegreeType(const std::string& degreeType) { degreeType_ = degreeType; }
     void setCreditHours(int creditHours) { creditHours_ = creditHours; }
     void setDurationSemesters(int duration) { durationSemesters_ = duration; }
+    void setDurationInterval(const std::string& interval) { durationInterval_ = interval; }
     void setRequiredForms(const std::vector<std::string>& forms) { requiredForms_ = forms; }
     void setPrerequisites(const std::vector<std::string>& prereqs) { prerequisites_ = prereqs; }
     void setActive(bool active) { isActive_ = active; }
@@ -72,6 +75,7 @@ private:
     std::string degreeType_;  // "bachelor", "master", "doctoral", "certificate", "associate"
     int creditHours_;
     int durationSemesters_;
+    std::string durationInterval_;  // "semester", "month", "week", "day"
     std::vector<std::string> requiredForms_;
     std::vector<std::string> prerequisites_;
     bool isActive_;
