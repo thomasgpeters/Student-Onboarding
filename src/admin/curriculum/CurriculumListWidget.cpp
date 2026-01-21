@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <set>
+#include <map>
 #include <nlohmann/json.hpp>
 
 namespace StudentIntake {
@@ -317,6 +318,10 @@ void CurriculumListWidget::loadCurriculums() {
             }
         }
         std::cerr << "[CurriculumListWidget] Loaded " << curriculums_.size() << " curriculums" << std::endl;
+
+        // Load all form requirements from junction table and map to curriculums
+        loadAllFormRequirements();
+
     } catch (const std::exception& e) {
         std::cerr << "[CurriculumListWidget] Error loading curriculums: " << e.what() << std::endl;
     }
@@ -549,6 +554,62 @@ std::string CurriculumListWidget::getDegreeTypeBadgeClass(const std::string& deg
     if (degreeType == "certificate") return "badge-secondary";
     if (degreeType == "associate") return "badge-success";
     return "badge-secondary";
+}
+
+void CurriculumListWidget::loadAllFormRequirements() {
+    if (!apiService_ || curriculums_.empty()) return;
+
+    try {
+        // Fetch all form requirements at once
+        auto response = apiService_->getApiClient()->get("/CurriculumFormRequirement");
+        if (!response.success) return;
+
+        auto jsonResponse = nlohmann::json::parse(response.body);
+        nlohmann::json items;
+        if (jsonResponse.is_array()) {
+            items = jsonResponse;
+        } else if (jsonResponse.contains("data")) {
+            items = jsonResponse["data"];
+        }
+
+        // Build a map of curriculum_id -> list of form_type_ids
+        std::map<int, std::vector<int>> curriculumForms;
+        for (const auto& item : items) {
+            nlohmann::json attrs = item.contains("attributes") ? item["attributes"] : item;
+            if (attrs.contains("curriculum_id") && attrs.contains("form_type_id")) {
+                int currId = attrs["curriculum_id"].get<int>();
+                int formTypeId = attrs["form_type_id"].get<int>();
+                curriculumForms[currId].push_back(formTypeId);
+            }
+        }
+
+        // Update each curriculum with its required forms
+        for (auto& curriculum : curriculums_) {
+            int currId = 0;
+            try {
+                currId = std::stoi(curriculum.getId());
+            } catch (...) {
+                continue;
+            }
+
+            if (curriculumForms.count(currId)) {
+                std::vector<std::string> formIds;
+                for (int typeId : curriculumForms[currId]) {
+                    std::string formId = Curriculum::typeIdToFormId(typeId);
+                    if (!formId.empty()) {
+                        formIds.push_back(formId);
+                    }
+                }
+                curriculum.setRequiredForms(formIds);
+            }
+        }
+
+        std::cerr << "[CurriculumListWidget] Loaded form requirements for "
+                  << curriculumForms.size() << " curriculums" << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[CurriculumListWidget] Error loading form requirements: " << e.what() << std::endl;
+    }
 }
 
 } // namespace Admin

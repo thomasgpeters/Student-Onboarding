@@ -36,6 +36,7 @@ private:
     void setupUI();
     void setupStats();
     void loadCurriculums();
+    void loadAllFormRequirements();
     void updateTable();
     void applyFilters();
     void updateStats();
