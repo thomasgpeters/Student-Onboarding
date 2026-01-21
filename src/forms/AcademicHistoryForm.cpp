@@ -703,7 +703,7 @@ void AcademicHistoryForm::handleSubmit() {
     }
 
     // Emit success signal to move to next form
-    formSubmitted_.emit();
+    formSubmitted().emit();
 }
 
 void AcademicHistoryForm::loadHistoriesFromApi() {
