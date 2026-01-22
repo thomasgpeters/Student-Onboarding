@@ -99,6 +99,8 @@ CREATE TABLE IF NOT EXISTS curriculum (
     training_hours_classroom INTEGER,
     training_hours_range INTEGER,
     training_hours_road INTEGER,
+    -- Endorsement program flag (base program vs add-on endorsement)
+    is_endorsement BOOLEAN DEFAULT FALSE,
     -- Admin content field (migration 002)
     syllabus_content TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -187,6 +189,29 @@ CREATE TABLE IF NOT EXISTS student_address (
     is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- STUDENT ENDORSEMENT ENROLLMENT TABLE
+-- =====================================================
+-- Junction table for students to enroll in multiple endorsement programs
+-- The student's primary program is stored in student.curriculum_id
+-- Additional endorsements are stored here
+
+CREATE TABLE IF NOT EXISTS student_endorsement (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES student(id) ON DELETE CASCADE,
+    curriculum_id INTEGER NOT NULL REFERENCES curriculum(id) ON DELETE CASCADE,
+    enrollment_status VARCHAR(50) DEFAULT 'enrolled',
+    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Each student can only enroll in each endorsement once
+    UNIQUE(student_id, curriculum_id),
+    -- Enrollment status constraint
+    CONSTRAINT student_endorsement_status_check
+        CHECK (enrollment_status IN ('enrolled', 'in_progress', 'completed', 'withdrawn'))
 );
 
 -- =====================================================
@@ -500,6 +525,11 @@ CREATE INDEX IF NOT EXISTS idx_academic_history_student ON academic_history(stud
 CREATE INDEX IF NOT EXISTS idx_document_student ON document(student_id);
 CREATE INDEX IF NOT EXISTS idx_consent_student ON consent(student_id);
 
+-- Endorsement enrollment indexes
+CREATE INDEX IF NOT EXISTS idx_student_endorsement_student ON student_endorsement(student_id);
+CREATE INDEX IF NOT EXISTS idx_student_endorsement_curriculum ON student_endorsement(curriculum_id);
+CREATE INDEX IF NOT EXISTS idx_curriculum_is_endorsement ON curriculum(is_endorsement);
+
 -- Audit indexes
 CREATE INDEX IF NOT EXISTS idx_audit_student ON audit_log(student_id);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_admin ON admin_audit_log(admin_user_id);
@@ -568,6 +598,9 @@ CREATE TRIGGER update_document_updated_at BEFORE UPDATE ON document FOR EACH ROW
 
 DROP TRIGGER IF EXISTS update_consent_updated_at ON consent;
 CREATE TRIGGER update_consent_updated_at BEFORE UPDATE ON consent FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_student_endorsement_updated_at ON student_endorsement;
+CREATE TRIGGER update_student_endorsement_updated_at BEFORE UPDATE ON student_endorsement FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
 -- END OF SCHEMA

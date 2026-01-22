@@ -17,7 +17,9 @@ Curriculum::Curriculum()
     , durationSemesters_(0)
     , durationInterval_("semester")
     , isActive_(true)
-    , isOnline_(false) {
+    , isOnline_(false)
+    , isEndorsement_(false)
+    , cdlClass_("") {
 }
 
 Curriculum::Curriculum(const std::string& id, const std::string& name)
@@ -32,7 +34,9 @@ Curriculum::Curriculum(const std::string& id, const std::string& name)
     , durationSemesters_(0)
     , durationInterval_("semester")
     , isActive_(true)
-    , isOnline_(false) {
+    , isOnline_(false)
+    , isEndorsement_(false)
+    , cdlClass_("") {
 }
 
 std::string Curriculum::getFormattedDuration() const {
@@ -128,6 +132,10 @@ nlohmann::json Curriculum::toJson() const {
     j["duration_interval"] = durationInterval_;
     j["is_active"] = isActive_;
     j["is_online"] = isOnline_;
+    j["is_endorsement"] = isEndorsement_;
+    if (!cdlClass_.empty()) {
+        j["cdl_class"] = cdlClass_;
+    }
 
     // Convert string form IDs to integer form_type_ids for the API
     nlohmann::json formTypeIds = nlohmann::json::array();
@@ -253,6 +261,17 @@ Curriculum Curriculum::fromJson(const nlohmann::json& json) {
     if (attrs.contains("isOnline")) curriculum.isOnline_ = attrs["isOnline"].get<bool>();
     else if (attrs.contains("is_online") && !attrs["is_online"].is_null())
         curriculum.isOnline_ = attrs["is_online"].get<bool>();
+
+    // isEndorsement / is_endorsement
+    if (attrs.contains("isEndorsement")) curriculum.isEndorsement_ = attrs["isEndorsement"].get<bool>();
+    else if (attrs.contains("is_endorsement") && !attrs["is_endorsement"].is_null())
+        curriculum.isEndorsement_ = attrs["is_endorsement"].get<bool>();
+
+    // cdlClass / cdl_class
+    if (attrs.contains("cdlClass") && !attrs["cdlClass"].is_null())
+        curriculum.cdlClass_ = attrs["cdlClass"].get<std::string>();
+    else if (attrs.contains("cdl_class") && !attrs["cdl_class"].is_null())
+        curriculum.cdlClass_ = attrs["cdl_class"].get<std::string>();
 
     return curriculum;
 }

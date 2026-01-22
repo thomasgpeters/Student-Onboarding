@@ -26,6 +26,7 @@ public:
     std::string getPreferredName() const { return preferredName_; }
     std::string getFullName() const;
     std::string getCurriculumId() const { return curriculumId_; }
+    std::vector<std::string> getEndorsementIds() const { return endorsementIds_; }
     std::string getStudentType() const { return studentType_; }
     std::string getGender() const { return gender_; }
     std::string getPreferredPronouns() const { return preferredPronouns_; }
@@ -56,6 +57,11 @@ public:
     void setLastName(const std::string& lastName) { lastName_ = lastName; }
     void setPreferredName(const std::string& preferredName) { preferredName_ = preferredName; }
     void setCurriculumId(const std::string& curriculumId) { curriculumId_ = curriculumId; }
+    void setEndorsementIds(const std::vector<std::string>& ids) { endorsementIds_ = ids; }
+    void addEndorsementId(const std::string& id);
+    void removeEndorsementId(const std::string& id);
+    bool hasEndorsement(const std::string& id) const;
+    void clearEndorsements() { endorsementIds_.clear(); }
     void setStudentType(const std::string& type) { studentType_ = type; }
     void setGender(const std::string& gender) { gender_ = gender; }
     void setPreferredPronouns(const std::string& pronouns) { preferredPronouns_ = pronouns; }
@@ -96,7 +102,8 @@ private:
     std::string middleName_;
     std::string lastName_;
     std::string preferredName_;
-    std::string curriculumId_;
+    std::string curriculumId_;                    // Base program ID
+    std::vector<std::string> endorsementIds_;     // Additional endorsement program IDs
     std::string studentType_;  // "undergraduate", "graduate", "doctoral", "certificate"
     std::string gender_;
     std::string preferredPronouns_;
