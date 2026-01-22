@@ -26,43 +26,57 @@ void ConsentForm::createFormFields() {
     checkboxSection->addStyleClass("form-section consent-checkboxes");
 
     // Terms of Service
-    termsCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+    auto termsRow = checkboxSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    termsRow->addStyleClass("consent-item");
+    termsCheckbox_ = termsRow->addWidget(std::make_unique<Wt::WCheckBox>(
         " I agree to the Terms of Service - By enrolling, I agree to abide by all university policies, "
         "procedures, regulations, and applicable laws. *"));
     termsCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Privacy Policy
-    privacyCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+    auto privacyRow = checkboxSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    privacyRow->addStyleClass("consent-item");
+    privacyCheckbox_ = privacyRow->addWidget(std::make_unique<Wt::WCheckBox>(
         " I agree to the Privacy Policy - My personal information will be collected, stored, and "
         "processed in accordance with the university's Privacy Policy. *"));
     privacyCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // FERPA Rights
-    ferpaCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+    auto ferpaRow = checkboxSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    ferpaRow->addStyleClass("consent-item");
+    ferpaCheckbox_ = ferpaRow->addWidget(std::make_unique<Wt::WCheckBox>(
         " I acknowledge my FERPA rights - I understand my rights under the Family Educational Rights "
         "and Privacy Act regarding my education records. *"));
     ferpaCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Student Code of Conduct
-    codeOfConductCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+    auto conductRow = checkboxSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    conductRow->addStyleClass("consent-item");
+    codeOfConductCheckbox_ = conductRow->addWidget(std::make_unique<Wt::WCheckBox>(
         " I agree to the Student Code of Conduct - I will uphold academic integrity and ethical "
         "behavior standards, including refraining from cheating and plagiarism. *"));
     codeOfConductCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Communication Consent
-    communicationCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+    auto commRow = checkboxSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    commRow->addStyleClass("consent-item");
+    communicationCheckbox_ = commRow->addWidget(std::make_unique<Wt::WCheckBox>(
         " I consent to receive communications - I agree to receive email, SMS, and mail from the "
         "university regarding enrollment, academics, and campus events. *"));
     communicationCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Photo Release (Optional)
-    photoReleaseCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+    auto photoRow = checkboxSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    photoRow->addStyleClass("consent-item");
+    photoReleaseCheckbox_ = photoRow->addWidget(std::make_unique<Wt::WCheckBox>(
         " I consent to photo/media release (optional) - I grant permission for photos and videos "
         "taken during university events to be used for promotional purposes."));
     photoReleaseCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Accuracy Certification
-    accuracyCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+    auto accuracyRow = checkboxSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    accuracyRow->addStyleClass("consent-item");
+    accuracyCheckbox_ = accuracyRow->addWidget(std::make_unique<Wt::WCheckBox>(
         " I certify accuracy of information - All information provided in this application is accurate "
         "and complete. I understand false information may result in disciplinary action. *"));
     accuracyCheckbox_->addStyleClass("form-check consent-checkbox");
