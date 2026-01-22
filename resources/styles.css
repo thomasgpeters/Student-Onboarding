@@ -696,19 +696,36 @@ body {
 
 .consent-item {
     display: block;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+    border-bottom: 0.25px solid var(--border-color);
 }
 
 .consent-item:last-child {
     border-bottom: none;
 }
 
+.consent-title {
+    display: block;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.consent-description {
+    display: block;
+    font-weight: 400;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-left: 1.5rem;
+    line-height: 1.4;
+}
+
 .consent-checkboxes {
     background: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 1.25rem;
 }
 
 .signature-section {
