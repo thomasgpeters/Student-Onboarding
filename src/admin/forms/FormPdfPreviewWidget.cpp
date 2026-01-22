@@ -739,70 +739,77 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     }
                     std::cerr << "[FormPdfPreviewWidget] Found " << cItems.size() << " consent records" << std::endl;
 
-                    // Display all consent records
-                    int consentNum = 1;
+                    // Build a map of consent_type -> is_accepted and extract signature
+                    std::map<std::string, bool> consentMap;
+                    std::string signature;
+                    std::string signatureDate;
+
                     for (const auto& c : cItems) {
                         nlohmann::json cAttrs = c.contains("attributes") ? c["attributes"] : c;
 
-                        if (consentNum > 1) {
-                            fields.push_back({"", "", "text"});
+                        std::string consentType;
+                        if (cAttrs.contains("consent_type") && cAttrs["consent_type"].is_string()) {
+                            consentType = cAttrs["consent_type"].get<std::string>();
                         }
 
-                        // Helper lambda to safely get string from JSON (handles null values)
-                        auto safeGetString = [&cAttrs](const std::string& key) -> std::string {
-                            if (cAttrs.contains(key) && cAttrs[key].is_string()) {
-                                return cAttrs[key].get<std::string>();
-                            }
-                            return "";
-                        };
-
-                        std::string consentType = safeGetString("consent_type");
-                        std::string consentVersion = safeGetString("consent_version");
-                        std::string consentLabel = !consentType.empty() ? consentType : "Consent Agreement";
-                        if (!consentVersion.empty()) {
-                            consentLabel += " (v" + consentVersion + ")";
-                        }
-                        fields.push_back({consentLabel, "", "header"});
-
-                        // Acceptance status
                         bool isAccepted = cAttrs.contains("is_accepted") && !cAttrs["is_accepted"].is_null() ?
                             cAttrs.value("is_accepted", false) : false;
-                        fields.push_back({"Status", isAccepted ? "Accepted" : "Not Accepted", "text"});
 
-                        // Acceptance timestamp (can be null)
-                        std::string acceptedAt = safeGetString("accepted_at");
-                        if (!acceptedAt.empty()) {
-                            fields.push_back({"Accepted On", acceptedAt, "date"});
+                        if (consentType == "student_signature") {
+                            // Extract signature data
+                            if (cAttrs.contains("electronic_signature") && cAttrs["electronic_signature"].is_string()) {
+                                signature = cAttrs["electronic_signature"].get<std::string>();
+                            }
+                            if (cAttrs.contains("signature_date") && cAttrs["signature_date"].is_string()) {
+                                signatureDate = cAttrs["signature_date"].get<std::string>();
+                            }
+                        } else if (!consentType.empty()) {
+                            consentMap[consentType] = isAccepted;
                         }
-
-                        // Signature information
-                        std::string signature = safeGetString("electronic_signature");
-                        if (!signature.empty()) {
-                            fields.push_back({"Electronic Signature", signature, "signature"});
-                        }
-
-                        std::string sigDate = safeGetString("signature_date");
-                        if (!sigDate.empty()) {
-                            fields.push_back({"Signature Date", sigDate, "date"});
-                        }
-
-                        // IP address for audit (can be null)
-                        std::string ipAddress = safeGetString("ip_address");
-                        if (!ipAddress.empty()) {
-                            fields.push_back({"IP Address", ipAddress, "text"});
-                        }
-
-                        consentNum++;
                     }
 
-                    // If we have consent records, add a summary of what was agreed to
-                    if (!cItems.empty()) {
-                        fields.push_back({"", "", "text"});
-                        fields.push_back({"Consent Acknowledgments", "", "header"});
-                        fields.push_back({"☑ Terms of Service", "Consented - I agree to abide by the institution's terms of service and student conduct policies", "consent_item"});
-                        fields.push_back({"☑ Privacy Policy", "Consented - I acknowledge the institution's privacy policy and data handling practices", "consent_item"});
-                        fields.push_back({"☑ FERPA Rights", "Consented - I understand my rights under the Family Educational Rights and Privacy Act", "consent_item"});
-                        fields.push_back({"☑ Information Accuracy", "Consented - I certify that all information provided is accurate and complete", "consent_item"});
+                    // Define consent items with titles and descriptions (matching student form)
+                    struct ConsentItemDef {
+                        std::string type;
+                        std::string title;
+                        std::string description;
+                    };
+
+                    std::vector<ConsentItemDef> consentDefs = {
+                        {"terms_of_service", "Terms of Service",
+                         "By enrolling, I agree to abide by all university policies, procedures, regulations, and applicable laws."},
+                        {"privacy_policy", "Privacy Policy",
+                         "My personal information will be collected, stored, and processed in accordance with the university's Privacy Policy."},
+                        {"ferpa_acknowledgment", "FERPA Rights",
+                         "I understand my rights under the Family Educational Rights and Privacy Act regarding my education records."},
+                        {"code_of_conduct", "Student Code of Conduct",
+                         "I will uphold academic integrity and ethical behavior standards, including refraining from cheating and plagiarism."},
+                        {"communication_consent", "Communication Consent",
+                         "I agree to receive email, SMS, and mail from the university regarding enrollment, academics, and campus events."},
+                        {"photo_release", "Photo/Media Release (Optional)",
+                         "I grant permission for photos and videos taken during university events to be used for promotional purposes."},
+                        {"accuracy_certification", "Accuracy Certification",
+                         "All information provided in this application is accurate and complete. I understand false information may result in disciplinary action."}
+                    };
+
+                    // Add consent acknowledgments section
+                    fields.push_back({"Consent Acknowledgments", "", "header"});
+
+                    for (const auto& def : consentDefs) {
+                        bool isChecked = consentMap.count(def.type) && consentMap[def.type];
+                        std::string checkbox = isChecked ? "☑" : "☐";
+                        std::string title = checkbox + " " + def.title;
+                        fields.push_back({title, def.description, "consent_item"});
+                    }
+
+                    // Add signature section at the bottom
+                    if (!signature.empty()) {
+                        fields.push_back({"", "", "text"});  // Spacer
+                        fields.push_back({"Electronic Signature", "", "header"});
+                        fields.push_back({"Signature", signature, "signature"});
+                        if (!signatureDate.empty()) {
+                            fields.push_back({"Date", signatureDate, "date"});
+                        }
                     }
                 }
             }

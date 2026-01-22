@@ -1855,19 +1855,23 @@ textarea.form-control {
 
 /* Consent checkbox item styling */
 .pdf-consent-checkbox {
-    font-size: 1.1rem !important;
-    color: #166534 !important;
+    font-size: 1rem !important;
+    color: #1e293b !important;
     font-weight: 600 !important;
     vertical-align: top;
-    padding-top: 0.5rem !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.25rem !important;
+    width: 40% !important;
 }
 
 .pdf-consent-description {
-    font-size: 0.9rem !important;
-    color: #374151 !important;
-    line-height: 1.4 !important;
-    padding: 0.5rem 0 !important;
-    border-bottom: 1px dashed #e5e7eb;
+    font-size: 0.875rem !important;
+    color: #64748b !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    border-bottom: 0.25px solid #e2e8f0;
 }
 
 .pdf-footer {
