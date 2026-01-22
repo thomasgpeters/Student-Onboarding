@@ -210,7 +210,12 @@ Student-Onboarding/
 │       ├── 004_extend_curriculum_schema.sql
 │       ├── 005_seed_accredited_curriculum.sql
 │       ├── 005_seed_vocational_curriculum.sql
-│       └── 006_flush_curriculum.sql
+│       ├── 006_flush_curriculum.sql
+│       ├── 007_institution_settings.sql
+│       ├── 008_add_duration_interval.sql
+│       ├── 009_add_institution_type.sql
+│       ├── 010_academic_history_compound_key.sql
+│       └── 011_emergency_contact_compound_key.sql
 ├── scripts/
 │   └── seed_curriculum.sh      # Curriculum seeding script
 ├── docs/
@@ -355,15 +360,44 @@ The application expects the following API endpoints (note: capitalized resource 
 | `/StudentAddress` | GET/POST | List/create student addresses |
 | `/StudentAddress/:id` | PATCH/DELETE | Update/delete student address |
 | `/EmergencyContact` | GET/POST | List/create emergency contacts |
-| `/EmergencyContact/:id` | PATCH/DELETE | Update/delete emergency contact |
+| `/EmergencyContact/:key` | PATCH/DELETE | Update/delete (key: `student_id,relationship,phone`) |
 | `/MedicalInfo` | POST | Submit medical info |
 | `/AcademicHistory` | GET/POST | List/create academic history |
-| `/AcademicHistory/:id` | PATCH/DELETE | Update/delete academic history |
+| `/AcademicHistory/:key` | PATCH/DELETE | Update/delete (key: `student_id,institution_name,institution_type`) |
 | `/FinancialAid` | GET/POST/PATCH | Get/create/update financial aid |
 | `/Document` | POST | Submit documents |
-| `/Consent` | POST | Submit consent form |
+| `/Consent` | GET/POST/DELETE | Get/create/delete consent records |
 | `/InstitutionSetting` | GET | List all institution settings |
 | `/InstitutionSetting/:setting_key` | GET/PUT | Get or update a setting by key |
+
+#### Compound Primary Keys
+
+Some tables use compound primary keys instead of auto-increment IDs:
+
+**EmergencyContact** - Key: `(student_id, contact_relationship, phone)`
+```
+GET    /EmergencyContact?filter[student_id]=1      # List contacts for student
+POST   /EmergencyContact                            # Create new contact
+PATCH  /EmergencyContact/1,Parent,555-123-4567     # Update existing contact
+DELETE /EmergencyContact/1,Parent,555-123-4567     # Delete contact
+```
+
+**AcademicHistory** - Key: `(student_id, institution_name, institution_type)`
+```
+GET    /AcademicHistory?filter[student_id]=1       # List history for student
+POST   /AcademicHistory                             # Create new record
+PATCH  /AcademicHistory/1,State%20University,undergraduate  # Update record
+DELETE /AcademicHistory/1,State%20University,undergraduate  # Delete record
+```
+
+**Consent** - Stored as individual records per consent type
+```
+GET    /Consent?filter[student_id]=1               # List all consents for student
+POST   /Consent                                     # Create consent record
+DELETE /Consent/:id                                 # Delete consent by ID
+```
+
+Consent types: `terms_of_service`, `privacy_policy`, `ferpa_acknowledgment`, `code_of_conduct`, `communication_consent`, `photo_release`, `accuracy_certification`, `student_signature`
 
 ### JSON:API Format
 
@@ -563,6 +597,100 @@ See `docs/ADMIN_DASHBOARD_DESIGN.md` for full specification and `docs/Administra
 - `docs/DATA_MODEL_CHANGES.md` - Database schema change documentation
 
 ## Recent Changes
+
+### Version 2.2.0 - Compound Primary Keys & Consent Form Redesign
+
+#### Database Schema Changes
+
+**Emergency Contact Compound Key** (`database/migrations/011_emergency_contact_compound_key.sql`)
+- Changed `emergency_contact` table to use compound primary key: `(student_id, contact_relationship, phone)`
+- Dropped the auto-increment `id` column
+- Prevents duplicate emergency contacts by using natural key
+- Enables proper PATCH updates instead of creating duplicate records
+
+**Academic History Compound Key** (`database/migrations/010_academic_history_compound_key.sql`)
+- Changed `academic_history` table to use compound primary key: `(student_id, institution_name, institution_type)`
+- Dropped the auto-increment `id` column
+- Valid `institution_type` values: `highschool`, `undergraduate`, `graduate`, `vocational`
+
+#### API Endpoint Changes
+
+After running the migrations and rebuilding ApiLogicServer, the API endpoints use compound key format:
+
+| Endpoint | Format |
+|----------|--------|
+| `/EmergencyContact/{key}` | `{student_id},{contact_relationship},{phone}` |
+| `/AcademicHistory/{key}` | `{student_id},{institution_name},{institution_type}` |
+
+Example:
+```
+GET /EmergencyContact/1,Parent,555-123-4567
+PATCH /AcademicHistory/1,State%20University,undergraduate
+```
+
+#### Model Changes
+
+**EmergencyContact Model**
+- Removed `getId()`/`setId()` methods
+- Added `hasValidKey()` - returns true if all compound key fields are set
+- Added `getCompoundKey()` - returns `studentId|relationship|phone` for comparison
+
+**AcademicHistory Model**
+- Removed `getId()`/`setId()` methods
+- Added `hasValidKey()` - returns true if all compound key fields are set
+- Added `getCompoundKey()` - returns `studentId|institutionName|institutionType`
+
+#### FormSubmissionService Changes
+
+**Emergency Contact Operations**
+- `getEmergencyContactByKey(studentId, relationship, phone)` - fetch by compound key
+- `deleteEmergencyContact(studentId, relationship, phone)` - delete by compound key (3 params)
+- `updateEmergencyContact(contact)` - uses compound key in PATCH URL
+- `saveEmergencyContact(contact)` - checks existence via compound key, uses PATCH for updates, POST for creates
+
+**Academic History Operations**
+- `getAcademicHistoryByKey(studentId, institutionName, institutionType)` - fetch by compound key
+- `deleteAcademicHistory(studentId, institutionName, institutionType)` - delete by compound key
+- `saveAcademicHistory(history)` - checks existence via compound key for upsert logic
+
+#### Consent Form Redesign
+
+**Simplified UI Structure**
+- Each consent checkbox now has a title (bold) and description (lighter) on separate lines
+- Removed redundant section headers for each consent type
+- Thin 0.25px divider between consent items for clean separation
+- Single signature section at the bottom (not repeated per consent)
+
+**Individual Consent Records**
+- Each consent type stored as a separate database record:
+  - `terms_of_service`
+  - `privacy_policy`
+  - `ferpa_acknowledgment`
+  - `code_of_conduct`
+  - `communication_consent`
+  - `photo_release` (optional)
+  - `accuracy_certification`
+- Signature stored once in a `student_signature` record type
+- Added `StudentConsentData` struct with consent map and signature fields
+- Added `getStudentConsentsWithSignature(studentId)` method
+
+**PDF Preview Updates**
+- Consent form PDF preview now shows each consent item with checkbox status (☑/☐)
+- Displays actual stored values from database
+- Single signature section at bottom
+
+#### Bug Fixes
+
+- **Emergency Contact Duplicates**: Fixed issue where form kept POSTing new records instead of PATCHing existing ones
+- **PDF Preview Null Values**: Fixed crash when emergency contact fields contain null values in JSON
+- **Academic History Institution Types**: Changed values from `high_school` to `highschool` to avoid API parsing issues with underscores
+
+### Version 2.1.0 - Admin Form Approval & Student Detail Improvements
+
+- **Approve/Reject Buttons**: Fixed admin form submission approve/reject functionality
+  - Corrected parameter type (JSON object vs string)
+  - Fixed success check method (`isSuccess()` vs `success`)
+  - Proper resource type for FormSubmission PATCH
 
 ### Version 2.0.0 - Admin Forms Management & PDF Preview
 - **Form Submission Tracking Fix**: Fixed critical bug where form submissions were not being tracked
