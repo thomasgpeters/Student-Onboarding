@@ -32,6 +32,8 @@ public:
     std::vector<std::string> getPrerequisites() const { return prerequisites_; }
     bool isActive() const { return isActive_; }
     bool isOnline() const { return isOnline_; }
+    bool isEndorsement() const { return isEndorsement_; }
+    std::string getCdlClass() const { return cdlClass_; }
 
     // Setters
     void setId(const std::string& id) { id_ = id; }
@@ -48,6 +50,8 @@ public:
     void setPrerequisites(const std::vector<std::string>& prereqs) { prerequisites_ = prereqs; }
     void setActive(bool active) { isActive_ = active; }
     void setOnline(bool online) { isOnline_ = online; }
+    void setEndorsement(bool endorsement) { isEndorsement_ = endorsement; }
+    void setCdlClass(const std::string& cdlClass) { cdlClass_ = cdlClass; }
 
     // Form management
     void addRequiredForm(const std::string& formId);
@@ -80,6 +84,8 @@ private:
     std::vector<std::string> prerequisites_;
     bool isActive_;
     bool isOnline_;
+    bool isEndorsement_;       // True for add-on endorsements, false for base programs
+    std::string cdlClass_;     // CDL class: "A", "B", or empty for non-CDL
 };
 
 /**

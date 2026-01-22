@@ -38,11 +38,18 @@ public:
     const Models::Student& getStudent() const { return student_; }
     void setStudent(const Models::Student& student) { student_ = student; }
 
-    // Curriculum
+    // Curriculum (base program)
     Models::Curriculum& getCurrentCurriculum() { return currentCurriculum_; }
     const Models::Curriculum& getCurrentCurriculum() const { return currentCurriculum_; }
     void setCurrentCurriculum(const Models::Curriculum& curriculum) { currentCurriculum_ = curriculum; }
     bool hasCurriculumSelected() const { return !currentCurriculum_.getId().empty(); }
+
+    // Endorsements (vocational mode)
+    std::vector<Models::Curriculum>& getSelectedEndorsements() { return selectedEndorsements_; }
+    const std::vector<Models::Curriculum>& getSelectedEndorsements() const { return selectedEndorsements_; }
+    void setSelectedEndorsements(const std::vector<Models::Curriculum>& endorsements) { selectedEndorsements_ = endorsements; }
+    void addSelectedEndorsement(const Models::Curriculum& endorsement) { selectedEndorsements_.push_back(endorsement); }
+    void clearSelectedEndorsements() { selectedEndorsements_.clear(); }
 
     // Form data management
     void setFormData(const std::string& formId, const Models::FormData& data);
@@ -78,6 +85,7 @@ private:
     std::string authToken_;
     Models::Student student_;
     Models::Curriculum currentCurriculum_;
+    std::vector<Models::Curriculum> selectedEndorsements_;
     std::map<std::string, Models::FormData> formDataCache_;
     std::vector<std::string> requiredFormIds_;
     std::string currentFormId_;

@@ -87,6 +87,24 @@ void Student::resetCompletedForms() {
     completedForms_.clear();
 }
 
+void Student::addEndorsementId(const std::string& id) {
+    if (!hasEndorsement(id)) {
+        endorsementIds_.push_back(id);
+    }
+}
+
+void Student::removeEndorsementId(const std::string& id) {
+    auto it = std::find(endorsementIds_.begin(), endorsementIds_.end(), id);
+    if (it != endorsementIds_.end()) {
+        endorsementIds_.erase(it);
+    }
+}
+
+bool Student::hasEndorsement(const std::string& id) const {
+    return std::find(endorsementIds_.begin(), endorsementIds_.end(), id)
+           != endorsementIds_.end();
+}
+
 int Student::getAge() const {
     auto now = std::chrono::system_clock::now();
     auto duration = now - dateOfBirth_;
@@ -375,6 +393,25 @@ Student Student::fromJson(const nlohmann::json& json) {
         parseCompletedForms(attrs["completedForms"]);
     } else if (attrs.contains("completed_forms")) {
         parseCompletedForms(attrs["completed_forms"]);
+    }
+
+    // Handle endorsement IDs - array of curriculum IDs for add-on endorsements
+    if (attrs.contains("endorsement_ids") && attrs["endorsement_ids"].is_array()) {
+        for (const auto& id : attrs["endorsement_ids"]) {
+            if (id.is_string()) {
+                student.endorsementIds_.push_back(id.get<std::string>());
+            } else if (id.is_number()) {
+                student.endorsementIds_.push_back(std::to_string(id.get<int>()));
+            }
+        }
+    } else if (attrs.contains("endorsementIds") && attrs["endorsementIds"].is_array()) {
+        for (const auto& id : attrs["endorsementIds"]) {
+            if (id.is_string()) {
+                student.endorsementIds_.push_back(id.get<std::string>());
+            } else if (id.is_number()) {
+                student.endorsementIds_.push_back(std::to_string(id.get<int>()));
+            }
+        }
     }
 
     // Parse date strings

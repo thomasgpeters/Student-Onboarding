@@ -42,6 +42,48 @@ A modular C++ web application built with the Wt (Witty) Web Toolkit for processi
 - Filter options by department and degree type
 - No separate "Continue" button needed - selection is immediate
 
+#### Vocational Mode: Base + Endorsements
+
+For vocational/CDL training programs, students use a **two-step selection process**:
+
+**Step 1 - Select Base Program:**
+- Only base programs are shown (e.g., "Class A CDL Training", "Class B CDL Training")
+- Endorsement programs are filtered out at this stage
+- Student selects their primary training program
+
+**Step 2 - Select Endorsements (Optional):**
+- After selecting a base program, students see available endorsements
+- Endorsements are filtered by CDL class (Class A endorsements for Class A program, etc.)
+- Multi-select checkboxes allow selecting multiple endorsements
+- Examples: Tanker (N), HazMat (H), Doubles/Triples (T), Air Brakes, Passenger (P)
+- "Back" button returns to base program selection
+- "Continue" button proceeds with selected base + endorsements
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Select Additional Endorsements                          │
+├─────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Selected Program: Class A CDL Training (Class A)    │ │
+│ │ Duration: 4 weeks                                   │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                         │
+│ Select any additional endorsements you wish to add...   │
+│                                                         │
+│ Available Endorsements:                                 │
+│ ┌────────────────────────┐ ┌────────────────────────┐   │
+│ │ ☑ Doubles/Triples (T)  │ │ ☐ Tanker (N)           │   │
+│ │ 1 week duration        │ │ 1 week duration        │   │
+│ └────────────────────────┘ └────────────────────────┘   │
+│ ┌────────────────────────┐ ┌────────────────────────┐   │
+│ │ ☐ HazMat (H)           │ │ ☑ Air Brakes           │   │
+│ │ 1 week duration        │ │ 3 days duration        │   │
+│ └────────────────────────┘ └────────────────────────┘   │
+│                                                         │
+│ [Back to Programs]                      [Continue]      │
+└─────────────────────────────────────────────────────────┘
+```
+
 ### 3. Dashboard
 The dashboard provides a central hub for students:
 
@@ -204,19 +246,14 @@ Student-Onboarding/
 │   ├── curriculum_accredited.json  # Accredited programs only
 │   └── curriculum_vocational.json  # Vocational CDL programs only
 ├── database/
-│   ├── schema.sql              # Database schema
-│   ├── postgresql-schema.sql   # PostgreSQL schema
-│   └── migrations/             # Database migrations
-│       ├── 004_extend_curriculum_schema.sql
-│       ├── 005_seed_accredited_curriculum.sql
-│       ├── 005_seed_vocational_curriculum.sql
-│       ├── 006_flush_curriculum.sql
-│       ├── 007_institution_settings.sql
-│       ├── 008_add_duration_interval.sql
-│       ├── 009_add_institution_type.sql
-│       ├── 010_academic_history_compound_key.sql
-│       ├── 011_emergency_contact_compound_key.sql
-│       └── 012_financial_aid_missing_columns.sql
+│   ├── schema.sql              # Complete database schema (consolidated)
+│   ├── install.sql             # Single installation script with seed data
+│   ├── scripts/
+│   │   ├── switch_to_accredited.sql  # Switch to university/college mode
+│   │   ├── switch_to_vocational.sql  # Switch to trade school/CDL mode
+│   │   └── README.md           # Scripts documentation
+│   └── migrations/
+│       └── archive/            # Historical migration files (reference only)
 ├── scripts/
 │   └── seed_curriculum.sh      # Curriculum seeding script
 ├── docs/
@@ -400,6 +437,23 @@ DELETE /Consent/:id                                 # Delete consent by ID
 
 Consent types: `terms_of_service`, `privacy_policy`, `ferpa_acknowledgment`, `code_of_conduct`, `communication_consent`, `photo_release`, `accuracy_certification`, `student_signature`
 
+**StudentEndorsement** - Junction table for multi-program enrollment (vocational mode)
+```
+GET    /StudentEndorsement?filter[student_id]=1   # List endorsements for student
+POST   /StudentEndorsement                         # Enroll in endorsement
+PATCH  /StudentEndorsement/:id                     # Update enrollment status
+DELETE /StudentEndorsement/:id                     # Withdraw from endorsement
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Enrollment ID |
+| `student_id` | int | Foreign key to student |
+| `curriculum_id` | int | Foreign key to endorsement curriculum |
+| `enrollment_status` | string | enrolled, in_progress, completed, withdrawn |
+| `enrolled_at` | timestamp | When student enrolled |
+| `completed_at` | timestamp | When endorsement was completed (nullable) |
+
 ### JSON:API Format
 
 The API uses JSON:API format with nested attributes:
@@ -436,7 +490,8 @@ The Student model supports these fields (all use snake_case in API):
 | `alternate_phone` | string | Secondary phone |
 | `ssn` | string | Social Security Number |
 | `citizenship_status` | string | Citizenship status |
-| `curriculum_id` | int | Selected program ID |
+| `curriculum_id` | int | Selected base program ID |
+| `endorsement_ids` | array | Selected endorsement program IDs (vocational mode) |
 | `student_type` | string | undergraduate/graduate/doctoral/certificate |
 | `is_international` | boolean | International student flag |
 | `is_transfer_student` | boolean | Transfer student flag |
@@ -592,12 +647,74 @@ See `docs/ADMIN_DASHBOARD_DESIGN.md` for full specification and `docs/Administra
 - `README.md` - This overview document
 - `WORKFLOW.md` - Detailed workflow and state documentation
 - `ARCHITECTURE_ANALYSIS.md` - Technical architecture and module details
+- `DATABASE.md` - Comprehensive database documentation and installation guide
+- `MIGRATION_SYSTEM.md` - Curriculum mode switching (accredited vs vocational)
+- `LOGGING.md` - Logging framework documentation
+- `DOCKER.md` - Docker deployment guide
 - `docs/ADMIN_DASHBOARD_DESIGN.md` - Admin portal design specification
 - `docs/Administration_User_Guide.md` - Comprehensive admin portal user guide with screenshot placeholders
 - `docs/CURRICULUM_SEEDING.md` - Curriculum data seeding and management guide
 - `docs/DATA_MODEL_CHANGES.md` - Database schema change documentation
 
 ## Recent Changes
+
+### Version 2.4.0 - Multi-Program Enrollment for Vocational/CDL Training
+
+Added support for students to enroll in a base program plus multiple endorsement programs in vocational mode.
+
+#### Database Changes
+
+**New Table: `student_endorsement`**
+- Junction table for multi-program enrollment
+- Links students to multiple endorsement curricula
+- Tracks enrollment status: enrolled, in_progress, completed, withdrawn
+- Each student can only enroll in each endorsement once (unique constraint)
+
+**Curriculum Table Changes**
+- Added `is_endorsement` (BOOLEAN) - distinguishes base programs from endorsements
+- Updated vocational switch script to flag base programs (FALSE) and endorsements (TRUE)
+
+**Database Consolidation**
+- Consolidated all migration files (001-012) into single `schema.sql`
+- Created `install.sql` for single-step installation
+- Archived individual migration files to `database/migrations/archive/`
+- Updated `MIGRATION_SYSTEM.md` and created `DATABASE.md` documentation
+
+#### Model Changes
+
+**Curriculum Model**
+- Added `isEndorsement()` getter
+- Added `getCdlClass()` getter for CDL class filtering (A or B)
+- Updated `toJson()`/`fromJson()` for new fields
+
+**Student Model**
+- Added `endorsementIds_` vector for tracking enrolled endorsements
+- Added `addEndorsementId()`, `removeEndorsementId()`, `hasEndorsement()`, `clearEndorsements()` methods
+- Updated `fromJson()` to parse endorsement_ids array
+
+**StudentSession**
+- Added `selectedEndorsements_` storage for full Curriculum objects
+- Added getter/setter methods for endorsement management
+
+#### UI Changes
+
+**CurriculumSelector - Two-Step Vocational Mode**
+- Step 1: Students select base program (Class A or Class B CDL)
+- Step 2: Students select optional endorsements via checkboxes
+- Endorsements filtered by matching CDL class
+- "Back to Programs" and "Continue" navigation buttons
+- Auto-detection of vocational mode based on curriculum data
+
+**Program Cards**
+- Duration now shown in appropriate units (weeks/days for vocational, semesters for accredited)
+- Uses `getFormattedDuration()` for proper display
+
+#### CDL Program Structure
+
+| Base Programs | Endorsements Available |
+|---------------|------------------------|
+| Class A CDL Training (4 weeks) | Doubles/Triples (T), Tanker (N), HazMat (H), Air Brakes |
+| Class B CDL Training (3 weeks) | Passenger (P), School Bus (S), Air Brakes |
 
 ### Version 2.3.0 - Financial Aid Data Fixes
 
