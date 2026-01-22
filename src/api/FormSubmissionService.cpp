@@ -1043,37 +1043,102 @@ SubmissionResult FormSubmissionService::submitDocuments(const std::string& stude
 
 SubmissionResult FormSubmissionService::submitConsent(const std::string& studentId,
                                                        const Models::FormData& data) {
-    // Transform form data to match Consent table schema (snake_case)
-    nlohmann::json attributes;
+    std::cout << "[FormSubmissionService] submitConsent - creating individual consent records" << std::endl;
+
+    // First, delete any existing consent records for this student to avoid duplicates
+    deleteStudentConsents(studentId);
+
+    // Get common fields
+    std::string signature = data.hasField("electronicSignature") ? data.getField("electronicSignature").stringValue : "";
+    std::string signatureDate = data.hasField("signatureDate") ? data.getField("signatureDate").stringValue : "";
 
     // student_id as integer
+    int studentIdInt = 0;
     try {
-        attributes["student_id"] = std::stoi(studentId);
+        studentIdInt = std::stoi(studentId);
     } catch (const std::exception&) {
-        attributes["student_id"] = studentId;
+        // Keep as 0, will use string below
     }
 
-    // Check if all required consents are accepted
-    bool termsAccepted = data.hasField("termsAccepted") && data.getField("termsAccepted").boolValue;
-    bool privacyAccepted = data.hasField("privacyAccepted") && data.getField("privacyAccepted").boolValue;
-    bool ferpaAcknowledged = data.hasField("ferpaAcknowledged") && data.getField("ferpaAcknowledged").boolValue;
-    bool accuracyCertified = data.hasField("accuracyCertified") && data.getField("accuracyCertified").boolValue;
-
-    attributes["consent_type"] = "student_intake";
-    attributes["consent_version"] = "1.0";
-    attributes["is_accepted"] = termsAccepted && privacyAccepted && ferpaAcknowledged && accuracyCertified;
-    attributes["electronic_signature"] = data.hasField("electronicSignature") ? data.getField("electronicSignature").stringValue : "";
-    attributes["signature_date"] = data.hasField("signatureDate") ? data.getField("signatureDate").stringValue : "";
-
-    nlohmann::json payload;
-    payload["data"] = {
-        {"type", "Consent"},
-        {"attributes", attributes}
+    // Define consent types with their form field names
+    struct ConsentDef {
+        std::string type;
+        std::string fieldName;
+        bool isRequired;
     };
 
-    std::cout << "[FormSubmissionService] submitConsent payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->post("/Consent", payload);
-    return parseSubmissionResponse(response);
+    std::vector<ConsentDef> consents = {
+        {"terms_of_service", "termsAccepted", true},
+        {"privacy_policy", "privacyAccepted", true},
+        {"ferpa_acknowledgment", "ferpaAcknowledged", true},
+        {"code_of_conduct", "codeOfConductAccepted", true},
+        {"communication_consent", "communicationConsent", true},
+        {"photo_release", "photoRelease", false},  // Optional
+        {"accuracy_certification", "accuracyCertified", true}
+    };
+
+    SubmissionResult finalResult;
+    finalResult.success = true;
+    int successCount = 0;
+    int failCount = 0;
+
+    // Create individual consent records
+    for (const auto& consent : consents) {
+        bool isAccepted = data.hasField(consent.fieldName) && data.getField(consent.fieldName).boolValue;
+
+        // Skip optional consents that aren't accepted (don't need to store them)
+        // But we DO want to store required consents even if false to track explicit rejection
+        if (!consent.isRequired && !isAccepted) {
+            continue;
+        }
+
+        nlohmann::json attributes;
+        if (studentIdInt > 0) {
+            attributes["student_id"] = studentIdInt;
+        } else {
+            attributes["student_id"] = studentId;
+        }
+        attributes["consent_type"] = consent.type;
+        attributes["consent_version"] = "1.0";
+        attributes["is_accepted"] = isAccepted;
+        attributes["electronic_signature"] = signature;
+        attributes["signature_date"] = signatureDate;
+
+        nlohmann::json payload;
+        payload["data"] = {
+            {"type", "Consent"},
+            {"attributes", attributes}
+        };
+
+        std::cout << "[FormSubmissionService] Creating consent record: " << consent.type
+                  << " = " << (isAccepted ? "true" : "false") << std::endl;
+
+        ApiResponse response = apiClient_->post("/Consent", payload);
+        if (response.isSuccess()) {
+            successCount++;
+        } else {
+            failCount++;
+            std::cerr << "[FormSubmissionService] Failed to create consent " << consent.type
+                      << ": " << response.errorMessage << std::endl;
+            finalResult.errors.push_back("Failed to save " + consent.type + ": " + response.errorMessage);
+        }
+    }
+
+    // Determine overall success
+    if (failCount == 0) {
+        finalResult.success = true;
+        finalResult.message = "All consent records saved successfully";
+    } else if (successCount > 0) {
+        finalResult.success = true;  // Partial success - some records saved
+        finalResult.message = "Saved " + std::to_string(successCount) + " consent records (" +
+                              std::to_string(failCount) + " failed)";
+    } else {
+        finalResult.success = false;
+        finalResult.message = "Failed to save consent records";
+    }
+
+    std::cout << "[FormSubmissionService] submitConsent completed: " << finalResult.message << std::endl;
+    return finalResult;
 }
 
 SubmissionResult FormSubmissionService::deleteStudentConsents(const std::string& studentId) {
@@ -1133,6 +1198,51 @@ SubmissionResult FormSubmissionService::deleteStudentConsents(const std::string&
     }
     std::cout << "[FormSubmissionService] " << result.message << std::endl;
     return result;
+}
+
+std::map<std::string, bool> FormSubmissionService::getStudentConsents(const std::string& studentId) {
+    std::map<std::string, bool> consents;
+    std::cout << "[FormSubmissionService] getStudentConsents for student: " << studentId << std::endl;
+
+    std::string endpoint = "/Consent?filter[student_id]=" + studentId;
+    ApiResponse response = apiClient_->get(endpoint);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        for (const auto& item : items) {
+            // Get attributes (handle both nested and flat formats)
+            const nlohmann::json& attrs = item.contains("attributes") ? item["attributes"] : item;
+
+            std::string consentType;
+            bool isAccepted = false;
+
+            if (attrs.contains("consent_type") && attrs["consent_type"].is_string()) {
+                consentType = attrs["consent_type"].get<std::string>();
+            }
+            if (attrs.contains("is_accepted") && attrs["is_accepted"].is_boolean()) {
+                isAccepted = attrs["is_accepted"].get<bool>();
+            }
+
+            if (!consentType.empty()) {
+                consents[consentType] = isAccepted;
+                std::cout << "[FormSubmissionService] Loaded consent: " << consentType
+                          << " = " << (isAccepted ? "true" : "false") << std::endl;
+            }
+        }
+    } else {
+        std::cerr << "[FormSubmissionService] Failed to get consents: " << response.errorMessage << std::endl;
+    }
+
+    std::cout << "[FormSubmissionService] Loaded " << consents.size() << " consent records" << std::endl;
+    return consents;
 }
 
 // Generic form submission

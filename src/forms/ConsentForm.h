@@ -33,6 +33,9 @@ private:
     // Signature
     Wt::WLineEdit* signatureInput_;
     Wt::WDateEdit* signatureDateInput_;
+
+    // API integration
+    void loadConsentsFromApi();
 };
 
 } // namespace Forms

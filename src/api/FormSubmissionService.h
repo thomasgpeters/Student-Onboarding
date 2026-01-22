@@ -105,6 +105,7 @@ public:
 
     // Consent record management
     SubmissionResult deleteStudentConsents(const std::string& studentId);
+    std::map<std::string, bool> getStudentConsents(const std::string& studentId);
 
     // Generic form submission (determines endpoint from form ID)
     SubmissionResult submitForm(const std::string& studentId,
