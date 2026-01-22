@@ -7,18 +7,25 @@
 namespace StudentIntake {
 namespace Models {
 
+/**
+ * @brief Model class representing an emergency contact record
+ *
+ * Each student can have multiple emergency contacts
+ * Uses compound primary key: (student_id, contact_relationship, phone)
+ */
 class EmergencyContact {
 public:
     EmergencyContact();
     EmergencyContact(const std::string& studentId);
 
-    // Getters
-    std::string getId() const { return id_; }
+    // Getters - compound key fields
     std::string getStudentId() const { return studentId_; }
-    std::string getFirstName() const { return firstName_; }
-    std::string getLastName() const { return lastName_; }
     std::string getRelationship() const { return relationship_; }
     std::string getPhone() const { return phone_; }
+
+    // Getters - other fields
+    std::string getFirstName() const { return firstName_; }
+    std::string getLastName() const { return lastName_; }
     std::string getAlternatePhone() const { return alternatePhone_; }
     std::string getEmail() const { return email_; }
     std::string getStreet1() const { return street1_; }
@@ -30,13 +37,14 @@ public:
     bool isPrimary() const { return isPrimary_; }
     int getPriority() const { return priority_; }
 
-    // Setters
-    void setId(const std::string& id) { id_ = id; }
+    // Setters - compound key fields
     void setStudentId(const std::string& studentId) { studentId_ = studentId; }
-    void setFirstName(const std::string& firstName) { firstName_ = firstName; }
-    void setLastName(const std::string& lastName) { lastName_ = lastName; }
     void setRelationship(const std::string& relationship) { relationship_ = relationship; }
     void setPhone(const std::string& phone) { phone_ = phone; }
+
+    // Setters - other fields
+    void setFirstName(const std::string& firstName) { firstName_ = firstName; }
+    void setLastName(const std::string& lastName) { lastName_ = lastName; }
     void setAlternatePhone(const std::string& phone) { alternatePhone_ = phone; }
     void setEmail(const std::string& email) { email_ = email; }
     void setStreet1(const std::string& street1) { street1_ = street1; }
@@ -55,13 +63,21 @@ public:
     // Check if contact has data
     bool isEmpty() const;
 
+    // Compound key check - returns true if all key fields are set
+    bool hasValidKey() const;
+
+    // Get compound key as a string for comparison/lookup (studentId|relationship|phone)
+    std::string getCompoundKey() const;
+
 private:
-    std::string id_;
+    // Compound primary key fields
     std::string studentId_;
+    std::string relationship_;  // contact_relationship in DB
+    std::string phone_;
+
+    // Other fields
     std::string firstName_;
     std::string lastName_;
-    std::string relationship_;
-    std::string phone_;
     std::string alternatePhone_;
     std::string email_;
     std::string street1_;

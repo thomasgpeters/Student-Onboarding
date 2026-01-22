@@ -4,12 +4,11 @@ namespace StudentIntake {
 namespace Models {
 
 EmergencyContact::EmergencyContact()
-    : id_("")
-    , studentId_("")
-    , firstName_("")
-    , lastName_("")
+    : studentId_("")
     , relationship_("")
     , phone_("")
+    , firstName_("")
+    , lastName_("")
     , alternatePhone_("")
     , email_("")
     , street1_("")
@@ -23,12 +22,11 @@ EmergencyContact::EmergencyContact()
 }
 
 EmergencyContact::EmergencyContact(const std::string& studentId)
-    : id_("")
-    , studentId_(studentId)
-    , firstName_("")
-    , lastName_("")
+    : studentId_(studentId)
     , relationship_("")
     , phone_("")
+    , firstName_("")
+    , lastName_("")
     , alternatePhone_("")
     , email_("")
     , street1_("")
@@ -43,6 +41,14 @@ EmergencyContact::EmergencyContact(const std::string& studentId)
 
 bool EmergencyContact::isEmpty() const {
     return firstName_.empty() && lastName_.empty() && phone_.empty();
+}
+
+bool EmergencyContact::hasValidKey() const {
+    return !studentId_.empty() && !relationship_.empty() && !phone_.empty();
+}
+
+std::string EmergencyContact::getCompoundKey() const {
+    return studentId_ + "|" + relationship_ + "|" + phone_;
 }
 
 nlohmann::json EmergencyContact::toJson() const {
@@ -78,20 +84,11 @@ nlohmann::json EmergencyContact::toJson() const {
 EmergencyContact EmergencyContact::fromJson(const nlohmann::json& json) {
     EmergencyContact contact;
 
-    // Handle 'id'
-    if (json.contains("id")) {
-        if (json["id"].is_string()) {
-            contact.id_ = json["id"].get<std::string>();
-        } else if (json["id"].is_number()) {
-            contact.id_ = std::to_string(json["id"].get<int>());
-        }
-    }
-
     // For JSON:API format, attributes may be nested
     const nlohmann::json& attrs = json.contains("attributes") ? json["attributes"] : json;
 
-    // Handle student_id
-    if (attrs.contains("student_id")) {
+    // Handle student_id (part of compound key)
+    if (attrs.contains("student_id") && !attrs["student_id"].is_null()) {
         if (attrs["student_id"].is_string()) {
             contact.studentId_ = attrs["student_id"].get<std::string>();
         } else if (attrs["student_id"].is_number()) {
@@ -99,73 +96,73 @@ EmergencyContact EmergencyContact::fromJson(const nlohmann::json& json) {
         }
     }
 
+    // Handle contact_relationship (part of compound key)
+    if (attrs.contains("contact_relationship") && !attrs["contact_relationship"].is_null() && attrs["contact_relationship"].is_string()) {
+        contact.relationship_ = attrs["contact_relationship"].get<std::string>();
+    }
+
+    // Handle phone (part of compound key)
+    if (attrs.contains("phone") && !attrs["phone"].is_null() && attrs["phone"].is_string()) {
+        contact.phone_ = attrs["phone"].get<std::string>();
+    }
+
     // Handle first_name
-    if (attrs.contains("first_name") && attrs["first_name"].is_string()) {
+    if (attrs.contains("first_name") && !attrs["first_name"].is_null() && attrs["first_name"].is_string()) {
         contact.firstName_ = attrs["first_name"].get<std::string>();
     }
 
     // Handle last_name
-    if (attrs.contains("last_name") && attrs["last_name"].is_string()) {
+    if (attrs.contains("last_name") && !attrs["last_name"].is_null() && attrs["last_name"].is_string()) {
         contact.lastName_ = attrs["last_name"].get<std::string>();
     }
 
-    // Handle contact_relationship
-    if (attrs.contains("contact_relationship") && attrs["contact_relationship"].is_string()) {
-        contact.relationship_ = attrs["contact_relationship"].get<std::string>();
-    }
-
-    // Handle phone
-    if (attrs.contains("phone") && attrs["phone"].is_string()) {
-        contact.phone_ = attrs["phone"].get<std::string>();
-    }
-
     // Handle alternate_phone
-    if (attrs.contains("alternate_phone") && attrs["alternate_phone"].is_string()) {
+    if (attrs.contains("alternate_phone") && !attrs["alternate_phone"].is_null() && attrs["alternate_phone"].is_string()) {
         contact.alternatePhone_ = attrs["alternate_phone"].get<std::string>();
     }
 
     // Handle email
-    if (attrs.contains("email") && attrs["email"].is_string()) {
+    if (attrs.contains("email") && !attrs["email"].is_null() && attrs["email"].is_string()) {
         contact.email_ = attrs["email"].get<std::string>();
     }
 
     // Handle street1
-    if (attrs.contains("street1") && attrs["street1"].is_string()) {
+    if (attrs.contains("street1") && !attrs["street1"].is_null() && attrs["street1"].is_string()) {
         contact.street1_ = attrs["street1"].get<std::string>();
     }
 
     // Handle street2
-    if (attrs.contains("street2") && attrs["street2"].is_string()) {
+    if (attrs.contains("street2") && !attrs["street2"].is_null() && attrs["street2"].is_string()) {
         contact.street2_ = attrs["street2"].get<std::string>();
     }
 
     // Handle city
-    if (attrs.contains("city") && attrs["city"].is_string()) {
+    if (attrs.contains("city") && !attrs["city"].is_null() && attrs["city"].is_string()) {
         contact.city_ = attrs["city"].get<std::string>();
     }
 
     // Handle state
-    if (attrs.contains("state") && attrs["state"].is_string()) {
+    if (attrs.contains("state") && !attrs["state"].is_null() && attrs["state"].is_string()) {
         contact.state_ = attrs["state"].get<std::string>();
     }
 
     // Handle postal_code
-    if (attrs.contains("postal_code") && attrs["postal_code"].is_string()) {
+    if (attrs.contains("postal_code") && !attrs["postal_code"].is_null() && attrs["postal_code"].is_string()) {
         contact.postalCode_ = attrs["postal_code"].get<std::string>();
     }
 
     // Handle country
-    if (attrs.contains("country") && attrs["country"].is_string()) {
+    if (attrs.contains("country") && !attrs["country"].is_null() && attrs["country"].is_string()) {
         contact.country_ = attrs["country"].get<std::string>();
     }
 
     // Handle is_primary
-    if (attrs.contains("is_primary") && attrs["is_primary"].is_boolean()) {
+    if (attrs.contains("is_primary") && !attrs["is_primary"].is_null() && attrs["is_primary"].is_boolean()) {
         contact.isPrimary_ = attrs["is_primary"].get<bool>();
     }
 
     // Handle priority
-    if (attrs.contains("priority") && attrs["priority"].is_number()) {
+    if (attrs.contains("priority") && !attrs["priority"].is_null() && attrs["priority"].is_number()) {
         contact.priority_ = attrs["priority"].get<int>();
     }
 

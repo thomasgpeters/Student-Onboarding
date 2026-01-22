@@ -162,17 +162,21 @@ void EmergencyContactForm::addContactSection(int contactNumber) {
 
 void EmergencyContactForm::removeContact(int index) {
     if (index > 0 && index < static_cast<int>(contacts_.size())) {
-        // Delete from database if this contact has an ID
-        if (index < static_cast<int>(contactIds_.size())) {
-            if (!contactIds_[index].empty() && apiService_) {
-                std::cout << "[EmergencyContactForm] Deleting contact ID: " << contactIds_[index] << std::endl;
-                auto result = apiService_->deleteEmergencyContact(contactIds_[index]);
+        // Delete from database if this contact exists in originalContacts_
+        if (index < static_cast<int>(originalContacts_.size()) && apiService_) {
+            const auto& original = originalContacts_[index];
+            if (original.hasValidKey()) {
+                std::cout << "[EmergencyContactForm] Deleting contact: " << original.getCompoundKey() << std::endl;
+                auto result = apiService_->deleteEmergencyContact(
+                    original.getStudentId(),
+                    original.getRelationship(),
+                    original.getPhone());
                 if (!result.success) {
                     std::cout << "[EmergencyContactForm] Failed to delete contact: " << result.message << std::endl;
                 }
             }
-            // Keep contactIds_ in sync with contacts_
-            contactIds_.erase(contactIds_.begin() + index);
+            // Keep originalContacts_ in sync with contacts_
+            originalContacts_.erase(originalContacts_.begin() + index);
         }
 
         contactsContainer_->removeWidget(contacts_[index].container);
@@ -332,8 +336,8 @@ void EmergencyContactForm::loadContactsFromApi() {
 
     if (apiContacts.empty()) return;
 
-    // Clear contact IDs
-    contactIds_.clear();
+    // Store original contacts for update/delete operations
+    originalContacts_ = apiContacts;
 
     // Add additional contact sections if needed
     while (contacts_.size() < apiContacts.size()) {
@@ -342,13 +346,7 @@ void EmergencyContactForm::loadContactsFromApi() {
 
     // Populate each contact
     for (size_t i = 0; i < apiContacts.size() && i < contacts_.size(); ++i) {
-        contactIds_.push_back(apiContacts[i].getId());
         populateContactFields(static_cast<int>(i), apiContacts[i]);
-    }
-
-    // Ensure contactIds_ has same size as contacts_
-    while (contactIds_.size() < contacts_.size()) {
-        contactIds_.push_back("");
     }
 }
 
@@ -358,27 +356,28 @@ void EmergencyContactForm::saveContactsToApi() {
     std::string studentId = session_->getStudent().getId();
     if (studentId.empty()) return;
 
-    // Ensure contactIds_ matches contacts_ size
-    while (contactIds_.size() < contacts_.size()) {
-        contactIds_.push_back("");
-    }
-
-    // Save each contact
+    // Save each contact using compound key for updates
     for (size_t i = 0; i < contacts_.size(); ++i) {
         Models::EmergencyContact contact = buildContactFromFields(static_cast<int>(i));
         contact.setStudentId(studentId);
         contact.setPrimary(i == 0);
         contact.setPriority(static_cast<int>(i) + 1);
 
-        if (i < contactIds_.size() && !contactIds_[i].empty()) {
-            contact.setId(contactIds_[i]);
-        }
+        if (contact.isEmpty()) continue;
 
-        if (!contact.isEmpty()) {
-            Api::SubmissionResult result = apiService_->saveEmergencyContact(contact);
-            if (result.success && contactIds_[i].empty()) {
-                contactIds_[i] = result.submissionId;
+        // saveEmergencyContact will check if contact exists using compound key
+        // and use PATCH for updates, POST for creates
+        Api::SubmissionResult result = apiService_->saveEmergencyContact(contact);
+        if (result.success) {
+            std::cout << "[EmergencyContactForm] Saved contact: " << contact.getCompoundKey() << std::endl;
+            // Update originalContacts_ to track the new state
+            if (i < originalContacts_.size()) {
+                originalContacts_[i] = contact;
+            } else {
+                originalContacts_.push_back(contact);
             }
+        } else {
+            std::cout << "[EmergencyContactForm] Failed to save contact: " << result.message << std::endl;
         }
     }
 }

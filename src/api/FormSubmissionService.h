@@ -70,11 +70,16 @@ public:
     SubmissionResult deleteStudentAddress(const std::string& addressId);
     SubmissionResult saveStudentAddress(const Models::StudentAddress& address);  // Create or update
 
-    // EmergencyContact API endpoints
+    // EmergencyContact API endpoints (uses compound key: student_id, contact_relationship, phone)
     std::vector<Models::EmergencyContact> getEmergencyContacts(const std::string& studentId);
+    Models::EmergencyContact getEmergencyContactByKey(const std::string& studentId,
+                                                       const std::string& relationship,
+                                                       const std::string& phone);
     SubmissionResult createEmergencyContact(const Models::EmergencyContact& contact);
     SubmissionResult updateEmergencyContact(const Models::EmergencyContact& contact);
-    SubmissionResult deleteEmergencyContact(const std::string& contactId);
+    SubmissionResult deleteEmergencyContact(const std::string& studentId,
+                                             const std::string& relationship,
+                                             const std::string& phone);
     SubmissionResult saveEmergencyContact(const Models::EmergencyContact& contact);  // Create or update
 
     // AcademicHistory API endpoints (uses compound key: student_id, institution_name, institution_type)
