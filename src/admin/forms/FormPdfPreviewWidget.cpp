@@ -616,61 +616,81 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                         nlohmann::json fa = faItems[0];
                         nlohmann::json faAttrs = fa.contains("attributes") ? fa["attributes"] : fa;
 
+                        // Helper lambdas for safe JSON access
+                        auto safeGetString = [&faAttrs](const std::string& key) -> std::string {
+                            if (faAttrs.contains(key) && faAttrs[key].is_string()) {
+                                return faAttrs[key].get<std::string>();
+                            }
+                            return "";
+                        };
+                        auto safeGetBool = [&faAttrs](const std::string& key, bool defaultVal = false) -> bool {
+                            if (faAttrs.contains(key) && faAttrs[key].is_boolean()) {
+                                return faAttrs[key].get<bool>();
+                            }
+                            return defaultVal;
+                        };
+
+                        // General Information
+                        fields.push_back({"General Information", "", "header"});
+                        fields.push_back({"Applying for Financial Aid", safeGetBool("applying_for_aid", true) ? "Yes" : "No", "text"});
+
                         // FAFSA Information
+                        fields.push_back({"", "", "text"});
                         fields.push_back({"FAFSA Information", "", "header"});
-                        fields.push_back({"FAFSA Completed", faAttrs.value("fafsa_completed", false) ? "Yes" : "No", "text"});
-                        fields.push_back({"FAFSA Year", faAttrs.value("fafsa_year", ""), "text"});
+                        fields.push_back({"FAFSA Completed", safeGetBool("fafsa_completed") ? "Yes" : "No", "text"});
                         if (faAttrs.contains("efc") && !faAttrs["efc"].is_null()) {
                             std::ostringstream efcStr;
-                            efcStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("efc", 0.0);
-                            fields.push_back({"Expected Family Contribution (EFC)", efcStr.str(), "text"});
-                        }
-                        fields.push_back({"Aid Types Requested", faAttrs.value("aid_types", ""), "text"});
-                        if (faAttrs.contains("requested_aid_amount") && !faAttrs["requested_aid_amount"].is_null()) {
-                            std::ostringstream aidStr;
-                            aidStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("requested_aid_amount", 0.0);
-                            fields.push_back({"Requested Aid Amount", aidStr.str(), "text"});
+                            efcStr << std::fixed << std::setprecision(2) << faAttrs.value("efc", 0.0);
+                            fields.push_back({"Student Aid Index (SAI/EFC)", efcStr.str(), "text"});
                         }
 
                         // Employment Information
                         fields.push_back({"", "", "text"});
                         fields.push_back({"Employment Information", "", "header"});
-                        fields.push_back({"Employment Status", faAttrs.value("employment_status", ""), "text"});
-                        fields.push_back({"Employer Name", faAttrs.value("employer_name", ""), "text"});
-                        if (faAttrs.contains("annual_income") && !faAttrs["annual_income"].is_null()) {
-                            std::ostringstream incomeStr;
-                            incomeStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("annual_income", 0.0);
-                            fields.push_back({"Annual Income", incomeStr.str(), "text"});
+                        std::string empStatus = safeGetString("employment_status");
+                        fields.push_back({"Employment Status", empStatus.empty() ? "Not specified" : empStatus, "text"});
+                        std::string employer = safeGetString("employer_name");
+                        if (!employer.empty()) {
+                            fields.push_back({"Employer Name", employer, "text"});
                         }
 
                         // Household Information
                         fields.push_back({"", "", "text"});
                         fields.push_back({"Household Information", "", "header"});
-                        fields.push_back({"Independent Student", faAttrs.value("is_independent", false) ? "Yes" : "No", "text"});
-                        if (faAttrs.contains("household_size") && !faAttrs["household_size"].is_null()) {
-                            fields.push_back({"Household Size", std::to_string(faAttrs.value("household_size", 0)), "text"});
-                        }
+                        std::string incomeRange = safeGetString("household_income_range");
+                        fields.push_back({"Household Income Range", incomeRange.empty() ? "Not specified" : incomeRange, "text"});
                         if (faAttrs.contains("dependents_count") && !faAttrs["dependents_count"].is_null()) {
                             fields.push_back({"Number of Dependents", std::to_string(faAttrs.value("dependents_count", 0)), "text"});
                         }
+                        fields.push_back({"Veteran Benefits Eligible", safeGetBool("veteran_benefits") ? "Yes" : "No", "text"});
 
-                        // Loan Information
-                        bool hasLoans = faAttrs.value("has_outstanding_loans", false);
-                        fields.push_back({"Has Outstanding Loans", hasLoans ? "Yes" : "No", "text"});
-                        if (hasLoans && faAttrs.contains("outstanding_loan_amount") && !faAttrs["outstanding_loan_amount"].is_null()) {
-                            std::ostringstream loanStr;
-                            loanStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("outstanding_loan_amount", 0.0);
-                            fields.push_back({"Outstanding Loan Amount", loanStr.str(), "text"});
-                        }
+                        // Aid Types Interested In
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Types of Aid Interested In", "", "header"});
+                        fields.push_back({"Scholarships and Grants", safeGetBool("scholarship_interest") ? "Yes" : "No", "text"});
+                        fields.push_back({"Federal Work-Study", safeGetBool("work_study_interest") ? "Yes" : "No", "text"});
+                        fields.push_back({"Student Loans", safeGetBool("loan_interest") ? "Yes" : "No", "text"});
 
-                        // Scholarships
-                        std::string scholarships = faAttrs.value("scholarship_applications", "");
+                        // Current Scholarships
+                        std::string scholarships = safeGetString("scholarship_applications");
                         if (!scholarships.empty()) {
                             fields.push_back({"", "", "text"});
-                            fields.push_back({"Scholarship Applications", "", "header"});
+                            fields.push_back({"Current Scholarships", "", "header"});
                             fields.push_back({"Scholarships", scholarships, "text"});
                         }
+
+                        // Special Circumstances
+                        std::string specialCirc = safeGetString("special_circumstances");
+                        if (!specialCirc.empty()) {
+                            fields.push_back({"", "", "text"});
+                            fields.push_back({"Special Circumstances", "", "header"});
+                            fields.push_back({"Details", specialCirc, "text"});
+                        }
+                    } else {
+                        fields.push_back({"No Financial Aid Data", "No financial aid information has been submitted.", "text"});
                     }
+                } else {
+                    fields.push_back({"No Financial Aid Data", "No financial aid information has been submitted.", "text"});
                 }
             } else if (formType == "documents") {
                 std::string docUrl = "/Document?filter[student_id]=" + std::to_string(studentId);
@@ -1303,68 +1323,88 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 }
             } else if (formType == "financial_aid") {
                 auto faResponse = apiService_->getApiClient()->get("/FinancialAid?filter[student_id]=" + std::to_string(studentId));
-                if (faResponse.success) {
+                if (faResponse.success && !faResponse.body.empty()) {
                     auto faJson = nlohmann::json::parse(faResponse.body);
                     nlohmann::json faItems = faJson.is_array() ? faJson : (faJson.contains("data") ? faJson["data"] : nlohmann::json::array());
                     if (!faItems.empty()) {
                         nlohmann::json fa = faItems[0];
                         nlohmann::json faAttrs = fa.contains("attributes") ? fa["attributes"] : fa;
 
+                        // Helper lambdas for safe JSON access
+                        auto safeGetString = [&faAttrs](const std::string& key) -> std::string {
+                            if (faAttrs.contains(key) && faAttrs[key].is_string()) {
+                                return faAttrs[key].get<std::string>();
+                            }
+                            return "";
+                        };
+                        auto safeGetBool = [&faAttrs](const std::string& key, bool defaultVal = false) -> bool {
+                            if (faAttrs.contains(key) && faAttrs[key].is_boolean()) {
+                                return faAttrs[key].get<bool>();
+                            }
+                            return defaultVal;
+                        };
+
+                        // General Information
+                        fields.push_back({"General Information", "", "header"});
+                        fields.push_back({"Applying for Financial Aid", safeGetBool("applying_for_aid", true) ? "Yes" : "No", "text"});
+
                         // FAFSA Information
+                        fields.push_back({"", "", "text"});
                         fields.push_back({"FAFSA Information", "", "header"});
-                        fields.push_back({"FAFSA Completed", faAttrs.value("fafsa_completed", false) ? "Yes" : "No", "text"});
-                        fields.push_back({"FAFSA Year", faAttrs.value("fafsa_year", ""), "text"});
+                        fields.push_back({"FAFSA Completed", safeGetBool("fafsa_completed") ? "Yes" : "No", "text"});
                         if (faAttrs.contains("efc") && !faAttrs["efc"].is_null()) {
                             std::ostringstream efcStr;
-                            efcStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("efc", 0.0);
-                            fields.push_back({"Expected Family Contribution (EFC)", efcStr.str(), "text"});
-                        }
-                        fields.push_back({"Aid Types Requested", faAttrs.value("aid_types", ""), "text"});
-                        if (faAttrs.contains("requested_aid_amount") && !faAttrs["requested_aid_amount"].is_null()) {
-                            std::ostringstream aidStr;
-                            aidStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("requested_aid_amount", 0.0);
-                            fields.push_back({"Requested Aid Amount", aidStr.str(), "text"});
+                            efcStr << std::fixed << std::setprecision(2) << faAttrs.value("efc", 0.0);
+                            fields.push_back({"Student Aid Index (SAI/EFC)", efcStr.str(), "text"});
                         }
 
                         // Employment Information
                         fields.push_back({"", "", "text"});
                         fields.push_back({"Employment Information", "", "header"});
-                        fields.push_back({"Employment Status", faAttrs.value("employment_status", ""), "text"});
-                        fields.push_back({"Employer Name", faAttrs.value("employer_name", ""), "text"});
-                        if (faAttrs.contains("annual_income") && !faAttrs["annual_income"].is_null()) {
-                            std::ostringstream incomeStr;
-                            incomeStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("annual_income", 0.0);
-                            fields.push_back({"Annual Income", incomeStr.str(), "text"});
+                        std::string empStatus = safeGetString("employment_status");
+                        fields.push_back({"Employment Status", empStatus.empty() ? "Not specified" : empStatus, "text"});
+                        std::string employer = safeGetString("employer_name");
+                        if (!employer.empty()) {
+                            fields.push_back({"Employer Name", employer, "text"});
                         }
 
                         // Household Information
                         fields.push_back({"", "", "text"});
                         fields.push_back({"Household Information", "", "header"});
-                        fields.push_back({"Independent Student", faAttrs.value("is_independent", false) ? "Yes" : "No", "text"});
-                        if (faAttrs.contains("household_size") && !faAttrs["household_size"].is_null()) {
-                            fields.push_back({"Household Size", std::to_string(faAttrs.value("household_size", 0)), "text"});
-                        }
+                        std::string incomeRange = safeGetString("household_income_range");
+                        fields.push_back({"Household Income Range", incomeRange.empty() ? "Not specified" : incomeRange, "text"});
                         if (faAttrs.contains("dependents_count") && !faAttrs["dependents_count"].is_null()) {
                             fields.push_back({"Number of Dependents", std::to_string(faAttrs.value("dependents_count", 0)), "text"});
                         }
+                        fields.push_back({"Veteran Benefits Eligible", safeGetBool("veteran_benefits") ? "Yes" : "No", "text"});
 
-                        // Loan Information
-                        bool hasLoans = faAttrs.value("has_outstanding_loans", false);
-                        fields.push_back({"Has Outstanding Loans", hasLoans ? "Yes" : "No", "text"});
-                        if (hasLoans && faAttrs.contains("outstanding_loan_amount") && !faAttrs["outstanding_loan_amount"].is_null()) {
-                            std::ostringstream loanStr;
-                            loanStr << "$" << std::fixed << std::setprecision(2) << faAttrs.value("outstanding_loan_amount", 0.0);
-                            fields.push_back({"Outstanding Loan Amount", loanStr.str(), "text"});
-                        }
+                        // Aid Types Interested In
+                        fields.push_back({"", "", "text"});
+                        fields.push_back({"Types of Aid Interested In", "", "header"});
+                        fields.push_back({"Scholarships and Grants", safeGetBool("scholarship_interest") ? "Yes" : "No", "text"});
+                        fields.push_back({"Federal Work-Study", safeGetBool("work_study_interest") ? "Yes" : "No", "text"});
+                        fields.push_back({"Student Loans", safeGetBool("loan_interest") ? "Yes" : "No", "text"});
 
-                        // Scholarships
-                        std::string scholarships = faAttrs.value("scholarship_applications", "");
+                        // Current Scholarships
+                        std::string scholarships = safeGetString("scholarship_applications");
                         if (!scholarships.empty()) {
                             fields.push_back({"", "", "text"});
-                            fields.push_back({"Scholarship Applications", "", "header"});
+                            fields.push_back({"Current Scholarships", "", "header"});
                             fields.push_back({"Scholarships", scholarships, "text"});
                         }
+
+                        // Special Circumstances
+                        std::string specialCirc = safeGetString("special_circumstances");
+                        if (!specialCirc.empty()) {
+                            fields.push_back({"", "", "text"});
+                            fields.push_back({"Special Circumstances", "", "header"});
+                            fields.push_back({"Details", specialCirc, "text"});
+                        }
+                    } else {
+                        fields.push_back({"No Financial Aid Data", "No financial aid information has been submitted.", "text"});
                     }
+                } else {
+                    fields.push_back({"No Financial Aid Data", "No financial aid information has been submitted.", "text"});
                 }
             } else if (formType == "documents") {
                 std::string docUrl = "/Document?filter[student_id]=" + std::to_string(studentId);
