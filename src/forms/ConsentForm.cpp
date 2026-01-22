@@ -14,125 +14,60 @@ ConsentForm::~ConsentForm() {
 }
 
 void ConsentForm::createFormFields() {
+    // Introduction
     auto intro = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     intro->addStyleClass("form-section");
     auto introText = intro->addWidget(std::make_unique<Wt::WText>(
         "<p>Please review and acknowledge the following terms and policies to complete your enrollment.</p>"));
     introText->setTextFormat(Wt::TextFormat::XHTML);
 
+    // Consent checkboxes section
+    auto checkboxSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    checkboxSection->addStyleClass("form-section consent-checkboxes");
+
     // Terms of Service
-    auto termsSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    termsSection->addStyleClass("form-section consent-section");
-    auto termsHeader = termsSection->addWidget(std::make_unique<Wt::WText>("<h4>Terms of Service</h4>"));
-    termsHeader->setTextFormat(Wt::TextFormat::XHTML);
-
-    auto termsText = termsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    termsText->addStyleClass("consent-text");
-    auto termsBody = termsText->addWidget(std::make_unique<Wt::WText>(
-        "<p>By enrolling at this institution, you agree to abide by all university policies, "
-        "procedures, and regulations. This includes academic integrity policies, student conduct "
-        "codes, and all applicable local, state, and federal laws.</p>"));
-    termsBody->setTextFormat(Wt::TextFormat::XHTML);
-
-    termsCheckbox_ = termsSection->addWidget(std::make_unique<Wt::WCheckBox>(
-        " I have read and agree to the Terms of Service *"));
+    termsCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+        " I agree to the Terms of Service - By enrolling, I agree to abide by all university policies, "
+        "procedures, regulations, and applicable laws. *"));
     termsCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Privacy Policy
-    auto privacySection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    privacySection->addStyleClass("form-section consent-section");
-    auto privacyHeader = privacySection->addWidget(std::make_unique<Wt::WText>("<h4>Privacy Policy</h4>"));
-    privacyHeader->setTextFormat(Wt::TextFormat::XHTML);
-
-    auto privacyText = privacySection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    privacyText->addStyleClass("consent-text");
-    auto privacyBody = privacyText->addWidget(std::make_unique<Wt::WText>(
-        "<p>Your personal information will be collected, stored, and processed in accordance with "
-        "our Privacy Policy. We are committed to protecting your privacy and will only use your "
-        "information for educational purposes and as required by law.</p>"));
-    privacyBody->setTextFormat(Wt::TextFormat::XHTML);
-
-    privacyCheckbox_ = privacySection->addWidget(std::make_unique<Wt::WCheckBox>(
-        " I have read and agree to the Privacy Policy *"));
+    privacyCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+        " I agree to the Privacy Policy - My personal information will be collected, stored, and "
+        "processed in accordance with the university's Privacy Policy. *"));
     privacyCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // FERPA Rights
-    auto ferpaSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    ferpaSection->addStyleClass("form-section consent-section");
-    auto ferpaHeader = ferpaSection->addWidget(std::make_unique<Wt::WText>("<h4>FERPA Rights Acknowledgment</h4>"));
-    ferpaHeader->setTextFormat(Wt::TextFormat::XHTML);
-
-    auto ferpaText = ferpaSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    ferpaText->addStyleClass("consent-text");
-    auto ferpaBody = ferpaText->addWidget(std::make_unique<Wt::WText>(
-        "<p>The Family Educational Rights and Privacy Act (FERPA) protects the privacy of student "
-        "education records. You have the right to inspect and review your education records, "
-        "request amendments, and control disclosure of personally identifiable information.</p>"));
-    ferpaBody->setTextFormat(Wt::TextFormat::XHTML);
-
-    ferpaCheckbox_ = ferpaSection->addWidget(std::make_unique<Wt::WCheckBox>(
-        " I acknowledge my FERPA rights and responsibilities *"));
+    ferpaCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+        " I acknowledge my FERPA rights - I understand my rights under the Family Educational Rights "
+        "and Privacy Act regarding my education records. *"));
     ferpaCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Student Code of Conduct
-    auto conductSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    conductSection->addStyleClass("form-section consent-section");
-    auto conductHeader = conductSection->addWidget(std::make_unique<Wt::WText>("<h4>Student Code of Conduct</h4>"));
-    conductHeader->setTextFormat(Wt::TextFormat::XHTML);
-
-    auto conductText = conductSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    conductText->addStyleClass("consent-text");
-    auto conductBody = conductText->addWidget(std::make_unique<Wt::WText>(
-        "<p>As a member of our academic community, you agree to uphold the highest standards of "
-        "academic integrity and ethical behavior. This includes refraining from cheating, plagiarism, "
-        "and other forms of academic dishonesty.</p>"));
-    conductBody->setTextFormat(Wt::TextFormat::XHTML);
-
-    codeOfConductCheckbox_ = conductSection->addWidget(std::make_unique<Wt::WCheckBox>(
-        " I agree to abide by the Student Code of Conduct *"));
+    codeOfConductCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+        " I agree to the Student Code of Conduct - I will uphold academic integrity and ethical "
+        "behavior standards, including refraining from cheating and plagiarism. *"));
     codeOfConductCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Communication Consent
-    auto commSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    commSection->addStyleClass("form-section consent-section");
-    auto commHeader = commSection->addWidget(std::make_unique<Wt::WText>("<h4>Communication Preferences</h4>"));
-    commHeader->setTextFormat(Wt::TextFormat::XHTML);
-
-    communicationCheckbox_ = commSection->addWidget(std::make_unique<Wt::WCheckBox>(
-        " I consent to receive communications (email, SMS, mail) from the university regarding "
-        "my enrollment, academics, and campus events *"));
+    communicationCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+        " I consent to receive communications - I agree to receive email, SMS, and mail from the "
+        "university regarding enrollment, academics, and campus events. *"));
     communicationCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Photo Release (Optional)
-    auto photoSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    photoSection->addStyleClass("form-section consent-section");
-    auto photoHeader = photoSection->addWidget(std::make_unique<Wt::WText>("<h4>Photo/Media Release (Optional)</h4>"));
-    photoHeader->setTextFormat(Wt::TextFormat::XHTML);
-
-    auto photoText = photoSection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    photoText->addStyleClass("consent-text");
-    auto photoBody = photoText->addWidget(std::make_unique<Wt::WText>(
-        "<p>I grant permission for photographs, videos, or other media of me taken during university "
-        "events to be used for promotional and educational purposes.</p>"));
-    photoBody->setTextFormat(Wt::TextFormat::XHTML);
-
-    photoReleaseCheckbox_ = photoSection->addWidget(std::make_unique<Wt::WCheckBox>(
-        " I consent to the photo/media release (optional)"));
+    photoReleaseCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+        " I consent to photo/media release (optional) - I grant permission for photos and videos "
+        "taken during university events to be used for promotional purposes."));
     photoReleaseCheckbox_->addStyleClass("form-check consent-checkbox");
 
     // Accuracy Certification
-    auto accuracySection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    accuracySection->addStyleClass("form-section consent-section");
-    auto accuracyHeader = accuracySection->addWidget(std::make_unique<Wt::WText>("<h4>Certification of Accuracy</h4>"));
-    accuracyHeader->setTextFormat(Wt::TextFormat::XHTML);
-
-    accuracyCheckbox_ = accuracySection->addWidget(std::make_unique<Wt::WCheckBox>(
-        " I certify that all information provided in this application is accurate and complete "
-        "to the best of my knowledge. I understand that providing false information may result "
-        "in dismissal or other disciplinary action. *"));
+    accuracyCheckbox_ = checkboxSection->addWidget(std::make_unique<Wt::WCheckBox>(
+        " I certify accuracy of information - All information provided in this application is accurate "
+        "and complete. I understand false information may result in disciplinary action. *"));
     accuracyCheckbox_->addStyleClass("form-check consent-checkbox");
 
-    // Electronic Signature
+    // Electronic Signature section
     auto signatureSection = formFieldsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     signatureSection->addStyleClass("form-section signature-section");
     auto signatureHeader = signatureSection->addWidget(std::make_unique<Wt::WText>("<h4>Electronic Signature</h4>"));
@@ -259,39 +194,42 @@ void ConsentForm::loadConsentsFromApi() {
 
     std::cout << "[ConsentForm] Loading consent data from API for student: " << studentId << std::endl;
 
-    std::map<std::string, bool> consents = apiService_->getStudentConsents(studentId);
+    auto consentData = apiService_->getStudentConsentsWithSignature(studentId);
 
-    if (consents.empty()) {
+    if (consentData.consents.empty()) {
         std::cout << "[ConsentForm] No existing consent records found" << std::endl;
         return;
     }
 
     // Map API consent_type values to form checkboxes
-    // API uses: terms_of_service, privacy_policy, ferpa_acknowledgment, code_of_conduct,
-    //           communication_consent, photo_release, accuracy_certification
-    if (consents.count("terms_of_service")) {
-        termsCheckbox_->setChecked(consents["terms_of_service"]);
+    if (consentData.consents.count("terms_of_service")) {
+        termsCheckbox_->setChecked(consentData.consents["terms_of_service"]);
     }
-    if (consents.count("privacy_policy")) {
-        privacyCheckbox_->setChecked(consents["privacy_policy"]);
+    if (consentData.consents.count("privacy_policy")) {
+        privacyCheckbox_->setChecked(consentData.consents["privacy_policy"]);
     }
-    if (consents.count("ferpa_acknowledgment")) {
-        ferpaCheckbox_->setChecked(consents["ferpa_acknowledgment"]);
+    if (consentData.consents.count("ferpa_acknowledgment")) {
+        ferpaCheckbox_->setChecked(consentData.consents["ferpa_acknowledgment"]);
     }
-    if (consents.count("code_of_conduct")) {
-        codeOfConductCheckbox_->setChecked(consents["code_of_conduct"]);
+    if (consentData.consents.count("code_of_conduct")) {
+        codeOfConductCheckbox_->setChecked(consentData.consents["code_of_conduct"]);
     }
-    if (consents.count("communication_consent")) {
-        communicationCheckbox_->setChecked(consents["communication_consent"]);
+    if (consentData.consents.count("communication_consent")) {
+        communicationCheckbox_->setChecked(consentData.consents["communication_consent"]);
     }
-    if (consents.count("photo_release")) {
-        photoReleaseCheckbox_->setChecked(consents["photo_release"]);
+    if (consentData.consents.count("photo_release")) {
+        photoReleaseCheckbox_->setChecked(consentData.consents["photo_release"]);
     }
-    if (consents.count("accuracy_certification")) {
-        accuracyCheckbox_->setChecked(consents["accuracy_certification"]);
+    if (consentData.consents.count("accuracy_certification")) {
+        accuracyCheckbox_->setChecked(consentData.consents["accuracy_certification"]);
     }
 
-    std::cout << "[ConsentForm] Loaded " << consents.size() << " consent values from API" << std::endl;
+    // Load signature if present
+    if (!consentData.signature.empty()) {
+        signatureInput_->setText(consentData.signature);
+    }
+
+    std::cout << "[ConsentForm] Loaded " << consentData.consents.size() << " consent values from API" << std::endl;
 }
 
 } // namespace Forms

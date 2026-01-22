@@ -35,6 +35,15 @@ struct SubmissionResult {
 using SubmissionCallback = std::function<void(const SubmissionResult&)>;
 
 /**
+ * @brief Student consent data including signature
+ */
+struct StudentConsentData {
+    std::map<std::string, bool> consents;  // consent_type -> is_accepted
+    std::string signature;
+    std::string signatureDate;
+};
+
+/**
  * @brief Service for submitting forms to the ApiLogicServer backend
  */
 class FormSubmissionService {
@@ -106,6 +115,7 @@ public:
     // Consent record management
     SubmissionResult deleteStudentConsents(const std::string& studentId);
     std::map<std::string, bool> getStudentConsents(const std::string& studentId);
+    StudentConsentData getStudentConsentsWithSignature(const std::string& studentId);
 
     // Generic form submission (determines endpoint from form ID)
     SubmissionResult submitForm(const std::string& studentId,
