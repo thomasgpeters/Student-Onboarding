@@ -694,6 +694,23 @@ body {
     font-weight: 500;
 }
 
+.consent-item {
+    display: block;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.consent-item:last-child {
+    border-bottom: none;
+}
+
+.consent-checkboxes {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+}
+
 .signature-section {
     background: #fffbeb;
     padding: 1.5rem;
