@@ -246,8 +246,8 @@ void ConsentForm::populateFormFields(const Models::FormData& data) {
 }
 
 void ConsentForm::loadConsentsFromApi() {
-    if (!session_) {
-        std::cout << "[ConsentForm] No session available, skipping API load" << std::endl;
+    if (!apiService_ || !session_) {
+        std::cout << "[ConsentForm] No apiService or session available, skipping API load" << std::endl;
         return;
     }
 
@@ -259,8 +259,7 @@ void ConsentForm::loadConsentsFromApi() {
 
     std::cout << "[ConsentForm] Loading consent data from API for student: " << studentId << std::endl;
 
-    auto& apiService = session_->getFormSubmissionService();
-    std::map<std::string, bool> consents = apiService.getStudentConsents(studentId);
+    std::map<std::string, bool> consents = apiService_->getStudentConsents(studentId);
 
     if (consents.empty()) {
         std::cout << "[ConsentForm] No existing consent records found" << std::endl;
