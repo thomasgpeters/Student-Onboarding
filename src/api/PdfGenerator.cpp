@@ -1,5 +1,5 @@
 #include "PdfGenerator.h"
-#include <iostream>
+#include "utils/Logger.h"
 #include <fstream>
 #include <sstream>
 #include <ctime>
@@ -22,7 +22,7 @@ static void hpdf_error_handler(HPDF_STATUS error_no, HPDF_STATUS detail_no, void
     oss << "HPDF Error: error_no=" << std::hex << error_no
         << ", detail_no=" << detail_no;
     *errorMsg = oss.str();
-    std::cerr << "[PdfGenerator] " << *errorMsg << std::endl;
+    LOG_ERROR("PdfGenerator", *errorMsg);
 }
 #endif
 
@@ -317,7 +317,7 @@ std::string PdfGenerator::generateFormPdf(const PdfFormData& formData, const std
         HPDF_SaveToFile(pdf, fullPath.c_str());
         HPDF_Free(pdf);
 
-        std::cerr << "[PdfGenerator] Generated PDF: " << fullPath << std::endl;
+        LOG_INFO("PdfGenerator", "Generated PDF: " << fullPath);
         return fullPath;
 
     } catch (const std::exception& e) {
@@ -466,7 +466,7 @@ std::string PdfGenerator::generateMultiFormPdf(const std::vector<PdfFormData>& f
         HPDF_SaveToFile(pdf, fullPath.c_str());
         HPDF_Free(pdf);
 
-        std::cerr << "[PdfGenerator] Generated multi-form PDF: " << fullPath << std::endl;
+        LOG_INFO("PdfGenerator", "Generated multi-form PDF: " << fullPath);
         return fullPath;
 
     } catch (const std::exception& e) {

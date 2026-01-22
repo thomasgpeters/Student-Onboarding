@@ -1,6 +1,6 @@
 #include "FormTypeDetailWidget.h"
 #include <Wt/WBreak.h>
-#include <iostream>
+#include "utils/Logger.h"
 #include <nlohmann/json.hpp>
 
 namespace StudentIntake {
@@ -154,18 +154,18 @@ void FormTypeDetailWidget::loadFormType(int formTypeId) {
 
 void FormTypeDetailWidget::loadFormTypeData() {
     if (!apiService_ || currentFormTypeId_ <= 0) {
-        std::cerr << "[FormTypeDetail] Invalid state for loading" << std::endl;
+        LOG_WARN("FormTypeDetail", "Invalid state for loading");
         return;
     }
 
     try {
-        std::cerr << "[FormTypeDetail] Loading form type: " << currentFormTypeId_ << std::endl;
+        LOG_DEBUG("FormTypeDetail", "Loading form type: " << currentFormTypeId_);
 
         std::string endpoint = "/FormType/" + std::to_string(currentFormTypeId_);
         auto response = apiService_->getApiClient()->get(endpoint);
 
         if (!response.success) {
-            std::cerr << "[FormTypeDetail] Failed to load form type: " << response.errorMessage << std::endl;
+            LOG_ERROR("FormTypeDetail", "Failed to load form type: " << response.errorMessage);
             return;
         }
 
@@ -185,13 +185,13 @@ void FormTypeDetailWidget::loadFormTypeData() {
         createdAt_ = attrs.value("created_at", "");
         updatedAt_ = attrs.value("updated_at", "");
 
-        std::cerr << "[FormTypeDetail] Loaded form type: " << formName_ << " (" << formCode_ << ")" << std::endl;
+        LOG_INFO("FormTypeDetail", "Loaded form type: " << formName_ << " (" << formCode_ << ")");
 
         loadFieldDefinitions();
         updateDisplay();
 
     } catch (const std::exception& e) {
-        std::cerr << "[FormTypeDetail] Exception loading form type: " << e.what() << std::endl;
+        LOG_ERROR("FormTypeDetail", "Exception loading form type: " << e.what());
     }
 }
 

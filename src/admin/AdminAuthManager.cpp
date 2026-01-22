@@ -1,6 +1,6 @@
 #include "AdminAuthManager.h"
 #include <regex>
-#include <iostream>
+#include "utils/Logger.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -42,7 +42,7 @@ AdminAuthResult AdminAuthManager::login(const std::string& email, const std::str
     // Development fallback: Allow login with default admin credentials
     // even if API is not available. REMOVE IN PRODUCTION!
     if (email == "admin@university.edu" && password == "admin123") {
-        std::cerr << "[AdminAuth] Using development fallback login for admin" << std::endl;
+        LOG_WARN("AdminAuth", "Using development fallback login for admin");
         result.adminUser.setId(1);
         result.adminUser.setEmail(email);
         result.adminUser.setFirstName("System");
@@ -58,17 +58,17 @@ AdminAuthResult AdminAuthManager::login(const std::string& email, const std::str
     try {
         // Query the AdminUser API endpoint (PascalCase for ApiLogicServer)
         std::string endpoint = "/AdminUser?filter[email]=" + email;
-        std::cerr << "[AdminAuth] Querying endpoint: " << endpoint << std::endl;
+        LOG_DEBUG("AdminAuth", "Querying endpoint: " << endpoint);
         auto response = apiService_->getApiClient()->get(endpoint);
 
         if (!response.success) {
-            std::cerr << "[AdminAuth] API request failed: " << response.errorMessage << std::endl;
+            LOG_ERROR("AdminAuth", "API request failed: " << response.errorMessage);
             result.message = "Failed to connect to server";
             result.errors.push_back(response.errorMessage);
             return result;
         }
 
-        std::cerr << "[AdminAuth] API response: " << response.body.substr(0, 500) << std::endl;
+        LOG_DEBUG("AdminAuth", "API response: " << response.body.substr(0, 500));
 
         // Parse JSON response
         auto jsonResponse = nlohmann::json::parse(response.body);
@@ -115,13 +115,13 @@ AdminAuthResult AdminAuthManager::login(const std::string& email, const std::str
         result.message = "Login successful";
         result.token = "admin_token_" + std::to_string(result.adminUser.getId());
 
-        std::cerr << "[AdminAuth] Login successful for: " << email
-                  << " (Role: " << result.adminUser.getRoleString() << ")" << std::endl;
+        LOG_INFO("AdminAuth", "Login successful for: " << email
+                  << " (Role: " << result.adminUser.getRoleString() << ")");
 
     } catch (const std::exception& e) {
         result.message = "Login failed";
         result.errors.push_back(std::string("Exception: ") + e.what());
-        std::cerr << "[AdminAuth] Login exception: " << e.what() << std::endl;
+        LOG_ERROR("AdminAuth", "Login exception: " << e.what());
     }
 
     return result;

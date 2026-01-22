@@ -1,7 +1,7 @@
 #include "CurriculumEditorWidget.h"
 #include <Wt/WBreak.h>
-#include <iostream>
 #include <algorithm>
+#include "utils/Logger.h"
 #include <nlohmann/json.hpp>
 
 namespace StudentIntake {
@@ -323,10 +323,10 @@ void CurriculumEditorWidget::loadDepartments() {
                 }
             }
 
-            std::cerr << "[CurriculumEditorWidget] Loaded " << departments_.size() << " departments" << std::endl;
+            LOG_DEBUG("CurriculumEditorWidget", "Loaded " << departments_.size() << " departments");
         }
     } catch (const std::exception& e) {
-        std::cerr << "[CurriculumEditorWidget] Error loading departments: " << e.what() << std::endl;
+        LOG_ERROR("CurriculumEditorWidget", "Error loading departments: " << e.what());
     }
 
     // Populate the dropdown (clear except "Select Department")
@@ -361,7 +361,7 @@ void CurriculumEditorWidget::loadCurriculum(const std::string& curriculumId) {
                 }
             }
         } catch (const std::exception& e) {
-            std::cerr << "[CurriculumEditorWidget] Error loading curriculum: " << e.what() << std::endl;
+            LOG_ERROR("CurriculumEditorWidget", "Error loading curriculum: " << e.what());
         }
     }
 
@@ -576,7 +576,7 @@ void CurriculumEditorWidget::saveCurriculum() {
                 return;
             }
         } catch (const std::exception& e) {
-            std::cerr << "[CurriculumEditorWidget] Error saving curriculum: " << e.what() << std::endl;
+            LOG_ERROR("CurriculumEditorWidget", "Error saving curriculum: " << e.what());
             showError("Error saving program: " + std::string(e.what()));
             return;
         }
@@ -584,7 +584,7 @@ void CurriculumEditorWidget::saveCurriculum() {
 
     // No API - simulate success
     showSuccess(isNewCurriculum_ ? "Program created successfully!" : "Program updated successfully!");
-    std::cerr << "[CurriculumEditorWidget] Program saved (simulated): " << currentCurriculum_.getName() << std::endl;
+    LOG_INFO("CurriculumEditorWidget", "Program saved (simulated): " << currentCurriculum_.getName());
     saveSuccess_.emit();
 }
 
@@ -695,11 +695,10 @@ void CurriculumEditorWidget::loadCurriculumFormRequirements(const std::string& c
             }
 
             currentCurriculum_.setRequiredForms(requiredForms);
-            std::cerr << "[CurriculumEditorWidget] Loaded " << requiredForms.size()
-                      << " required forms for curriculum " << curriculumId << std::endl;
+            LOG_DEBUG("CurriculumEditorWidget", "Loaded " << requiredForms.size() << " required forms for curriculum " << curriculumId);
         }
     } catch (const std::exception& e) {
-        std::cerr << "[CurriculumEditorWidget] Error loading form requirements: " << e.what() << std::endl;
+        LOG_ERROR("CurriculumEditorWidget", "Error loading form requirements: " << e.what());
     }
 }
 
@@ -756,11 +755,10 @@ void CurriculumEditorWidget::saveCurriculumFormRequirements(const std::string& c
             }
         }
 
-        std::cerr << "[CurriculumEditorWidget] Saved " << currentCurriculum_.getRequiredForms().size()
-                  << " form requirements for curriculum " << curriculumId << std::endl;
+        LOG_DEBUG("CurriculumEditorWidget", "Saved " << currentCurriculum_.getRequiredForms().size() << " form requirements for curriculum " << curriculumId);
 
     } catch (const std::exception& e) {
-        std::cerr << "[CurriculumEditorWidget] Error saving form requirements: " << e.what() << std::endl;
+        LOG_ERROR("CurriculumEditorWidget", "Error saving form requirements: " << e.what());
     }
 }
 

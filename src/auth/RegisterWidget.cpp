@@ -1,8 +1,8 @@
 #include "RegisterWidget.h"
+#include "utils/Logger.h"
 #include <Wt/WBreak.h>
 #include <Wt/WAnchor.h>
 #include <Wt/WLabel.h>
-#include <iostream>
 
 namespace StudentIntake {
 namespace Auth {
@@ -196,8 +196,7 @@ void RegisterWidget::validateForm() {
 }
 
 void RegisterWidget::handleRegister() {
-    std::cout << "[RegisterWidget] handleRegister called" << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("RegisterWidget", "handleRegister called");
 
     clearError();
 
@@ -207,8 +206,7 @@ void RegisterWidget::handleRegister() {
     std::string password = passwordInput_->text().toUTF8();
     std::string confirmPassword = confirmPasswordInput_->text().toUTF8();
 
-    std::cout << "[RegisterWidget] Registration attempt for: " << email << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("RegisterWidget", "Registration attempt for: " << email);
 
     // Validate inputs
     if (firstName.empty()) {
@@ -246,23 +244,19 @@ void RegisterWidget::handleRegister() {
         return;
     }
 
-    std::cout << "[RegisterWidget] Validation passed, calling authManager" << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("RegisterWidget", "Validation passed, calling authManager");
 
     // Disable register button during registration
     registerButton_->setEnabled(false);
     registerButton_->setText("Creating account...");
 
     if (authManager_) {
-        std::cout << "[RegisterWidget] AuthManager is set, calling registerStudent" << std::endl;
-        std::cout.flush();
+        LOG_DEBUG("RegisterWidget", "AuthManager is set, calling registerStudent");
 
         AuthResult result = authManager_->registerStudent(email, password, firstName, lastName);
 
-        std::cout << "[RegisterWidget] Registration result - success: " << result.success
-                  << ", message: " << result.message << std::endl;
-        std::cout << "[RegisterWidget] Result student ID: '" << result.student.getId() << "'" << std::endl;
-        std::cout.flush();
+        LOG_DEBUG("RegisterWidget", "Registration result - success: " << result.success << ", message: " << result.message);
+        LOG_DEBUG("RegisterWidget", "Result student ID: '" << result.student.getId() << "'");
 
         if (result.success) {
             // Update session
@@ -270,9 +264,7 @@ void RegisterWidget::handleRegister() {
                 session_->setLoggedIn(true);
                 session_->setAuthToken(result.token);
                 session_->setStudent(result.student);
-                std::cout << "[RegisterWidget] Session student ID after setStudent: '"
-                          << session_->getStudent().getId() << "'" << std::endl;
-                std::cout.flush();
+                LOG_DEBUG("RegisterWidget", "Session student ID after setStudent: '" << session_->getStudent().getId() << "'");
             }
 
             registrationSuccess_.emit();
@@ -284,8 +276,7 @@ void RegisterWidget::handleRegister() {
             }
         }
     } else {
-        std::cerr << "[RegisterWidget] ERROR: authManager_ is null!" << std::endl;
-        std::cerr.flush();
+        LOG_ERROR("RegisterWidget", "authManager_ is null!");
         showError("Registration service unavailable");
     }
 

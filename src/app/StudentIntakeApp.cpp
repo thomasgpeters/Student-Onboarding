@@ -2,7 +2,7 @@
 #include <Wt/WText.h>
 #include <Wt/WBreak.h>
 #include <fstream>
-#include <iostream>
+#include "utils/Logger.h"
 
 namespace StudentIntake {
 namespace App {
@@ -151,12 +151,12 @@ void StudentIntakeApp::setupUI() {
     dashboardWidget_ = contentContainer_->addWidget(std::make_unique<Widgets::DashboardWidget>());
     dashboardWidget_->setSession(session_);
     dashboardWidget_->continueClicked().connect([this]() {
-        std::cout << "[StudentIntakeApp] continueClicked - hasCurriculumSelected: " << session_->hasCurriculumSelected() << std::endl;
+        LOG_DEBUG("StudentIntakeApp", "continueClicked - hasCurriculumSelected: " << session_->hasCurriculumSelected());
         if (!session_->hasCurriculumSelected()) {
-            std::cout << "[StudentIntakeApp] Going to CurriculumSelection from Dashboard" << std::endl;
+            LOG_INFO("StudentIntakeApp", "Going to CurriculumSelection from Dashboard");
             setState(AppState::CurriculumSelection);
         } else {
-            std::cout << "[StudentIntakeApp] Going to Forms from Dashboard" << std::endl;
+            LOG_INFO("StudentIntakeApp", "Going to Forms from Dashboard");
             setState(AppState::Forms);
         }
     });
@@ -278,7 +278,7 @@ void StudentIntakeApp::setState(AppState state) {
 }
 
 void StudentIntakeApp::showLogin() {
-    std::cout << "[StudentIntakeApp] showLogin called" << std::endl;
+    LOG_DEBUG("StudentIntakeApp", "showLogin called");
     hideAllViews();
     loginWidget_->show();
     loginWidget_->reset();
@@ -295,12 +295,12 @@ void StudentIntakeApp::showRegister() {
 }
 
 void StudentIntakeApp::showCurriculumSelection() {
-    std::cout << "[StudentIntakeApp] showCurriculumSelection called" << std::endl;
+    LOG_DEBUG("StudentIntakeApp", "showCurriculumSelection called");
     hideAllViews();
     curriculumSelector_->show();
     curriculumSelector_->refresh();
     navigationWidget_->refresh();
-    std::cout << "[StudentIntakeApp] showCurriculumSelection completed" << std::endl;
+    LOG_DEBUG("StudentIntakeApp", "showCurriculumSelection completed");
 }
 
 void StudentIntakeApp::showDashboard() {
@@ -319,14 +319,14 @@ void StudentIntakeApp::showDashboard() {
 }
 
 void StudentIntakeApp::showForms() {
-    std::cout << "[StudentIntakeApp] showForms called" << std::endl;
+    LOG_DEBUG("StudentIntakeApp", "showForms called");
 
     // Calculate required forms based on student data
     auto requiredFormIds = Session::SessionManager::getInstance().calculateRequiredForms(
         session_->getStudent(),
         session_->getCurrentCurriculum());
 
-    std::cout << "[StudentIntakeApp] Calculated " << requiredFormIds.size() << " required forms" << std::endl;
+    LOG_DEBUG("StudentIntakeApp", "Calculated " << requiredFormIds.size() << " required forms");
     session_->setRequiredFormIds(requiredFormIds);
 
     // Configure form factory with session and API service
@@ -364,54 +364,53 @@ void StudentIntakeApp::showCompletion() {
 }
 
 void StudentIntakeApp::handleLoginSuccess() {
-    std::cout << "[StudentIntakeApp] handleLoginSuccess called" << std::endl;
+    LOG_DEBUG("StudentIntakeApp", "handleLoginSuccess called");
     navigationWidget_->refresh();
 
     // Check if returning student has a curriculum_id - if so, load the curriculum
     std::string curriculumId = session_->getStudent().getCurriculumId();
-    std::cout << "[StudentIntakeApp] Student curriculum_id: '" << curriculumId << "'" << std::endl;
+    LOG_DEBUG("StudentIntakeApp", "Student curriculum_id: '" << curriculumId << "'");
 
     if (!curriculumId.empty() && !session_->hasCurriculumSelected()) {
         // Load curriculum from manager
-        std::cout << "[StudentIntakeApp] Loading curriculum from manager..." << std::endl;
+        LOG_DEBUG("StudentIntakeApp", "Loading curriculum from manager...");
         auto curriculum = curriculumManager_->getCurriculum(curriculumId);
-        std::cout << "[StudentIntakeApp] Loaded curriculum id: '" << curriculum.getId() << "'" << std::endl;
+        LOG_DEBUG("StudentIntakeApp", "Loaded curriculum id: '" << curriculum.getId() << "'");
 
         if (!curriculum.getId().empty()) {
             session_->setCurrentCurriculum(curriculum);
 
             // Load required forms for this curriculum so we can check completion
             auto requiredFormIds = curriculum.getRequiredForms();
-            std::cout << "[StudentIntakeApp] Required forms count: " << requiredFormIds.size() << std::endl;
+            LOG_DEBUG("StudentIntakeApp", "Required forms count: " << requiredFormIds.size());
             session_->setRequiredFormIds(requiredFormIds);
         }
     }
 
-    std::cout << "[StudentIntakeApp] hasCurriculumSelected: " << session_->hasCurriculumSelected() << std::endl;
+    LOG_DEBUG("StudentIntakeApp", "hasCurriculumSelected: " << session_->hasCurriculumSelected());
 
     if (session_->hasCurriculumSelected()) {
         // Check if all forms are already completed (returning student)
-        std::cout << "[StudentIntakeApp] isIntakeComplete: " << session_->isIntakeComplete() << std::endl;
+        LOG_DEBUG("StudentIntakeApp", "isIntakeComplete: " << session_->isIntakeComplete());
         if (session_->isIntakeComplete()) {
             // All forms are complete - go directly to completion view
-            std::cout << "[StudentIntakeApp] Going to Completion" << std::endl;
+            LOG_INFO("StudentIntakeApp", "Going to Completion");
             setState(AppState::Completion);
         } else {
             // Some forms still need to be filled
-            std::cout << "[StudentIntakeApp] Going to Dashboard" << std::endl;
+            LOG_INFO("StudentIntakeApp", "Going to Dashboard");
             setState(AppState::Dashboard);
         }
     } else {
-        std::cout << "[StudentIntakeApp] Going to CurriculumSelection" << std::endl;
+        LOG_INFO("StudentIntakeApp", "Going to CurriculumSelection");
         setState(AppState::CurriculumSelection);
     }
 }
 
 void StudentIntakeApp::handleRegistrationSuccess() {
-    std::cout << "[StudentIntakeApp] handleRegistrationSuccess called" << std::endl;
-    std::cout << "[StudentIntakeApp] Session student ID: '" << session_->getStudent().getId() << "'" << std::endl;
-    std::cout << "[StudentIntakeApp] Session student email: '" << session_->getStudent().getEmail() << "'" << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("StudentIntakeApp", "handleRegistrationSuccess called");
+    LOG_DEBUG("StudentIntakeApp", "Session student ID: '" << session_->getStudent().getId() << "'");
+    LOG_DEBUG("StudentIntakeApp", "Session student email: '" << session_->getStudent().getEmail() << "'");
 
     navigationWidget_->refresh();
     setState(AppState::CurriculumSelection);
@@ -439,7 +438,7 @@ void StudentIntakeApp::handleCurriculumSelected(const Models::Curriculum& curric
 }
 
 void StudentIntakeApp::handleChangeProgram() {
-    std::cout << "[StudentIntakeApp] handleChangeProgram - resetting completed forms" << std::endl;
+    LOG_INFO("StudentIntakeApp", "handleChangeProgram - resetting completed forms");
 
     // Reset completed forms for the student
     session_->getStudent().resetCompletedForms();
@@ -453,10 +452,10 @@ void StudentIntakeApp::handleChangeProgram() {
 
     // Delete consent records and update student profile on server
     if (apiService_) {
-        std::cout << "[StudentIntakeApp] Deleting consent records for student" << std::endl;
+        LOG_DEBUG("StudentIntakeApp", "Deleting consent records for student");
         apiService_->deleteStudentConsents(session_->getStudent().getId());
 
-        std::cout << "[StudentIntakeApp] Updating student profile with cleared forms" << std::endl;
+        LOG_DEBUG("StudentIntakeApp", "Updating student profile with cleared forms");
         apiService_->updateStudentProfile(session_->getStudent());
     }
 

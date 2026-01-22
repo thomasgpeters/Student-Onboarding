@@ -1,8 +1,8 @@
 #include "AcademicHistoryForm.h"
 #include "api/FormSubmissionService.h"
+#include "utils/Logger.h"
 #include <Wt/WLabel.h>
 #include <Wt/WBreak.h>
-#include <iostream>
 #include <sstream>
 #include <iomanip>
 
@@ -718,15 +718,14 @@ void AcademicHistoryForm::loadHistoriesFromApi() {
         return;
     }
 
-    std::cout << "[AcademicHistoryForm] Loading academic histories for student: " << studentId << std::endl;
+    LOG_DEBUG("AcademicHistoryForm", "Loading academic histories for student: " << studentId);
 
     auto histories = apiService_->getAcademicHistories(studentId);
-    std::cout << "[AcademicHistoryForm] Found " << histories.size() << " history records" << std::endl;
+    LOG_DEBUG("AcademicHistoryForm", "Found " << histories.size() << " history records");
 
     academicHistories_.clear();
     for (const auto& history : histories) {
-        std::cout << "[AcademicHistoryForm] Record type: " << history.getInstitutionType()
-                  << ", name: " << history.getInstitutionName() << std::endl;
+        LOG_DEBUG("AcademicHistoryForm", "Record type: " << history.getInstitutionType() << ", name: " << history.getInstitutionName());
         academicHistories_.push_back(history);
     }
 
@@ -748,18 +747,16 @@ void AcademicHistoryForm::saveHistoriesToApi() {
         return;
     }
 
-    std::cout << "[AcademicHistoryForm] Saving " << academicHistories_.size()
-              << " academic histories for student: " << studentId << std::endl;
+    LOG_DEBUG("AcademicHistoryForm", "Saving " << academicHistories_.size() << " academic histories for student: " << studentId);
 
     for (auto& history : academicHistories_) {
         history.setStudentId(studentId);
 
         auto result = apiService_->saveAcademicHistory(history);
         if (result.success) {
-            std::cout << "[AcademicHistoryForm] Saved record: " << history.getInstitutionName()
-                      << " (" << history.getInstitutionType() << ")" << std::endl;
+            LOG_DEBUG("AcademicHistoryForm", "Saved record: " << history.getInstitutionName() << " (" << history.getInstitutionType() << ")");
         } else {
-            std::cout << "[AcademicHistoryForm] Failed to save record: " << result.message << std::endl;
+            LOG_WARN("AcademicHistoryForm", "Failed to save record: " << result.message);
         }
     }
 }

@@ -1,7 +1,7 @@
 #include "StudentDetailWidget.h"
 #include <Wt/WBreak.h>
-#include <iostream>
 #include <map>
+#include "utils/Logger.h"
 #include <algorithm>
 #include <nlohmann/json.hpp>
 
@@ -228,20 +228,20 @@ void StudentDetailWidget::setupUI() {
 
 void StudentDetailWidget::loadStudent(int studentId) {
     if (!apiService_) {
-        std::cerr << "[StudentDetail] API service not available" << std::endl;
+        LOG_WARN("StudentDetail", "API service not available");
         return;
     }
 
     currentStudentId_ = studentId;
 
     try {
-        std::cerr << "[StudentDetail] Loading student: " << studentId << std::endl;
+        LOG_DEBUG("StudentDetail", "Loading student: " << studentId);
 
         std::string endpoint = "/Student/" + std::to_string(studentId);
         auto response = apiService_->getApiClient()->get(endpoint);
 
         if (!response.success) {
-            std::cerr << "[StudentDetail] Failed to load student: " << response.errorMessage << std::endl;
+            LOG_ERROR("StudentDetail", "Failed to load student: " << response.errorMessage);
             return;
         }
 
@@ -298,10 +298,10 @@ void StudentDetailWidget::loadStudent(int studentId) {
         // Reset checkbox state - it will be unchecked by default
         hasPreviousEducationCheckbox_->setChecked(false);
         academicHistoryContainer_->hide();
-        std::cerr << "[StudentDetail] Loaded student: " << currentStudent_.getFullName() << std::endl;
+        LOG_DEBUG("StudentDetail", "Loaded student: " << currentStudent_.getFullName());
 
     } catch (const std::exception& e) {
-        std::cerr << "[StudentDetail] Exception loading student: " << e.what() << std::endl;
+        LOG_ERROR("StudentDetail", "Exception loading student: " << e.what());
     }
 }
 
@@ -353,7 +353,7 @@ void StudentDetailWidget::loadStudentAddress() {
             }
         }
     } catch (const std::exception& e) {
-        std::cerr << "[StudentDetail] Error loading address: " << e.what() << std::endl;
+        LOG_ERROR("StudentDetail", "Error loading address: " << e.what());
     }
 
     addressText_->setText("Not provided");
@@ -408,7 +408,7 @@ void StudentDetailWidget::loadFormSubmissions() {
             }
         }
     } catch (const std::exception& e) {
-        std::cerr << "[StudentDetail] Error loading submissions: " << e.what() << std::endl;
+        LOG_ERROR("StudentDetail", "Error loading submissions: " << e.what());
     }
 
     updateFormSubmissionsTable();
@@ -540,9 +540,9 @@ void StudentDetailWidget::loadAcademicHistory() {
                 academicHistory_.push_back(historyRecord);
             }
         }
-        std::cerr << "[StudentDetail] Loaded " << academicHistory_.size() << " academic history records" << std::endl;
+        LOG_DEBUG("StudentDetail", "Loaded " << academicHistory_.size() << " academic history records");
     } catch (const std::exception& e) {
-        std::cerr << "[StudentDetail] Error loading academic history: " << e.what() << std::endl;
+        LOG_ERROR("StudentDetail", "Error loading academic history: " << e.what());
     }
 
     updateAcademicHistoryTable();
@@ -645,7 +645,7 @@ void StudentDetailWidget::updateAcademicHistoryTable() {
 }
 
 void StudentDetailWidget::approveSubmission(int submissionId) {
-    std::cerr << "[StudentDetail] Approving submission: " << submissionId << std::endl;
+    LOG_DEBUG("StudentDetail", "Approving submission: " << submissionId);
 
     if (apiService_) {
         try {
@@ -658,7 +658,7 @@ void StudentDetailWidget::approveSubmission(int submissionId) {
                 "/FormSubmission/" + std::to_string(submissionId), payload);
 
             if (response.isSuccess()) {
-                std::cerr << "[StudentDetail] Submission approved successfully" << std::endl;
+                LOG_INFO("StudentDetail", "Submission approved successfully");
                 // Update local state
                 for (auto& sub : formSubmissions_) {
                     if (sub.id == submissionId) {
@@ -668,16 +668,16 @@ void StudentDetailWidget::approveSubmission(int submissionId) {
                 }
                 updateFormSubmissionsTable();
             } else {
-                std::cerr << "[StudentDetail] Failed to approve submission: " << response.errorMessage << std::endl;
+                LOG_ERROR("StudentDetail", "Failed to approve submission: " << response.errorMessage);
             }
         } catch (const std::exception& e) {
-            std::cerr << "[StudentDetail] Error approving submission: " << e.what() << std::endl;
+            LOG_ERROR("StudentDetail", "Error approving submission: " << e.what());
         }
     }
 }
 
 void StudentDetailWidget::rejectSubmission(int submissionId) {
-    std::cerr << "[StudentDetail] Rejecting submission: " << submissionId << std::endl;
+    LOG_DEBUG("StudentDetail", "Rejecting submission: " << submissionId);
 
     if (apiService_) {
         try {
@@ -690,7 +690,7 @@ void StudentDetailWidget::rejectSubmission(int submissionId) {
                 "/FormSubmission/" + std::to_string(submissionId), payload);
 
             if (response.isSuccess()) {
-                std::cerr << "[StudentDetail] Submission rejected successfully" << std::endl;
+                LOG_INFO("StudentDetail", "Submission rejected successfully");
                 // Update local state
                 for (auto& sub : formSubmissions_) {
                     if (sub.id == submissionId) {
@@ -700,10 +700,10 @@ void StudentDetailWidget::rejectSubmission(int submissionId) {
                 }
                 updateFormSubmissionsTable();
             } else {
-                std::cerr << "[StudentDetail] Failed to reject submission: " << response.errorMessage << std::endl;
+                LOG_ERROR("StudentDetail", "Failed to reject submission: " << response.errorMessage);
             }
         } catch (const std::exception& e) {
-            std::cerr << "[StudentDetail] Error rejecting submission: " << e.what() << std::endl;
+            LOG_ERROR("StudentDetail", "Error rejecting submission: " << e.what());
         }
     }
 }
@@ -759,7 +759,7 @@ void StudentDetailWidget::updateDisplay() {
 }
 
 void StudentDetailWidget::onRevokeAccess() {
-    std::cerr << "[StudentDetail] Revoking access for student: " << currentStudent_.getId() << std::endl;
+    LOG_INFO("StudentDetail", "Revoking access for student: " << currentStudent_.getId());
     revokeAccessClicked_.emit(std::stoi(currentStudent_.getId()));
 
     isRevoked_ = true;
@@ -767,7 +767,7 @@ void StudentDetailWidget::onRevokeAccess() {
 }
 
 void StudentDetailWidget::onRestoreAccess() {
-    std::cerr << "[StudentDetail] Restoring access for student: " << currentStudent_.getId() << std::endl;
+    LOG_INFO("StudentDetail", "Restoring access for student: " << currentStudent_.getId());
     restoreAccessClicked_.emit(std::stoi(currentStudent_.getId()));
 
     isRevoked_ = false;

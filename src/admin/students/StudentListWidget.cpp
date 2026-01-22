@@ -1,8 +1,8 @@
 #include "StudentListWidget.h"
 #include <Wt/WTemplate.h>
 #include <Wt/WBreak.h>
-#include <iostream>
 #include <algorithm>
+#include "utils/Logger.h"
 #include <sstream>
 #include <iomanip>
 
@@ -217,7 +217,7 @@ void StudentListWidget::loadCurriculum() {
         auto response = apiService_->getApiClient()->get("/Curriculum");
 
         if (!response.success) {
-            std::cerr << "[StudentList] Failed to load curriculum: " << response.errorMessage << std::endl;
+            LOG_ERROR("StudentList", "Failed to load curriculum: " << response.errorMessage);
             return;
         }
 
@@ -262,7 +262,7 @@ void StudentListWidget::loadCurriculum() {
             }
         }
 
-        std::cerr << "[StudentList] Loaded " << curriculumMap_.size() << " curriculum entries" << std::endl;
+        LOG_DEBUG("StudentList", "Loaded " << curriculumMap_.size() << " curriculum entries");
 
         // Update the program filter dropdown
         programFilter_->clear();
@@ -272,7 +272,7 @@ void StudentListWidget::loadCurriculum() {
         }
 
     } catch (const std::exception& e) {
-        std::cerr << "[StudentList] Exception loading curriculum: " << e.what() << std::endl;
+        LOG_ERROR("StudentList", "Exception loading curriculum: " << e.what());
     }
 }
 
@@ -286,17 +286,17 @@ std::string StudentListWidget::getProgramName(const std::string& curriculumId) c
 
 void StudentListWidget::loadStudents() {
     if (!apiService_) {
-        std::cerr << "[StudentList] API service not available" << std::endl;
+        LOG_WARN("StudentList", "API service not available");
         return;
     }
 
     try {
-        std::cerr << "[StudentList] Loading students..." << std::endl;
+        LOG_DEBUG("StudentList", "Loading students...");
 
         auto response = apiService_->getApiClient()->get("/Student");
 
         if (!response.success) {
-            std::cerr << "[StudentList] Failed to load students: " << response.errorMessage << std::endl;
+            LOG_ERROR("StudentList", "Failed to load students: " << response.errorMessage);
             return;
         }
 
@@ -357,12 +357,12 @@ void StudentListWidget::loadStudents() {
             }
         }
 
-        std::cerr << "[StudentList] Loaded " << allStudents_.size() << " students" << std::endl;
+        LOG_DEBUG("StudentList", "Loaded " << allStudents_.size() << " students");
         updateTable(allStudents_);
         updateStats();  // Update stat cards with correct counts
 
     } catch (const std::exception& e) {
-        std::cerr << "[StudentList] Exception loading students: " << e.what() << std::endl;
+        LOG_ERROR("StudentList", "Exception loading students: " << e.what());
     }
 }
 
@@ -523,7 +523,7 @@ void StudentListWidget::updateTable(const std::vector<::StudentIntake::Models::S
 }
 
 void StudentListWidget::onStudentRowClicked(int studentId) {
-    std::cerr << "[StudentList] Student selected: " << studentId << std::endl;
+    LOG_DEBUG("StudentList", "Student selected: " << studentId);
     studentSelected_.emit(studentId);
 }
 
@@ -653,7 +653,7 @@ void StudentListWidget::showAddStudentDialog() {
                 auto result = apiService_->registerStudent(newStudent, passwordInput->text().toUTF8());
 
                 if (result.success) {
-                    std::cerr << "[StudentList] Student created successfully" << std::endl;
+                    LOG_INFO("StudentList", "Student created successfully");
                     dialog->accept();
                     refresh();  // Refresh the student list
                 } else {
@@ -663,7 +663,7 @@ void StudentListWidget::showAddStudentDialog() {
                     errorContainer->show();
                 }
             } catch (const std::exception& e) {
-                std::cerr << "[StudentList] Error creating student: " << e.what() << std::endl;
+                LOG_ERROR("StudentList", "Error creating student: " << e.what());
                 errorText->setText("Error creating student: " + std::string(e.what()));
                 errorContainer->show();
             }

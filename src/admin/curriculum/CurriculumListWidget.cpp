@@ -1,7 +1,7 @@
 #include "CurriculumListWidget.h"
 #include <Wt/WBreak.h>
-#include <iostream>
 #include <algorithm>
+#include "utils/Logger.h"
 #include <set>
 #include <map>
 #include <nlohmann/json.hpp>
@@ -249,10 +249,10 @@ void CurriculumListWidget::loadDepartments() {
                 }
             }
 
-            std::cerr << "[CurriculumListWidget] Loaded " << departmentMap_.size() << " departments" << std::endl;
+            LOG_DEBUG("CurriculumListWidget", "Loaded " << departmentMap_.size() << " departments");
         }
     } catch (const std::exception& e) {
-        std::cerr << "[CurriculumListWidget] Error loading departments: " << e.what() << std::endl;
+        LOG_ERROR("CurriculumListWidget", "Error loading departments: " << e.what());
     }
 }
 
@@ -268,7 +268,7 @@ void CurriculumListWidget::loadCurriculums() {
     curriculums_.clear();
 
     if (!apiService_) {
-        std::cerr << "[CurriculumListWidget] API service not available" << std::endl;
+        LOG_WARN("CurriculumListWidget", "API service not available");
         // Use default data for testing - vocational/adult education programs
         Curriculum cdl;
         cdl.setId("1");
@@ -366,7 +366,7 @@ void CurriculumListWidget::loadCurriculums() {
                 curriculums_.push_back(Curriculum::fromJson(item));
             }
         }
-        std::cerr << "[CurriculumListWidget] Loaded " << curriculums_.size() << " curriculums" << std::endl;
+        LOG_DEBUG("CurriculumListWidget", "Loaded " << curriculums_.size() << " curriculums");
 
         // Map department_id to department name using loaded departments
         for (auto& curriculum : curriculums_) {
@@ -380,7 +380,7 @@ void CurriculumListWidget::loadCurriculums() {
         loadAllFormRequirements();
 
     } catch (const std::exception& e) {
-        std::cerr << "[CurriculumListWidget] Error loading curriculums: " << e.what() << std::endl;
+        LOG_ERROR("CurriculumListWidget", "Error loading curriculums: " << e.what());
     }
 
     // Populate department filter with distinct departments from loaded curricula
@@ -660,11 +660,10 @@ void CurriculumListWidget::loadAllFormRequirements() {
             }
         }
 
-        std::cerr << "[CurriculumListWidget] Loaded form requirements for "
-                  << curriculumForms.size() << " curriculums" << std::endl;
+        LOG_DEBUG("CurriculumListWidget", "Loaded form requirements for " << curriculumForms.size() << " curriculums");
 
     } catch (const std::exception& e) {
-        std::cerr << "[CurriculumListWidget] Error loading form requirements: " << e.what() << std::endl;
+        LOG_ERROR("CurriculumListWidget", "Error loading form requirements: " << e.what());
     }
 }
 

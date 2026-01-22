@@ -1,7 +1,7 @@
 #include "AdminApp.h"
 #include <Wt/WBootstrap5Theme.h>
 #include <Wt/WText.h>
-#include <iostream>
+#include "utils/Logger.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -422,7 +422,7 @@ void AdminApp::showSettings() {
 }
 
 void AdminApp::handleLoginSuccess() {
-    std::cerr << "[AdminApp] Login successful, showing dashboard" << std::endl;
+    LOG_INFO("AdminApp", "Login successful, showing dashboard");
     setState(AppState::Dashboard);
 }
 
@@ -452,23 +452,23 @@ void AdminApp::handleSectionChange(AdminSection section) {
 }
 
 void AdminApp::handleStudentSelected(int studentId) {
-    std::cerr << "[AdminApp] Student selected: " << studentId << std::endl;
+    LOG_DEBUG("AdminApp", "Student selected: " << studentId);
     selectedStudentId_ = studentId;
     hideAllViews();
     showStudentDetail(studentId);
 }
 
 void AdminApp::handleViewStudentForms(int studentId) {
-    std::cerr << "[AdminApp] View forms for student: " << studentId << std::endl;
+    LOG_DEBUG("AdminApp", "View forms for student: " << studentId);
     hideAllViews();
     showStudentForms(studentId);
 }
 
 void AdminApp::handleRevokeAccess(int studentId) {
-    std::cerr << "[AdminApp] Revoking access for student: " << studentId << std::endl;
+    LOG_INFO("AdminApp", "Revoking access for student: " << studentId);
 
     if (!apiService_) {
-        std::cerr << "[AdminApp] API service not available" << std::endl;
+        LOG_ERROR("AdminApp", "API service not available");
         return;
     }
 
@@ -483,22 +483,22 @@ void AdminApp::handleRevokeAccess(int studentId) {
         auto response = apiService_->getApiClient()->patch(endpoint, updateData);
 
         if (response.success) {
-            std::cerr << "[AdminApp] Access revoked successfully" << std::endl;
+            LOG_INFO("AdminApp", "Access revoked successfully");
             // Refresh the student list to reflect the change
             studentListWidget_->refresh();
         } else {
-            std::cerr << "[AdminApp] Failed to revoke access: " << response.errorMessage << std::endl;
+            LOG_ERROR("AdminApp", "Failed to revoke access: " << response.errorMessage);
         }
     } catch (const std::exception& e) {
-        std::cerr << "[AdminApp] Exception revoking access: " << e.what() << std::endl;
+        LOG_ERROR("AdminApp", "Exception revoking access: " << e.what());
     }
 }
 
 void AdminApp::handleRestoreAccess(int studentId) {
-    std::cerr << "[AdminApp] Restoring access for student: " << studentId << std::endl;
+    LOG_INFO("AdminApp", "Restoring access for student: " << studentId);
 
     if (!apiService_) {
-        std::cerr << "[AdminApp] API service not available" << std::endl;
+        LOG_ERROR("AdminApp", "API service not available");
         return;
     }
 
@@ -513,53 +513,53 @@ void AdminApp::handleRestoreAccess(int studentId) {
         auto response = apiService_->getApiClient()->patch(endpoint, updateData);
 
         if (response.success) {
-            std::cerr << "[AdminApp] Access restored successfully" << std::endl;
+            LOG_INFO("AdminApp", "Access restored successfully");
             // Refresh the student list to reflect the change
             studentListWidget_->refresh();
         } else {
-            std::cerr << "[AdminApp] Failed to restore access: " << response.errorMessage << std::endl;
+            LOG_ERROR("AdminApp", "Failed to restore access: " << response.errorMessage);
         }
     } catch (const std::exception& e) {
-        std::cerr << "[AdminApp] Exception restoring access: " << e.what() << std::endl;
+        LOG_ERROR("AdminApp", "Exception restoring access: " << e.what());
     }
 }
 
 void AdminApp::handleCurriculumSelected(const std::string& curriculumId) {
-    std::cerr << "[AdminApp] Curriculum selected: " << curriculumId << std::endl;
+    LOG_DEBUG("AdminApp", "Curriculum selected: " << curriculumId);
     selectedCurriculumId_ = curriculumId;
     hideAllViews();
     showCurriculumEdit(curriculumId);
 }
 
 void AdminApp::handleAddCurriculum() {
-    std::cerr << "[AdminApp] Adding new curriculum" << std::endl;
+    LOG_DEBUG("AdminApp", "Adding new curriculum");
     selectedCurriculumId_ = "";
     hideAllViews();
     showCurriculumEdit("");
 }
 
 void AdminApp::handleCurriculumSaved() {
-    std::cerr << "[AdminApp] Curriculum saved, returning to list" << std::endl;
+    LOG_INFO("AdminApp", "Curriculum saved, returning to list");
     // Optionally stay on the edit page or go back to list
     // For now, refresh the list view
     setState(AppState::Curriculum);
 }
 
 void AdminApp::handleFormSubmissionSelected(int submissionId) {
-    std::cerr << "[AdminApp] Form submission selected: " << submissionId << std::endl;
+    LOG_DEBUG("AdminApp", "Form submission selected: " << submissionId);
     // Legacy handler - no longer used for main Forms section
     // Kept for FormDetailViewer compatibility
 }
 
 void AdminApp::handleFormTypeSelected(int formTypeId) {
-    std::cerr << "[AdminApp] Form type selected: " << formTypeId << std::endl;
+    LOG_DEBUG("AdminApp", "Form type selected: " << formTypeId);
     selectedFormTypeId_ = formTypeId;
     hideAllViews();
     showFormDetail(formTypeId);
 }
 
 void AdminApp::handleFormApproved(int submissionId) {
-    std::cerr << "[AdminApp] Form approved: " << submissionId << std::endl;
+    LOG_INFO("AdminApp", "Form approved: " << submissionId);
     // Refresh the submissions list if we're on it
     if (currentState_ == AppState::Forms) {
         formSubmissionsWidget_->loadData();
@@ -567,7 +567,7 @@ void AdminApp::handleFormApproved(int submissionId) {
 }
 
 void AdminApp::handleFormRejected(int submissionId) {
-    std::cerr << "[AdminApp] Form rejected: " << submissionId << std::endl;
+    LOG_INFO("AdminApp", "Form rejected: " << submissionId);
     // Refresh the submissions list if we're on it
     if (currentState_ == AppState::Forms) {
         formSubmissionsWidget_->loadData();
@@ -575,13 +575,13 @@ void AdminApp::handleFormRejected(int submissionId) {
 }
 
 void AdminApp::handleFormPdfPreview(int submissionId) {
-    std::cerr << "[AdminApp] Form PDF preview requested: " << submissionId << std::endl;
+    LOG_DEBUG("AdminApp", "Form PDF preview requested: " << submissionId);
     // Show the PDF preview as a modal dialog - no state change needed
     formPdfPreviewWidget_->showFormSubmission(submissionId);
 }
 
 void AdminApp::handlePrintAllStudentForms(int studentId) {
-    std::cerr << "[AdminApp] Print all student forms requested: " << studentId << std::endl;
+    LOG_DEBUG("AdminApp", "Print all student forms requested: " << studentId);
     // Show the PDF preview as a modal dialog - no state change needed
     formPdfPreviewWidget_->showStudentForms(studentId);
 }

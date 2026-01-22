@@ -1,10 +1,10 @@
 #include "FormSubmissionService.h"
 #include <thread>
-#include <iostream>
 #include <chrono>
 #include <ctime>
 #include <sstream>
 #include <iomanip>
+#include "utils/Logger.h"
 
 namespace StudentIntake {
 namespace Api {
@@ -172,7 +172,7 @@ SubmissionResult FormSubmissionService::parseSubmissionResponse(const ApiRespons
 // Student API endpoints
 SubmissionResult FormSubmissionService::registerStudent(const Models::Student& student,
                                                          const std::string& password) {
-    std::cout << "[FormSubmissionService] registerStudent called" << std::endl;
+    LOG_DEBUG("FormSubmissionService", "registerStudent called");
 
     // ApiLogicServer uses JSON:API format (SAFRS)
     nlohmann::json attributes = student.toJson();
@@ -186,20 +186,17 @@ SubmissionResult FormSubmissionService::registerStudent(const Models::Student& s
         {"attributes", attributes}
     };
 
-    std::cout << "[FormSubmissionService] Payload: " << payload.dump() << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("FormSubmissionService", "Payload: " << payload.dump());
 
     // ApiLogicServer uses capitalized resource names
     ApiResponse response = apiClient_->post("/Student", payload);
 
-    std::cout << "[FormSubmissionService] API response received - status: " << response.statusCode
-              << ", success: " << response.success << std::endl;
-    std::cout << "[FormSubmissionService] Response body: " << response.body << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("FormSubmissionService", "API response received - status: " << response.statusCode
+              << ", success: " << response.success);
+    LOG_DEBUG("FormSubmissionService", "Response body: " << response.body);
 
     SubmissionResult result = parseSubmissionResponse(response);
-    std::cout << "[FormSubmissionService] Parsed submissionId: '" << result.submissionId << "'" << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("FormSubmissionService", "Parsed submissionId: '" << result.submissionId << "'");
 
     return result;
 }
@@ -231,13 +228,11 @@ SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
                 : studentData;
 
             // Debug: Log curriculum_id from API response
-            std::cout << "[FormSubmissionService] Login - curriculum_id in API response: ";
             if (attributes.contains("curriculum_id")) {
-                std::cout << attributes["curriculum_id"].dump() << std::endl;
+                LOG_DEBUG("FormSubmissionService", "Login - curriculum_id in API response: " << attributes["curriculum_id"].dump());
             } else {
-                std::cout << "NOT PRESENT" << std::endl;
+                LOG_DEBUG("FormSubmissionService", "Login - curriculum_id in API response: NOT PRESENT");
             }
-            std::cout.flush();
 
             // Check password (stored as password_hash in DB)
             std::string storedPassword = attributes.value("password_hash", "");
@@ -254,8 +249,7 @@ SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
                         result.submissionId = std::to_string(studentData["id"].get<int>());
                     }
                 }
-                std::cout << "[FormSubmissionService] Login successful, student ID: " << result.submissionId << std::endl;
-                std::cout.flush();
+                LOG_INFO("FormSubmissionService", "Login successful, student ID: " << result.submissionId);
             } else {
                 result.success = false;
                 result.message = "Invalid password";
@@ -280,11 +274,11 @@ SubmissionResult FormSubmissionService::getStudentProfile(const std::string& stu
 SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Student& student) {
     // Wrap in JSON:API format
     nlohmann::json attributes = student.toJson();
-    std::cout << "[FormSubmissionService] updateStudentProfile - student ID: " << student.getId() << std::endl;
-    std::cout << "[FormSubmissionService] updateStudentProfile - curriculum_id in student: '"
-              << student.getCurriculumId() << "'" << std::endl;
-    std::cout << "[FormSubmissionService] updateStudentProfile - curriculum_id in payload: "
-              << (attributes.contains("curriculum_id") ? attributes["curriculum_id"].dump() : "NOT PRESENT") << std::endl;
+    LOG_DEBUG("FormSubmissionService", "updateStudentProfile - student ID: " << student.getId());
+    LOG_DEBUG("FormSubmissionService", "updateStudentProfile - curriculum_id in student: '"
+              << student.getCurriculumId() << "'");
+    LOG_DEBUG("FormSubmissionService", "updateStudentProfile - curriculum_id in payload: "
+              << (attributes.contains("curriculum_id") ? attributes["curriculum_id"].dump() : "NOT PRESENT"));
 
     nlohmann::json payload;
     payload["data"] = {
@@ -293,11 +287,10 @@ SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Stude
         {"attributes", attributes}
     };
     ApiResponse response = apiClient_->patch("/Student/" + student.getId(), payload);
-    std::cout << "[FormSubmissionService] updateStudentProfile - response status: " << response.statusCode << std::endl;
+    LOG_DEBUG("FormSubmissionService", "updateStudentProfile - response status: " << response.statusCode);
     if (!response.isSuccess()) {
-        std::cout << "[FormSubmissionService] updateStudentProfile - error: " << response.errorMessage << std::endl;
+        LOG_ERROR("FormSubmissionService", "updateStudentProfile - error: " << response.errorMessage);
     }
-    std::cout.flush();
     return parseSubmissionResponse(response);
 }
 
@@ -358,7 +351,7 @@ SubmissionResult FormSubmissionService::createStudentAddress(const Models::Stude
         {"attributes", address.toJson()}
     };
 
-    std::cout << "[FormSubmissionService] createStudentAddress payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "createStudentAddress payload: " << payload.dump());
     ApiResponse response = apiClient_->post("/StudentAddress", payload);
     return parseSubmissionResponse(response);
 }
@@ -371,7 +364,7 @@ SubmissionResult FormSubmissionService::updateStudentAddress(const Models::Stude
         {"attributes", address.toJson()}
     };
 
-    std::cout << "[FormSubmissionService] updateStudentAddress payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "updateStudentAddress payload: " << payload.dump());
     ApiResponse response = apiClient_->patch("/StudentAddress/" + address.getId(), payload);
     return parseSubmissionResponse(response);
 }
@@ -434,7 +427,7 @@ Models::EmergencyContact FormSubmissionService::getEmergencyContactByKey(const s
     std::string encodedKey = urlEncode(studentId) + "," + urlEncode(relationship) + "," + urlEncode(phone);
     std::string endpoint = "/EmergencyContact/" + encodedKey;
 
-    std::cout << "[FormSubmissionService] getEmergencyContactByKey: " << endpoint << std::endl;
+    LOG_DEBUG("FormSubmissionService", "getEmergencyContactByKey: " << endpoint);
     ApiResponse response = apiClient_->get(endpoint);
 
     if (response.isSuccess()) {
@@ -456,7 +449,7 @@ SubmissionResult FormSubmissionService::createEmergencyContact(const Models::Eme
         {"attributes", contact.toJson()}
     };
 
-    std::cout << "[FormSubmissionService] createEmergencyContact payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "createEmergencyContact payload: " << payload.dump());
     ApiResponse response = apiClient_->post("/EmergencyContact", payload);
     return parseSubmissionResponse(response);
 }
@@ -473,8 +466,8 @@ SubmissionResult FormSubmissionService::updateEmergencyContact(const Models::Eme
         {"attributes", contact.toJson()}
     };
 
-    std::cout << "[FormSubmissionService] updateEmergencyContact key: " << encodedKey << std::endl;
-    std::cout << "[FormSubmissionService] updateEmergencyContact payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "updateEmergencyContact key: " << encodedKey);
+    LOG_DEBUG("FormSubmissionService", "updateEmergencyContact payload: " << payload.dump());
     ApiResponse response = apiClient_->patch("/EmergencyContact/" + encodedKey, payload);
     return parseSubmissionResponse(response);
 }
@@ -484,7 +477,7 @@ SubmissionResult FormSubmissionService::deleteEmergencyContact(const std::string
                                                                 const std::string& phone) {
     // Build compound key for URL
     std::string encodedKey = urlEncode(studentId) + "," + urlEncode(relationship) + "," + urlEncode(phone);
-    std::cout << "[FormSubmissionService] deleteEmergencyContact key: " << encodedKey << std::endl;
+    LOG_DEBUG("FormSubmissionService", "deleteEmergencyContact key: " << encodedKey);
     ApiResponse response = apiClient_->del("/EmergencyContact/" + encodedKey);
     return parseSubmissionResponse(response);
 }
@@ -591,7 +584,7 @@ SubmissionResult FormSubmissionService::createAcademicHistory(const Models::Acad
         {"attributes", history.toJson()}
     };
 
-    std::cout << "[FormSubmissionService] createAcademicHistory payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "createAcademicHistory payload: " << payload.dump());
     ApiResponse response = apiClient_->post("/AcademicHistory", payload);
     return parseSubmissionResponse(response);
 }
@@ -608,7 +601,7 @@ SubmissionResult FormSubmissionService::updateAcademicHistory(const Models::Acad
         {"attributes", history.toJson()}
     };
 
-    std::cout << "[FormSubmissionService] updateAcademicHistory payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "updateAcademicHistory payload: " << payload.dump());
     ApiResponse response = apiClient_->patch("/AcademicHistory/" + compoundKey, payload);
     return parseSubmissionResponse(response);
 }
@@ -652,39 +645,38 @@ SubmissionResult FormSubmissionService::saveAcademicHistory(const Models::Academ
 std::vector<Models::Curriculum> FormSubmissionService::getCurriculums() {
     std::vector<Models::Curriculum> curriculums;
 
-    std::cout << "[FormSubmissionService] Fetching curriculums from /Curriculum" << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Fetching curriculums from /Curriculum");
     ApiResponse response = apiClient_->get("/Curriculum");
     if (response.isSuccess()) {
+        LOG_DEBUG("FormSubmissionService", "Curriculum response received");
         auto json = response.getJson();
-        std::cout << "[FormSubmissionService] Curriculum response received" << std::endl;
 
         if (json.is_array()) {
-            std::cout << "[FormSubmissionService] Response is array with " << json.size() << " items" << std::endl;
+            LOG_DEBUG("FormSubmissionService", "Response is array with " << json.size() << " items");
             for (const auto& item : json) {
                 auto curriculum = Models::Curriculum::fromJson(item);
-                std::cout << "[FormSubmissionService] Parsed curriculum: id=" << curriculum.getId()
+                LOG_DEBUG("FormSubmissionService", "Parsed curriculum: id=" << curriculum.getId()
                           << ", name=" << curriculum.getName()
-                          << ", credits=" << curriculum.getCreditHours() << std::endl;
+                          << ", credits=" << curriculum.getCreditHours());
                 curriculums.push_back(curriculum);
             }
         } else if (json.contains("data") && json["data"].is_array()) {
-            std::cout << "[FormSubmissionService] Response has 'data' array with " << json["data"].size() << " items" << std::endl;
+            LOG_DEBUG("FormSubmissionService", "Response has 'data' array with " << json["data"].size() << " items");
             for (const auto& item : json["data"]) {
                 auto curriculum = Models::Curriculum::fromJson(item);
-                std::cout << "[FormSubmissionService] Parsed curriculum: id=" << curriculum.getId()
+                LOG_DEBUG("FormSubmissionService", "Parsed curriculum: id=" << curriculum.getId()
                           << ", name=" << curriculum.getName()
-                          << ", credits=" << curriculum.getCreditHours() << std::endl;
+                          << ", credits=" << curriculum.getCreditHours());
                 curriculums.push_back(curriculum);
             }
         } else {
-            std::cout << "[FormSubmissionService] Unexpected response format" << std::endl;
+            LOG_WARN("FormSubmissionService", "Unexpected response format");
         }
     } else {
-        std::cout << "[FormSubmissionService] Failed to fetch curriculums: " << response.errorMessage << std::endl;
+        LOG_ERROR("FormSubmissionService", "Failed to fetch curriculums: " << response.errorMessage);
     }
 
-    std::cout << "[FormSubmissionService] Returning " << curriculums.size() << " curriculums" << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("FormSubmissionService", "Returning " << curriculums.size() << " curriculums");
     return curriculums;
 }
 
@@ -698,20 +690,20 @@ Models::Curriculum FormSubmissionService::getCurriculum(const std::string& curri
 
 // Institution Settings API endpoints
 Models::InstitutionSettings FormSubmissionService::getInstitutionSettings() {
-    std::cout << "[FormSubmissionService] Loading institution settings" << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Loading institution settings");
 
     ApiResponse response = apiClient_->get("/InstitutionSetting");
     if (response.isSuccess()) {
-        std::cout << "[FormSubmissionService] Institution settings loaded successfully" << std::endl;
+        LOG_INFO("FormSubmissionService", "Institution settings loaded successfully");
         return Models::InstitutionSettings::fromApiResponse(response.getJson());
     }
 
-    std::cerr << "[FormSubmissionService] Failed to load institution settings: " << response.errorMessage << std::endl;
+    LOG_ERROR("FormSubmissionService", "Failed to load institution settings: " << response.errorMessage);
     return Models::InstitutionSettings();
 }
 
 SubmissionResult FormSubmissionService::updateInstitutionSetting(const std::string& key, const std::string& value) {
-    std::cout << "[FormSubmissionService] Updating setting: " << key << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Updating setting: " << key);
 
     // First GET the record to retrieve the S_CheckSum for optimistic locking
     ApiResponse getResponse = apiClient_->get("/InstitutionSetting/" + key);
@@ -747,13 +739,13 @@ SubmissionResult FormSubmissionService::updateInstitutionSetting(const std::stri
         }}
     };
 
-    std::cout << "[FormSubmissionService] Updating setting " << key << " with value: " << value << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Updating setting " << key << " with value: " << value);
     ApiResponse patchResponse = apiClient_->patch("/InstitutionSetting/" + key, payload);
     return parseSubmissionResponse(patchResponse);
 }
 
 SubmissionResult FormSubmissionService::updateInstitutionSettings(const Models::InstitutionSettings& settings) {
-    std::cout << "[FormSubmissionService] Updating all institution settings" << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Updating all institution settings");
 
     SubmissionResult finalResult;
     finalResult.success = true;
@@ -766,7 +758,7 @@ SubmissionResult FormSubmissionService::updateInstitutionSettings(const Models::
             successCount++;
         } else {
             failCount++;
-            std::cerr << "[FormSubmissionService] Failed to update setting " << key << ": " << result.message << std::endl;
+            LOG_ERROR("FormSubmissionService", "Failed to update setting " << key << ": " << result.message);
         }
     }
 
@@ -776,7 +768,7 @@ SubmissionResult FormSubmissionService::updateInstitutionSettings(const Models::
         finalResult.success = (failCount == 0);
     }
 
-    std::cout << "[FormSubmissionService] " << finalResult.message << std::endl;
+    LOG_INFO("FormSubmissionService", finalResult.message);
     return finalResult;
 }
 
@@ -816,7 +808,7 @@ SubmissionResult FormSubmissionService::submitPersonalInfo(const std::string& st
     nlohmann::json payload = prepareFormPayload(studentId, data, "Student");
     // Add student ID to the data for JSON:API PATCH
     payload["data"]["id"] = studentId;
-    std::cout << "[FormSubmissionService] submitPersonalInfo payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "submitPersonalInfo payload: " << payload.dump());
     ApiResponse response = apiClient_->patch("/Student/" + studentId, payload);
     return parseSubmissionResponse(response);
 }
@@ -834,12 +826,13 @@ SubmissionResult FormSubmissionService::submitEmergencyContact(const std::string
     }
 
     // Debug: log what fields are available
-    std::cout << "[FormSubmissionService] submitEmergencyContact - studentId: " << studentId << std::endl;
-    std::cout << "[FormSubmissionService] Available fields:" << std::endl;
+    LOG_DEBUG("FormSubmissionService", "submitEmergencyContact - studentId: " << studentId);
+    std::ostringstream fieldsLog;
+    fieldsLog << "Available fields:";
     for (const auto& fieldName : data.getFieldNames()) {
-        std::cout << "  - " << fieldName << std::endl;
+        fieldsLog << " " << fieldName;
     }
-    std::cout.flush();
+    LOG_DEBUG("FormSubmissionService", fieldsLog.str());
 
     // Get primary contact data (contact1_) - use snake_case for API
     attributes["first_name"] = data.hasField("contact1_FirstName") ? data.getField("contact1_FirstName").stringValue : "";
@@ -861,7 +854,7 @@ SubmissionResult FormSubmissionService::submitEmergencyContact(const std::string
         {"attributes", attributes}
     };
 
-    std::cout << "[FormSubmissionService] submitEmergencyContact payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "submitEmergencyContact payload: " << payload.dump());
     ApiResponse response = apiClient_->post("/EmergencyContact", payload);
     return parseSubmissionResponse(response);
 }
@@ -869,7 +862,7 @@ SubmissionResult FormSubmissionService::submitEmergencyContact(const std::string
 SubmissionResult FormSubmissionService::submitMedicalInfo(const std::string& studentId,
                                                            const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "MedicalInfo");
-    std::cout << "[FormSubmissionService] submitMedicalInfo payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "submitMedicalInfo payload: " << payload.dump());
     ApiResponse response = apiClient_->post("/MedicalInfo", payload);
     return parseSubmissionResponse(response);
 }
@@ -887,8 +880,7 @@ SubmissionResult FormSubmissionService::submitAcademicHistory(const std::string&
     }
 
     // Debug: log what fields are available
-    std::cout << "[FormSubmissionService] submitAcademicHistory - studentId: " << studentId << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("FormSubmissionService", "submitAcademicHistory - studentId: " << studentId);
 
     // Map form fields to database columns
     // If has previous college, use college data; otherwise use high school data
@@ -937,7 +929,7 @@ SubmissionResult FormSubmissionService::submitAcademicHistory(const std::string&
         {"attributes", attributes}
     };
 
-    std::cout << "[FormSubmissionService] submitAcademicHistory payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "submitAcademicHistory payload: " << payload.dump());
     ApiResponse response = apiClient_->post("/AcademicHistory", payload);
     return parseSubmissionResponse(response);
 }
@@ -1034,7 +1026,7 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
         {"attributes", attributes}
     };
 
-    std::cout << "[FormSubmissionService] submitFinancialAid payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "submitFinancialAid payload: " << payload.dump());
 
     // Check if a financial_aid record already exists for this student
     std::string checkEndpoint = "/FinancialAid?filter[student_id]=" + studentId;
@@ -1062,7 +1054,7 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
             }
             if (!existingId.empty()) {
                 payload["data"]["id"] = existingId;
-                std::cout << "[FormSubmissionService] Updating existing FinancialAid record: " << existingId << std::endl;
+                LOG_INFO("FormSubmissionService", "Updating existing FinancialAid record: " << existingId);
                 response = apiClient_->patch("/FinancialAid/" + existingId, payload);
             } else {
                 response = apiClient_->post("/FinancialAid", payload);
@@ -1082,14 +1074,14 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
 SubmissionResult FormSubmissionService::submitDocuments(const std::string& studentId,
                                                          const Models::FormData& data) {
     nlohmann::json payload = prepareFormPayload(studentId, data, "Document");
-    std::cout << "[FormSubmissionService] submitDocuments payload: " << payload.dump() << std::endl;
+    LOG_DEBUG("FormSubmissionService", "submitDocuments payload: " << payload.dump());
     ApiResponse response = apiClient_->post("/Document", payload);
     return parseSubmissionResponse(response);
 }
 
 SubmissionResult FormSubmissionService::submitConsent(const std::string& studentId,
                                                        const Models::FormData& data) {
-    std::cout << "[FormSubmissionService] submitConsent - creating individual consent records" << std::endl;
+    LOG_DEBUG("FormSubmissionService", "submitConsent - creating individual consent records");
 
     // First, delete any existing consent records for this student to avoid duplicates
     deleteStudentConsents(studentId);
@@ -1154,16 +1146,16 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
             {"attributes", attributes}
         };
 
-        std::cout << "[FormSubmissionService] Creating consent record: " << consent.type
-                  << " = " << (isAccepted ? "true" : "false") << std::endl;
+        LOG_DEBUG("FormSubmissionService", "Creating consent record: " << consent.type
+                  << " = " << (isAccepted ? "true" : "false"));
 
         ApiResponse response = apiClient_->post("/Consent", payload);
         if (response.isSuccess()) {
             successCount++;
         } else {
             failCount++;
-            std::cerr << "[FormSubmissionService] Failed to create consent " << consent.type
-                      << ": " << response.errorMessage << std::endl;
+            LOG_ERROR("FormSubmissionService", "Failed to create consent " << consent.type
+                      << ": " << response.errorMessage);
             finalResult.errors.push_back("Failed to save " + consent.type + ": " + response.errorMessage);
         }
     }
@@ -1188,14 +1180,14 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
             {"attributes", sigAttributes}
         };
 
-        std::cout << "[FormSubmissionService] Creating signature record" << std::endl;
+        LOG_DEBUG("FormSubmissionService", "Creating signature record");
         ApiResponse sigResponse = apiClient_->post("/Consent", sigPayload);
         if (sigResponse.isSuccess()) {
             successCount++;
         } else {
             failCount++;
-            std::cerr << "[FormSubmissionService] Failed to create signature record: "
-                      << sigResponse.errorMessage << std::endl;
+            LOG_ERROR("FormSubmissionService", "Failed to create signature record: "
+                      << sigResponse.errorMessage);
             finalResult.errors.push_back("Failed to save signature: " + sigResponse.errorMessage);
         }
     }
@@ -1213,12 +1205,12 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
         finalResult.message = "Failed to save consent records";
     }
 
-    std::cout << "[FormSubmissionService] submitConsent completed: " << finalResult.message << std::endl;
+    LOG_INFO("FormSubmissionService", "submitConsent completed: " << finalResult.message);
     return finalResult;
 }
 
 SubmissionResult FormSubmissionService::deleteStudentConsents(const std::string& studentId) {
-    std::cout << "[FormSubmissionService] deleteStudentConsents for student: " << studentId << std::endl;
+    LOG_DEBUG("FormSubmissionService", "deleteStudentConsents for student: " << studentId);
 
     // First, get all consent records for this student
     std::string endpoint = "/Consent?filter[student_id]=" + studentId;
@@ -1258,10 +1250,10 @@ SubmissionResult FormSubmissionService::deleteStudentConsents(const std::string&
             ApiResponse delResponse = apiClient_->del("/Consent/" + consentId);
             if (delResponse.isSuccess()) {
                 deletedCount++;
-                std::cout << "[FormSubmissionService] Deleted consent record: " << consentId << std::endl;
+                LOG_DEBUG("FormSubmissionService", "Deleted consent record: " << consentId);
             } else {
                 lastError = delResponse.errorMessage;
-                std::cerr << "[FormSubmissionService] Failed to delete consent " << consentId << ": " << lastError << std::endl;
+                LOG_ERROR("FormSubmissionService", "Failed to delete consent " << consentId << ": " << lastError);
             }
         }
     }
@@ -1272,13 +1264,13 @@ SubmissionResult FormSubmissionService::deleteStudentConsents(const std::string&
     if (!lastError.empty()) {
         result.message += " (some errors occurred)";
     }
-    std::cout << "[FormSubmissionService] " << result.message << std::endl;
+    LOG_INFO("FormSubmissionService", result.message);
     return result;
 }
 
 std::map<std::string, bool> FormSubmissionService::getStudentConsents(const std::string& studentId) {
     std::map<std::string, bool> consents;
-    std::cout << "[FormSubmissionService] getStudentConsents for student: " << studentId << std::endl;
+    LOG_DEBUG("FormSubmissionService", "getStudentConsents for student: " << studentId);
 
     std::string endpoint = "/Consent?filter[student_id]=" + studentId;
     ApiResponse response = apiClient_->get(endpoint);
@@ -1309,21 +1301,21 @@ std::map<std::string, bool> FormSubmissionService::getStudentConsents(const std:
 
             if (!consentType.empty()) {
                 consents[consentType] = isAccepted;
-                std::cout << "[FormSubmissionService] Loaded consent: " << consentType
-                          << " = " << (isAccepted ? "true" : "false") << std::endl;
+                LOG_DEBUG("FormSubmissionService", "Loaded consent: " << consentType
+                          << " = " << (isAccepted ? "true" : "false"));
             }
         }
     } else {
-        std::cerr << "[FormSubmissionService] Failed to get consents: " << response.errorMessage << std::endl;
+        LOG_ERROR("FormSubmissionService", "Failed to get consents: " << response.errorMessage);
     }
 
-    std::cout << "[FormSubmissionService] Loaded " << consents.size() << " consent records" << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Loaded " << consents.size() << " consent records");
     return consents;
 }
 
 StudentConsentData FormSubmissionService::getStudentConsentsWithSignature(const std::string& studentId) {
     StudentConsentData result;
-    std::cout << "[FormSubmissionService] getStudentConsentsWithSignature for student: " << studentId << std::endl;
+    LOG_DEBUG("FormSubmissionService", "getStudentConsentsWithSignature for student: " << studentId);
 
     std::string endpoint = "/Consent?filter[student_id]=" + studentId;
     ApiResponse response = apiClient_->get(endpoint);
@@ -1360,19 +1352,19 @@ StudentConsentData FormSubmissionService::getStudentConsentsWithSignature(const 
                 if (attrs.contains("signature_date") && attrs["signature_date"].is_string()) {
                     result.signatureDate = attrs["signature_date"].get<std::string>();
                 }
-                std::cout << "[FormSubmissionService] Loaded signature: " << result.signature << std::endl;
+                LOG_DEBUG("FormSubmissionService", "Loaded signature: " << result.signature);
             } else if (!consentType.empty()) {
                 result.consents[consentType] = isAccepted;
-                std::cout << "[FormSubmissionService] Loaded consent: " << consentType
-                          << " = " << (isAccepted ? "true" : "false") << std::endl;
+                LOG_DEBUG("FormSubmissionService", "Loaded consent: " << consentType
+                          << " = " << (isAccepted ? "true" : "false"));
             }
         }
     } else {
-        std::cerr << "[FormSubmissionService] Failed to get consents: " << response.errorMessage << std::endl;
+        LOG_ERROR("FormSubmissionService", "Failed to get consents: " << response.errorMessage);
     }
 
-    std::cout << "[FormSubmissionService] Loaded " << result.consents.size()
-              << " consent records with signature" << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Loaded " << result.consents.size()
+              << " consent records with signature");
     return result;
 }
 
@@ -1413,7 +1405,7 @@ SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
         }
 
         nlohmann::json payload = prepareFormPayload(studentId, data, resourceType);
-        std::cout << "[FormSubmissionService] submitForm(" << formId << ") payload: " << payload.dump() << std::endl;
+        LOG_DEBUG("FormSubmissionService", "submitForm(" << formId << ") payload: " << payload.dump());
 
         // Personal info uses PATCH on student, others use POST
         ApiResponse response;
@@ -1430,11 +1422,11 @@ SubmissionResult FormSubmissionService::submitForm(const std::string& studentId,
     // If domain-specific submission succeeded, also create a FormSubmission record
     // This ensures the admin can see all submitted forms in the FormSubmissions list
     if (domainResult.success) {
-        std::cout << "[FormSubmissionService] Domain submission successful, creating FormSubmission record..." << std::endl;
+        LOG_DEBUG("FormSubmissionService", "Domain submission successful, creating FormSubmission record...");
         SubmissionResult formSubmissionResult = createFormSubmissionRecord(studentId, formId, "pending");
         if (!formSubmissionResult.success) {
-            std::cerr << "[FormSubmissionService] Warning: Domain data saved but FormSubmission record creation failed: "
-                      << formSubmissionResult.message << std::endl;
+            LOG_WARN("FormSubmissionService", "Domain data saved but FormSubmission record creation failed: "
+                      << formSubmissionResult.message);
             // Don't fail the overall submission - domain data was saved successfully
             // Just log the warning
         }
@@ -1581,21 +1573,21 @@ void FormSubmissionService::loadFormTypeCache() {
         return;  // Already loaded
     }
 
-    std::cout << "[FormSubmissionService] Loading form type cache..." << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Loading form type cache...");
     ApiResponse response = apiClient_->get("/FormType");
     if (response.isSuccess()) {
-        std::cout << "[FormSubmissionService] FormType API response: " << response.body << std::endl;
+        LOG_DEBUG("FormSubmissionService", "FormType API response: " << response.body);
         auto json = response.getJson();
         nlohmann::json items;
 
         if (json.is_array()) {
             items = json;
-            std::cout << "[FormSubmissionService] Response is array with " << items.size() << " items" << std::endl;
+            LOG_DEBUG("FormSubmissionService", "Response is array with " << items.size() << " items");
         } else if (json.contains("data") && json["data"].is_array()) {
             items = json["data"];
-            std::cout << "[FormSubmissionService] Response has data array with " << items.size() << " items" << std::endl;
+            LOG_DEBUG("FormSubmissionService", "Response has data array with " << items.size() << " items");
         } else {
-            std::cerr << "[FormSubmissionService] Unexpected FormType response format" << std::endl;
+            LOG_WARN("FormSubmissionService", "Unexpected FormType response format");
         }
 
         for (const auto& item : items) {
@@ -1622,21 +1614,20 @@ void FormSubmissionService::loadFormTypeCache() {
 
             if (!code.empty() && id > 0) {
                 formTypeCache_[code] = id;
-                std::cout << "[FormSubmissionService] Cached form type: " << code << " -> " << id << std::endl;
+                LOG_DEBUG("FormSubmissionService", "Cached form type: " << code << " -> " << id);
             } else {
-                std::cerr << "[FormSubmissionService] Skipping item - code: '" << code << "', id: " << id << std::endl;
+                LOG_WARN("FormSubmissionService", "Skipping item - code: '" << code << "', id: " << id);
             }
         }
     } else {
-        std::cerr << "[FormSubmissionService] Failed to load FormType data: " << response.errorMessage
-                  << " (status: " << response.statusCode << ")" << std::endl;
+        LOG_ERROR("FormSubmissionService", "Failed to load FormType data: " << response.errorMessage
+                  << " (status: " << response.statusCode << ")");
     }
-    std::cout << "[FormSubmissionService] Form type cache loaded with " << formTypeCache_.size() << " entries" << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("FormSubmissionService", "Form type cache loaded with " << formTypeCache_.size() << " entries");
 
     // If cache is still empty, seed the FormType table
     if (formTypeCache_.empty()) {
-        std::cout << "[FormSubmissionService] FormType table appears empty, seeding default values..." << std::endl;
+        LOG_INFO("FormSubmissionService", "FormType table appears empty, seeding default values...");
         ensureFormTypesExist();
     }
 }
@@ -1658,7 +1649,7 @@ int FormSubmissionService::createFormType(const std::string& code, const std::st
         {"attributes", attributes}
     };
 
-    std::cout << "[FormSubmissionService] Creating FormType: " << code << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Creating FormType: " << code);
     ApiResponse response = apiClient_->post("/FormType", payload);
 
     if (response.isSuccess()) {
@@ -1686,12 +1677,12 @@ int FormSubmissionService::createFormType(const std::string& code, const std::st
 
         if (id > 0) {
             formTypeCache_[code] = id;
-            std::cout << "[FormSubmissionService] Created FormType: " << code << " -> " << id << std::endl;
+            LOG_INFO("FormSubmissionService", "Created FormType: " << code << " -> " << id);
             return id;
         }
     } else {
-        std::cerr << "[FormSubmissionService] Failed to create FormType " << code
-                  << ": " << response.errorMessage << std::endl;
+        LOG_ERROR("FormSubmissionService", "Failed to create FormType " << code
+                  << ": " << response.errorMessage);
     }
 
     return 0;
@@ -1724,28 +1715,28 @@ void FormSubmissionService::ensureFormTypesExist() {
         }
     }
 
-    std::cout << "[FormSubmissionService] FormType seeding complete. Cache now has "
-              << formTypeCache_.size() << " entries" << std::endl;
+    LOG_INFO("FormSubmissionService", "FormType seeding complete. Cache now has "
+              << formTypeCache_.size() << " entries");
 }
 
 // Get form type ID from code
 int FormSubmissionService::getFormTypeId(const std::string& formCode) {
-    std::cout << "[FormSubmissionService] getFormTypeId called for: " << formCode << std::endl;
+    LOG_DEBUG("FormSubmissionService", "getFormTypeId called for: " << formCode);
     loadFormTypeCache();
 
     auto it = formTypeCache_.find(formCode);
     if (it != formTypeCache_.end()) {
-        std::cout << "[FormSubmissionService] Found form type in cache: " << formCode << " -> " << it->second << std::endl;
+        LOG_DEBUG("FormSubmissionService", "Found form type in cache: " << formCode << " -> " << it->second);
         return it->second;
     }
 
-    std::cout << "[FormSubmissionService] Form type not in cache, querying API..." << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Form type not in cache, querying API...");
 
     // Fallback: query API directly
     std::string endpoint = "/FormType?filter[code]=" + formCode;
     ApiResponse response = apiClient_->get(endpoint);
     if (response.isSuccess()) {
-        std::cout << "[FormSubmissionService] FormType query response: " << response.body << std::endl;
+        LOG_DEBUG("FormSubmissionService", "FormType query response: " << response.body);
         auto json = response.getJson();
         nlohmann::json items;
 
@@ -1769,17 +1760,17 @@ int FormSubmissionService::getFormTypeId(const std::string& formCode) {
             }
             if (id > 0) {
                 formTypeCache_[formCode] = id;
-                std::cout << "[FormSubmissionService] Found form type via query: " << formCode << " -> " << id << std::endl;
+                LOG_DEBUG("FormSubmissionService", "Found form type via query: " << formCode << " -> " << id);
                 return id;
             }
         } else {
-            std::cerr << "[FormSubmissionService] FormType query returned empty results for: " << formCode << std::endl;
+            LOG_WARN("FormSubmissionService", "FormType query returned empty results for: " << formCode);
         }
     } else {
-        std::cerr << "[FormSubmissionService] FormType query failed: " << response.errorMessage << std::endl;
+        LOG_ERROR("FormSubmissionService", "FormType query failed: " << response.errorMessage);
     }
 
-    std::cerr << "[FormSubmissionService] Could not find form type ID for code: " << formCode << std::endl;
+    LOG_ERROR("FormSubmissionService", "Could not find form type ID for code: " << formCode);
     return 0;
 }
 
@@ -1787,12 +1778,12 @@ int FormSubmissionService::getFormTypeId(const std::string& formCode) {
 SubmissionResult FormSubmissionService::createFormSubmissionRecord(const std::string& studentId,
                                                                      const std::string& formCode,
                                                                      const std::string& status) {
-    std::cout << "[FormSubmissionService] Creating form submission record for student " << studentId
-              << ", form: " << formCode << ", status: " << status << std::endl;
+    LOG_DEBUG("FormSubmissionService", "Creating form submission record for student " << studentId
+              << ", form: " << formCode << ", status: " << status);
 
     int formTypeId = getFormTypeId(formCode);
     if (formTypeId == 0) {
-        std::cerr << "[FormSubmissionService] Failed to get form type ID for: " << formCode << std::endl;
+        LOG_ERROR("FormSubmissionService", "Failed to get form type ID for: " << formCode);
         return SubmissionResult{false, "", "Could not find form type: " + formCode, {"Unknown form type"}, {}};
     }
 
@@ -1849,7 +1840,7 @@ SubmissionResult FormSubmissionService::createFormSubmissionRecord(const std::st
             }
             if (!existingId.empty()) {
                 payload["data"]["id"] = existingId;
-                std::cout << "[FormSubmissionService] Updating existing FormSubmission record: " << existingId << std::endl;
+                LOG_DEBUG("FormSubmissionService", "Updating existing FormSubmission record: " << existingId);
                 response = apiClient_->patch("/FormSubmission/" + existingId, payload);
                 isUpdate = true;
             }
@@ -1858,32 +1849,31 @@ SubmissionResult FormSubmissionService::createFormSubmissionRecord(const std::st
 
     // Create new record if not updating
     if (!isUpdate) {
-        std::cout << "[FormSubmissionService] Creating new FormSubmission record" << std::endl;
-        std::cout << "[FormSubmissionService] FormSubmission payload: " << payload.dump() << std::endl;
+        LOG_DEBUG("FormSubmissionService", "Creating new FormSubmission record");
+        LOG_DEBUG("FormSubmissionService", "FormSubmission payload: " << payload.dump());
         response = apiClient_->post("/FormSubmission", payload);
     }
 
-    std::cout << "[FormSubmissionService] FormSubmission API response - status: " << response.statusCode
-              << ", success: " << response.success << std::endl;
+    LOG_DEBUG("FormSubmissionService", "FormSubmission API response - status: " << response.statusCode
+              << ", success: " << response.success);
     if (!response.body.empty()) {
-        std::cout << "[FormSubmissionService] FormSubmission response body: " << response.body << std::endl;
+        LOG_DEBUG("FormSubmissionService", "FormSubmission response body: " << response.body);
     }
     if (!response.errorMessage.empty()) {
-        std::cerr << "[FormSubmissionService] FormSubmission error: " << response.errorMessage << std::endl;
+        LOG_ERROR("FormSubmissionService", "FormSubmission error: " << response.errorMessage);
     }
 
     SubmissionResult result = parseSubmissionResponse(response);
     if (result.success) {
-        std::cout << "[FormSubmissionService] FormSubmission record " << (isUpdate ? "updated" : "created")
-                  << " successfully, ID: " << result.submissionId << std::endl;
+        LOG_INFO("FormSubmissionService", "FormSubmission record " << (isUpdate ? "updated" : "created")
+                  << " successfully, ID: " << result.submissionId);
     } else {
-        std::cerr << "[FormSubmissionService] Failed to " << (isUpdate ? "update" : "create")
-                  << " FormSubmission record: " << result.message << std::endl;
+        LOG_ERROR("FormSubmissionService", "Failed to " << (isUpdate ? "update" : "create")
+                  << " FormSubmission record: " << result.message);
         for (const auto& err : result.errors) {
-            std::cerr << "[FormSubmissionService]   Error: " << err << std::endl;
+            LOG_ERROR("FormSubmissionService", "  Error: " << err);
         }
     }
-    std::cout.flush();
 
     return result;
 }

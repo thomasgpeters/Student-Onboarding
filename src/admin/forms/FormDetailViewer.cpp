@@ -1,6 +1,6 @@
 #include "FormDetailViewer.h"
 #include <Wt/WBreak.h>
-#include <iostream>
+#include "utils/Logger.h"
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
@@ -222,13 +222,13 @@ void FormDetailViewer::loadSubmission(int submissionId) {
     currentStudentId_ = 0;
     fieldsContainer_->clear();
 
-    std::cerr << "[FormDetailViewer] Loading submission: " << submissionId << std::endl;
+    LOG_DEBUG("FormDetailViewer", "Loading submission: " << submissionId);
 
     // Try to load from API
     if (apiService_) {
         try {
             auto response = apiService_->getApiClient()->get("/FormSubmission/" + std::to_string(submissionId));
-            std::cerr << "[FormDetailViewer] FormSubmission response - success: " << response.success << std::endl;
+            LOG_DEBUG("FormDetailViewer", "FormSubmission response - success: " << response.success);
 
             if (response.success) {
                 auto jsonResponse = nlohmann::json::parse(response.body);
@@ -247,8 +247,8 @@ void FormDetailViewer::loadSubmission(int submissionId) {
                 int formTypeId = safeGetInt(attrs, "form_type_id", 0);
                 currentStudentId_ = studentId;
 
-                std::cerr << "[FormDetailViewer] student_id: " << studentId
-                          << ", form_type_id: " << formTypeId << std::endl;
+                LOG_DEBUG("FormDetailViewer", "student_id: " << studentId
+                          << ", form_type_id: " << formTypeId);
 
                 // Get submission details
                 currentStatus_ = safeGetString(attrs, "status", "pending");
@@ -287,7 +287,7 @@ void FormDetailViewer::loadSubmission(int submissionId) {
                 return;
             }
         } catch (const std::exception& e) {
-            std::cerr << "[FormDetailViewer] Error loading submission: " << e.what() << std::endl;
+            LOG_ERROR("FormDetailViewer", "Error loading submission: " << e.what());
         }
     }
 
@@ -349,10 +349,10 @@ void FormDetailViewer::loadStudentInfo(int studentId) {
                 studentProgram_->setText("-");
             }
 
-            std::cerr << "[FormDetailViewer] Loaded student: " << fullName << ", " << email << std::endl;
+            LOG_DEBUG("FormDetailViewer", "Loaded student: " << fullName << ", " << email);
         }
     } catch (const std::exception& e) {
-        std::cerr << "[FormDetailViewer] Error loading student info: " << e.what() << std::endl;
+        LOG_ERROR("FormDetailViewer", "Error loading student info: " << e.what());
         studentName_->setText("-");
         studentEmail_->setText("-");
         studentProgram_->setText("-");
@@ -379,10 +379,10 @@ void FormDetailViewer::loadFormTypeInfo(int formTypeId) {
             std::string formName = safeGetString(attrs, "name", currentFormType_);
 
             formTitle_->setText("<h2>" + formName + " Submission</h2>");
-            std::cerr << "[FormDetailViewer] Form type: " << currentFormType_ << " (" << formName << ")" << std::endl;
+            LOG_DEBUG("FormDetailViewer", "Form type: " << currentFormType_ << " (" << formName << ")");
         }
     } catch (const std::exception& e) {
-        std::cerr << "[FormDetailViewer] Error loading form type: " << e.what() << std::endl;
+        LOG_ERROR("FormDetailViewer", "Error loading form type: " << e.what());
     }
 }
 
@@ -406,7 +406,7 @@ void FormDetailViewer::loadFormFieldData(int submissionId) {
                 items = json["data"];
             }
 
-            std::cerr << "[FormDetailViewer] Found " << items.size() << " form fields" << std::endl;
+            LOG_DEBUG("FormDetailViewer", "Found " << items.size() << " form fields");
 
             for (const auto& item : items) {
                 nlohmann::json attrs = item.contains("attributes") ? item["attributes"] : item;
@@ -441,7 +441,7 @@ void FormDetailViewer::loadFormFieldData(int submissionId) {
             }
         }
     } catch (const std::exception& e) {
-        std::cerr << "[FormDetailViewer] Error loading form fields: " << e.what() << std::endl;
+        LOG_ERROR("FormDetailViewer", "Error loading form fields: " << e.what());
     }
 
     if (fields.empty()) {
@@ -539,7 +539,7 @@ void FormDetailViewer::updateStatusDisplay(const std::string& status) {
 }
 
 void FormDetailViewer::handleApprove() {
-    std::cerr << "[FormDetailViewer] Approving submission: " << currentSubmissionId_ << std::endl;
+    LOG_INFO("FormDetailViewer", "Approving submission: " << currentSubmissionId_);
 
     bool success = false;
     if (apiService_) {
@@ -556,19 +556,19 @@ void FormDetailViewer::handleApprove() {
                 payload["data"]["attributes"]["rejection_reason"] = notes;  // Using rejection_reason field for notes
             }
 
-            std::cerr << "[FormDetailViewer] PATCH payload: " << payload.dump() << std::endl;
+            LOG_DEBUG("FormDetailViewer", "PATCH payload: " << payload.dump());
 
             auto response = apiService_->getApiClient()->patch(
                 "/FormSubmission/" + std::to_string(currentSubmissionId_), payload);
 
             if (response.success) {
-                std::cerr << "[FormDetailViewer] Submission approved successfully" << std::endl;
+                LOG_INFO("FormDetailViewer", "Submission approved successfully");
                 success = true;
             } else {
-                std::cerr << "[FormDetailViewer] Failed to approve: " << response.errorMessage << std::endl;
+                LOG_ERROR("FormDetailViewer", "Failed to approve: " << response.errorMessage);
             }
         } catch (const std::exception& e) {
-            std::cerr << "[FormDetailViewer] Error approving submission: " << e.what() << std::endl;
+            LOG_ERROR("FormDetailViewer", "Error approving submission: " << e.what());
         }
     }
 
@@ -581,7 +581,7 @@ void FormDetailViewer::handleApprove() {
 }
 
 void FormDetailViewer::handleReject() {
-    std::cerr << "[FormDetailViewer] Rejecting submission: " << currentSubmissionId_ << std::endl;
+    LOG_INFO("FormDetailViewer", "Rejecting submission: " << currentSubmissionId_);
 
     bool success = false;
     if (apiService_) {
@@ -598,19 +598,19 @@ void FormDetailViewer::handleReject() {
                 payload["data"]["attributes"]["rejection_reason"] = notes;
             }
 
-            std::cerr << "[FormDetailViewer] PATCH payload: " << payload.dump() << std::endl;
+            LOG_DEBUG("FormDetailViewer", "PATCH payload: " << payload.dump());
 
             auto response = apiService_->getApiClient()->patch(
                 "/FormSubmission/" + std::to_string(currentSubmissionId_), payload);
 
             if (response.success) {
-                std::cerr << "[FormDetailViewer] Submission rejected successfully" << std::endl;
+                LOG_INFO("FormDetailViewer", "Submission rejected successfully");
                 success = true;
             } else {
-                std::cerr << "[FormDetailViewer] Failed to reject: " << response.errorMessage << std::endl;
+                LOG_ERROR("FormDetailViewer", "Failed to reject: " << response.errorMessage);
             }
         } catch (const std::exception& e) {
-            std::cerr << "[FormDetailViewer] Error rejecting submission: " << e.what() << std::endl;
+            LOG_ERROR("FormDetailViewer", "Error rejecting submission: " << e.what());
         }
     }
 
@@ -623,7 +623,7 @@ void FormDetailViewer::handleReject() {
 }
 
 void FormDetailViewer::handleRequestRevision() {
-    std::cerr << "[FormDetailViewer] Requesting revision for submission: " << currentSubmissionId_ << std::endl;
+    LOG_INFO("FormDetailViewer", "Requesting revision for submission: " << currentSubmissionId_);
 
     bool success = false;
     if (apiService_) {
@@ -640,19 +640,19 @@ void FormDetailViewer::handleRequestRevision() {
                 payload["data"]["attributes"]["rejection_reason"] = notes;
             }
 
-            std::cerr << "[FormDetailViewer] PATCH payload: " << payload.dump() << std::endl;
+            LOG_DEBUG("FormDetailViewer", "PATCH payload: " << payload.dump());
 
             auto response = apiService_->getApiClient()->patch(
                 "/FormSubmission/" + std::to_string(currentSubmissionId_), payload);
 
             if (response.success) {
-                std::cerr << "[FormDetailViewer] Revision requested successfully" << std::endl;
+                LOG_INFO("FormDetailViewer", "Revision requested successfully");
                 success = true;
             } else {
-                std::cerr << "[FormDetailViewer] Failed to request revision: " << response.errorMessage << std::endl;
+                LOG_ERROR("FormDetailViewer", "Failed to request revision: " << response.errorMessage);
             }
         } catch (const std::exception& e) {
-            std::cerr << "[FormDetailViewer] Error requesting revision: " << e.what() << std::endl;
+            LOG_ERROR("FormDetailViewer", "Error requesting revision: " << e.what());
         }
     }
 

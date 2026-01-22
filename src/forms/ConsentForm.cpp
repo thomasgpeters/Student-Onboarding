@@ -1,7 +1,7 @@
 #include "ConsentForm.h"
+#include "utils/Logger.h"
 #include <Wt/WLabel.h>
 #include <Wt/WDate.h>
-#include <iostream>
 
 namespace StudentIntake {
 namespace Forms {
@@ -203,22 +203,22 @@ void ConsentForm::populateFormFields(const Models::FormData& data) {
 
 void ConsentForm::loadConsentsFromApi() {
     if (!apiService_ || !session_) {
-        std::cout << "[ConsentForm] No apiService or session available, skipping API load" << std::endl;
+        LOG_DEBUG("ConsentForm", "No apiService or session available, skipping API load");
         return;
     }
 
     std::string studentId = session_->getStudent().getId();
     if (studentId.empty()) {
-        std::cout << "[ConsentForm] No student ID, skipping API load" << std::endl;
+        LOG_DEBUG("ConsentForm", "No student ID, skipping API load");
         return;
     }
 
-    std::cout << "[ConsentForm] Loading consent data from API for student: " << studentId << std::endl;
+    LOG_DEBUG("ConsentForm", "Loading consent data from API for student: " << studentId);
 
     auto consentData = apiService_->getStudentConsentsWithSignature(studentId);
 
     if (consentData.consents.empty()) {
-        std::cout << "[ConsentForm] No existing consent records found" << std::endl;
+        LOG_DEBUG("ConsentForm", "No existing consent records found");
         return;
     }
 
@@ -250,7 +250,7 @@ void ConsentForm::loadConsentsFromApi() {
         signatureInput_->setText(consentData.signature);
     }
 
-    std::cout << "[ConsentForm] Loaded " << consentData.consents.size() << " consent values from API" << std::endl;
+    LOG_DEBUG("ConsentForm", "Loaded " << consentData.consents.size() << " consent values from API");
 }
 
 } // namespace Forms

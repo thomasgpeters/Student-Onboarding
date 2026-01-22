@@ -1,7 +1,7 @@
 #include "AdminDashboard.h"
 #include <Wt/WBreak.h>
-#include <iostream>
 #include <nlohmann/json.hpp>
+#include "utils/Logger.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -158,7 +158,7 @@ void AdminDashboard::loadStatistics() {
     activePrograms_ = 0;
 
     if (!apiService_) {
-        std::cerr << "[AdminDashboard] API service not available" << std::endl;
+        LOG_ERROR("AdminDashboard", "API service not available");
         return;
     }
 
@@ -190,12 +190,12 @@ void AdminDashboard::loadStatistics() {
             }
         }
 
-        std::cerr << "[AdminDashboard] Loaded statistics - Students: " << totalStudents_
+        LOG_DEBUG("AdminDashboard", "Loaded statistics - Students: " << totalStudents_
                   << ", Pending Forms: " << pendingForms_
-                  << ", Active Programs: " << activePrograms_ << std::endl;
+                  << ", Active Programs: " << activePrograms_);
 
     } catch (const std::exception& e) {
-        std::cerr << "[AdminDashboard] Error loading statistics: " << e.what() << std::endl;
+        LOG_ERROR("AdminDashboard", "Error loading statistics: " << e.what());
     }
 }
 
