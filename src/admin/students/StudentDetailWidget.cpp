@@ -650,14 +650,14 @@ void StudentDetailWidget::approveSubmission(int submissionId) {
     if (apiService_) {
         try {
             nlohmann::json payload;
-            payload["data"]["type"] = "form_submission";
+            payload["data"]["type"] = "FormSubmission";
             payload["data"]["id"] = std::to_string(submissionId);
             payload["data"]["attributes"]["status"] = "approved";
 
             auto response = apiService_->getApiClient()->patch(
-                "/FormSubmission/" + std::to_string(submissionId), payload.dump());
+                "/FormSubmission/" + std::to_string(submissionId), payload);
 
-            if (response.success) {
+            if (response.isSuccess()) {
                 std::cerr << "[StudentDetail] Submission approved successfully" << std::endl;
                 // Update local state
                 for (auto& sub : formSubmissions_) {
@@ -667,6 +667,8 @@ void StudentDetailWidget::approveSubmission(int submissionId) {
                     }
                 }
                 updateFormSubmissionsTable();
+            } else {
+                std::cerr << "[StudentDetail] Failed to approve submission: " << response.errorMessage << std::endl;
             }
         } catch (const std::exception& e) {
             std::cerr << "[StudentDetail] Error approving submission: " << e.what() << std::endl;
@@ -680,14 +682,14 @@ void StudentDetailWidget::rejectSubmission(int submissionId) {
     if (apiService_) {
         try {
             nlohmann::json payload;
-            payload["data"]["type"] = "form_submission";
+            payload["data"]["type"] = "FormSubmission";
             payload["data"]["id"] = std::to_string(submissionId);
             payload["data"]["attributes"]["status"] = "rejected";
 
             auto response = apiService_->getApiClient()->patch(
-                "/FormSubmission/" + std::to_string(submissionId), payload.dump());
+                "/FormSubmission/" + std::to_string(submissionId), payload);
 
-            if (response.success) {
+            if (response.isSuccess()) {
                 std::cerr << "[StudentDetail] Submission rejected successfully" << std::endl;
                 // Update local state
                 for (auto& sub : formSubmissions_) {
@@ -697,6 +699,8 @@ void StudentDetailWidget::rejectSubmission(int submissionId) {
                     }
                 }
                 updateFormSubmissionsTable();
+            } else {
+                std::cerr << "[StudentDetail] Failed to reject submission: " << response.errorMessage << std::endl;
             }
         } catch (const std::exception& e) {
             std::cerr << "[StudentDetail] Error rejecting submission: " << e.what() << std::endl;
