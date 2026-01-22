@@ -400,7 +400,7 @@ SubmissionResult FormSubmissionService::saveStudentAddress(const Models::Student
     return createStudentAddress(address);
 }
 
-// EmergencyContact API endpoints
+// EmergencyContact API endpoints (uses compound key: student_id, contact_relationship, phone)
 std::vector<Models::EmergencyContact> FormSubmissionService::getEmergencyContacts(const std::string& studentId) {
     std::vector<Models::EmergencyContact> contacts;
 
@@ -425,6 +425,30 @@ std::vector<Models::EmergencyContact> FormSubmissionService::getEmergencyContact
     return contacts;
 }
 
+Models::EmergencyContact FormSubmissionService::getEmergencyContactByKey(const std::string& studentId,
+                                                                          const std::string& relationship,
+                                                                          const std::string& phone) {
+    Models::EmergencyContact contact;
+
+    // URL encode the key parts
+    std::string encodedKey = urlEncode(studentId) + "," + urlEncode(relationship) + "," + urlEncode(phone);
+    std::string endpoint = "/EmergencyContact/" + encodedKey;
+
+    std::cout << "[FormSubmissionService] getEmergencyContactByKey: " << endpoint << std::endl;
+    ApiResponse response = apiClient_->get(endpoint);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        if (json.contains("data")) {
+            contact = Models::EmergencyContact::fromJson(json["data"]);
+        } else {
+            contact = Models::EmergencyContact::fromJson(json);
+        }
+    }
+
+    return contact;
+}
+
 SubmissionResult FormSubmissionService::createEmergencyContact(const Models::EmergencyContact& contact) {
     nlohmann::json payload;
     payload["data"] = {
@@ -438,28 +462,46 @@ SubmissionResult FormSubmissionService::createEmergencyContact(const Models::Eme
 }
 
 SubmissionResult FormSubmissionService::updateEmergencyContact(const Models::EmergencyContact& contact) {
+    // Build compound key for URL
+    std::string encodedKey = urlEncode(contact.getStudentId()) + "," +
+                             urlEncode(contact.getRelationship()) + "," +
+                             urlEncode(contact.getPhone());
+
     nlohmann::json payload;
     payload["data"] = {
         {"type", "EmergencyContact"},
-        {"id", contact.getId()},
         {"attributes", contact.toJson()}
     };
 
+    std::cout << "[FormSubmissionService] updateEmergencyContact key: " << encodedKey << std::endl;
     std::cout << "[FormSubmissionService] updateEmergencyContact payload: " << payload.dump() << std::endl;
-    ApiResponse response = apiClient_->patch("/EmergencyContact/" + contact.getId(), payload);
+    ApiResponse response = apiClient_->patch("/EmergencyContact/" + encodedKey, payload);
     return parseSubmissionResponse(response);
 }
 
-SubmissionResult FormSubmissionService::deleteEmergencyContact(const std::string& contactId) {
-    ApiResponse response = apiClient_->del("/EmergencyContact/" + contactId);
+SubmissionResult FormSubmissionService::deleteEmergencyContact(const std::string& studentId,
+                                                                const std::string& relationship,
+                                                                const std::string& phone) {
+    // Build compound key for URL
+    std::string encodedKey = urlEncode(studentId) + "," + urlEncode(relationship) + "," + urlEncode(phone);
+    std::cout << "[FormSubmissionService] deleteEmergencyContact key: " << encodedKey << std::endl;
+    ApiResponse response = apiClient_->del("/EmergencyContact/" + encodedKey);
     return parseSubmissionResponse(response);
 }
 
 SubmissionResult FormSubmissionService::saveEmergencyContact(const Models::EmergencyContact& contact) {
-    // If contact has an ID, update it; otherwise create new
-    if (!contact.getId().empty()) {
-        return updateEmergencyContact(contact);
+    // If contact has a valid compound key, check if it exists to determine update vs create
+    if (contact.hasValidKey()) {
+        // Try to get existing contact
+        auto existing = getEmergencyContactByKey(contact.getStudentId(),
+                                                  contact.getRelationship(),
+                                                  contact.getPhone());
+        if (existing.hasValidKey()) {
+            // Contact exists, update it
+            return updateEmergencyContact(contact);
+        }
     }
+    // Create new contact
     return createEmergencyContact(contact);
 }
 

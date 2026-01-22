@@ -60,8 +60,8 @@ private:
     bool validateRelationshipLimits();
     std::map<std::string, int> countRelationshipsByType() const;
 
-    // Cached contact IDs for updates
-    std::vector<std::string> contactIds_;
+    // Track original contacts loaded from API for update/delete operations
+    std::vector<Models::EmergencyContact> originalContacts_;
 };
 
 } // namespace Forms
