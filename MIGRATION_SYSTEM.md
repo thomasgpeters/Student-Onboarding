@@ -46,23 +46,23 @@ The Student Onboarding system supports multiple institution types through a flex
 
 ```
 database/
-├── migrations/
-│   ├── 001_add_student_fields.sql
-│   ├── 002_add_admin_tables.sql
-│   ├── 003_seed_sample_students.sql
-│   ├── 004_extend_curriculum_schema.sql
-│   ├── 005_seed_accredited_curriculum.sql    # Accredited programs only
-│   ├── 005_seed_vocational_curriculum.sql    # Vocational programs only
-│   ├── 006_flush_curriculum.sql              # Clear curriculum data
-│   ├── 007_institution_settings.sql          # Settings table
-│   ├── 008_add_duration_interval.sql         # Duration interval field
-│   └── 009_add_institution_type.sql          # Institution type settings
+├── schema.sql                    # Complete database schema (all tables, indexes, triggers)
+├── install.sql                   # Single installation script (schema + seed data)
 │
-└── scripts/
-    ├── switch_to_accredited.sql              # Complete accredited switch
-    ├── switch_to_vocational.sql              # Complete vocational switch
-    └── README.md                             # Scripts documentation
+├── scripts/
+│   ├── switch_to_accredited.sql  # Complete accredited/academic mode switch
+│   ├── switch_to_vocational.sql  # Complete vocational/trade school mode switch
+│   └── README.md                 # Scripts documentation
+│
+└── migrations/
+    └── archive/                  # Historical migration files (reference only)
+        ├── README.md
+        ├── 001_add_student_fields.sql
+        ├── 002_add_admin_tables.sql
+        └── ... (additional archived files)
 ```
+
+> **Note:** Individual migration files have been consolidated into `schema.sql` and `install.sql` for simpler deployments. The archived migrations are kept for historical reference only.
 
 ### Settings Architecture
 
@@ -269,6 +269,25 @@ ALTER TABLE curriculum ADD CONSTRAINT curriculum_duration_interval_check
 - `psql` command-line client
 - Database user with appropriate permissions
 
+### New Installation
+
+For new installations, use the consolidated install script:
+
+```bash
+# Create database
+createdb student_onboarding
+
+# Run installation (creates schema, seeds form types, settings, and admin user)
+psql -U postgres -d student_onboarding -f database/install.sql
+
+# Choose curriculum mode (required):
+# For universities/colleges (accredited):
+psql -U postgres -d student_onboarding -f database/scripts/switch_to_accredited.sql
+
+# OR for trade schools/CDL (vocational):
+psql -U postgres -d student_onboarding -f database/scripts/switch_to_vocational.sql
+```
+
 ### Step 1: Backup Your Database
 
 **Always backup before switching modes!**
@@ -281,20 +300,7 @@ pg_dump -U postgres -d student_onboarding > backup_$(date +%Y%m%d_%H%M%S).sql
 pg_dump -U postgres -d student_onboarding -t curriculum -t department > curriculum_backup.sql
 ```
 
-### Step 2: Run Required Migrations
-
-Ensure all migrations are applied:
-
-```bash
-cd database/migrations
-
-# Apply in order if not already done
-psql -U postgres -d student_onboarding -f 007_institution_settings.sql
-psql -U postgres -d student_onboarding -f 008_add_duration_interval.sql
-psql -U postgres -d student_onboarding -f 009_add_institution_type.sql
-```
-
-### Step 3: Switch Mode
+### Step 2: Switch Mode
 
 ```bash
 cd database/scripts
@@ -564,11 +570,15 @@ UPDATE curriculum SET duration_interval = 'week' WHERE code LIKE 'cdl%';
 
 **Symptom:** Settings not appearing in admin panel.
 
-**Cause:** Migration 009 not applied.
+**Cause:** Database not properly initialized.
 
 **Solution:**
 ```bash
-psql -f database/migrations/009_add_institution_type.sql
+# For new installations, run the full install script
+psql -U postgres -d student_onboarding -f database/install.sql
+
+# Then apply your curriculum mode
+psql -U postgres -d student_onboarding -f database/scripts/switch_to_vocational.sql
 ```
 
 ---
