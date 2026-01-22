@@ -1,6 +1,7 @@
 #include "ConsentForm.h"
 #include <Wt/WLabel.h>
 #include <Wt/WDate.h>
+#include <iostream>
 
 namespace StudentIntake {
 namespace Forms {
@@ -161,6 +162,9 @@ void ConsentForm::createFormFields() {
 
     // Update button text
     setNextButtonText("Submit Application");
+
+    // Load existing consent data from API
+    loadConsentsFromApi();
 }
 
 bool ConsentForm::validate() {
@@ -239,6 +243,56 @@ void ConsentForm::populateFormFields(const Models::FormData& data) {
         accuracyCheckbox_->setChecked(data.getField("accuracyCertified").boolValue);
     if (data.hasField("electronicSignature"))
         signatureInput_->setText(data.getField("electronicSignature").stringValue);
+}
+
+void ConsentForm::loadConsentsFromApi() {
+    if (!session_) {
+        std::cout << "[ConsentForm] No session available, skipping API load" << std::endl;
+        return;
+    }
+
+    std::string studentId = session_->getStudent().getId();
+    if (studentId.empty()) {
+        std::cout << "[ConsentForm] No student ID, skipping API load" << std::endl;
+        return;
+    }
+
+    std::cout << "[ConsentForm] Loading consent data from API for student: " << studentId << std::endl;
+
+    auto& apiService = session_->getFormSubmissionService();
+    std::map<std::string, bool> consents = apiService.getStudentConsents(studentId);
+
+    if (consents.empty()) {
+        std::cout << "[ConsentForm] No existing consent records found" << std::endl;
+        return;
+    }
+
+    // Map API consent_type values to form checkboxes
+    // API uses: terms_of_service, privacy_policy, ferpa_acknowledgment, code_of_conduct,
+    //           communication_consent, photo_release, accuracy_certification
+    if (consents.count("terms_of_service")) {
+        termsCheckbox_->setChecked(consents["terms_of_service"]);
+    }
+    if (consents.count("privacy_policy")) {
+        privacyCheckbox_->setChecked(consents["privacy_policy"]);
+    }
+    if (consents.count("ferpa_acknowledgment")) {
+        ferpaCheckbox_->setChecked(consents["ferpa_acknowledgment"]);
+    }
+    if (consents.count("code_of_conduct")) {
+        codeOfConductCheckbox_->setChecked(consents["code_of_conduct"]);
+    }
+    if (consents.count("communication_consent")) {
+        communicationCheckbox_->setChecked(consents["communication_consent"]);
+    }
+    if (consents.count("photo_release")) {
+        photoReleaseCheckbox_->setChecked(consents["photo_release"]);
+    }
+    if (consents.count("accuracy_certification")) {
+        accuracyCheckbox_->setChecked(consents["accuracy_certification"]);
+    }
+
+    std::cout << "[ConsentForm] Loaded " << consents.size() << " consent values from API" << std::endl;
 }
 
 } // namespace Forms
