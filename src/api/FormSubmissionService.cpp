@@ -1048,7 +1048,7 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
     // First, delete any existing consent records for this student to avoid duplicates
     deleteStudentConsents(studentId);
 
-    // Get common fields
+    // Get signature fields (stored only once, not on each consent)
     std::string signature = data.hasField("electronicSignature") ? data.getField("electronicSignature").stringValue : "";
     std::string signatureDate = data.hasField("signatureDate") ? data.getField("signatureDate").stringValue : "";
 
@@ -1082,7 +1082,7 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
     int successCount = 0;
     int failCount = 0;
 
-    // Create individual consent records
+    // Create individual consent records (without signature - signature stored separately)
     for (const auto& consent : consents) {
         bool isAccepted = data.hasField(consent.fieldName) && data.getField(consent.fieldName).boolValue;
 
@@ -1101,8 +1101,6 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
         attributes["consent_type"] = consent.type;
         attributes["consent_version"] = "1.0";
         attributes["is_accepted"] = isAccepted;
-        attributes["electronic_signature"] = signature;
-        attributes["signature_date"] = signatureDate;
 
         nlohmann::json payload;
         payload["data"] = {
@@ -1121,6 +1119,38 @@ SubmissionResult FormSubmissionService::submitConsent(const std::string& student
             std::cerr << "[FormSubmissionService] Failed to create consent " << consent.type
                       << ": " << response.errorMessage << std::endl;
             finalResult.errors.push_back("Failed to save " + consent.type + ": " + response.errorMessage);
+        }
+    }
+
+    // Store signature in a separate "student_signature" record (one per student)
+    if (!signature.empty()) {
+        nlohmann::json sigAttributes;
+        if (studentIdInt > 0) {
+            sigAttributes["student_id"] = studentIdInt;
+        } else {
+            sigAttributes["student_id"] = studentId;
+        }
+        sigAttributes["consent_type"] = "student_signature";
+        sigAttributes["consent_version"] = "1.0";
+        sigAttributes["is_accepted"] = true;  // Signature implies acceptance
+        sigAttributes["electronic_signature"] = signature;
+        sigAttributes["signature_date"] = signatureDate;
+
+        nlohmann::json sigPayload;
+        sigPayload["data"] = {
+            {"type", "Consent"},
+            {"attributes", sigAttributes}
+        };
+
+        std::cout << "[FormSubmissionService] Creating signature record" << std::endl;
+        ApiResponse sigResponse = apiClient_->post("/Consent", sigPayload);
+        if (sigResponse.isSuccess()) {
+            successCount++;
+        } else {
+            failCount++;
+            std::cerr << "[FormSubmissionService] Failed to create signature record: "
+                      << sigResponse.errorMessage << std::endl;
+            finalResult.errors.push_back("Failed to save signature: " + sigResponse.errorMessage);
         }
     }
 
@@ -1243,6 +1273,61 @@ std::map<std::string, bool> FormSubmissionService::getStudentConsents(const std:
 
     std::cout << "[FormSubmissionService] Loaded " << consents.size() << " consent records" << std::endl;
     return consents;
+}
+
+StudentConsentData FormSubmissionService::getStudentConsentsWithSignature(const std::string& studentId) {
+    StudentConsentData result;
+    std::cout << "[FormSubmissionService] getStudentConsentsWithSignature for student: " << studentId << std::endl;
+
+    std::string endpoint = "/Consent?filter[student_id]=" + studentId;
+    ApiResponse response = apiClient_->get(endpoint);
+
+    if (response.isSuccess()) {
+        auto json = response.getJson();
+        nlohmann::json items;
+
+        if (json.is_array()) {
+            items = json;
+        } else if (json.contains("data") && json["data"].is_array()) {
+            items = json["data"];
+        }
+
+        for (const auto& item : items) {
+            // Get attributes (handle both nested and flat formats)
+            const nlohmann::json& attrs = item.contains("attributes") ? item["attributes"] : item;
+
+            std::string consentType;
+            bool isAccepted = false;
+
+            if (attrs.contains("consent_type") && attrs["consent_type"].is_string()) {
+                consentType = attrs["consent_type"].get<std::string>();
+            }
+            if (attrs.contains("is_accepted") && attrs["is_accepted"].is_boolean()) {
+                isAccepted = attrs["is_accepted"].get<bool>();
+            }
+
+            // Handle signature record separately
+            if (consentType == "student_signature") {
+                if (attrs.contains("electronic_signature") && attrs["electronic_signature"].is_string()) {
+                    result.signature = attrs["electronic_signature"].get<std::string>();
+                }
+                if (attrs.contains("signature_date") && attrs["signature_date"].is_string()) {
+                    result.signatureDate = attrs["signature_date"].get<std::string>();
+                }
+                std::cout << "[FormSubmissionService] Loaded signature: " << result.signature << std::endl;
+            } else if (!consentType.empty()) {
+                result.consents[consentType] = isAccepted;
+                std::cout << "[FormSubmissionService] Loaded consent: " << consentType
+                          << " = " << (isAccepted ? "true" : "false") << std::endl;
+            }
+        }
+    } else {
+        std::cerr << "[FormSubmissionService] Failed to get consents: " << response.errorMessage << std::endl;
+    }
+
+    std::cout << "[FormSubmissionService] Loaded " << result.consents.size()
+              << " consent records with signature" << std::endl;
+    return result;
 }
 
 // Generic form submission
