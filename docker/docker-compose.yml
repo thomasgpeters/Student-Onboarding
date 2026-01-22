@@ -1,0 +1,88 @@
+# =============================================================================
+# Student Onboarding Application - Docker Compose
+# =============================================================================
+# Usage:
+#   docker-compose up -d          # Start in background
+#   docker-compose logs -f        # View logs
+#   docker-compose down           # Stop and remove
+#   docker-compose build          # Rebuild image
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Student Onboarding Web Application
+  # ---------------------------------------------------------------------------
+  student-onboarding:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: student-onboarding:latest
+    container_name: student-onboarding
+    restart: unless-stopped
+
+    # Environment configuration
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - HTTP_PORT=8080
+      - HTTP_ADDRESS=0.0.0.0
+
+    # Port mapping
+    ports:
+      - "${HOST_PORT:-8080}:8080"
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # API Backend (ApiLogicServer) - Optional
+  # ---------------------------------------------------------------------------
+  # Uncomment this section if you want to run the API backend in a container
+  # ---------------------------------------------------------------------------
+  # api-backend:
+  #   image: apilogicserver/api_logic_server:latest
+  #   container_name: student-api-backend
+  #   restart: unless-stopped
+  #   environment:
+  #     - APILOGICPROJECT_BIND_ADDRESS=0.0.0.0
+  #     - APILOGICPROJECT_PORT=5656
+  #   ports:
+  #     - "5656:5656"
+  #   volumes:
+  #     - ./api-project:/app
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:5656/api"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  default:
+    name: student-onboarding-network
+    driver: bridge

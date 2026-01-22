@@ -1,0 +1,79 @@
+# =============================================================================
+# Docker Build Ignore File
+# =============================================================================
+# Files and directories to exclude from Docker build context
+# =============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build artifacts
+build/
+cmake-build-*/
+*.o
+*.a
+*.so
+*.dylib
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+
+# Development files
+.env.local
+.env.development
+*.log
+
+# Test files
+tests/
+test/
+*_test.cpp
+*_test.h
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# Docker files (except what we need)
+docker-compose*.yml
+Dockerfile*
+!docker/Dockerfile
+!docker/entrypoint.sh
+!docker/docker-compose.yml
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+database/migrations/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+
+# Node modules (if any frontend tooling)
+node_modules/
+
+# Python virtual environments (if any)
+venv/
+__pycache__/
+*.pyc
