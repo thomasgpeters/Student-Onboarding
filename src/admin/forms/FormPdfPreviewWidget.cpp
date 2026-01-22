@@ -280,10 +280,22 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                     for (const auto& ec : ecItems) {
                         nlohmann::json ecAttrs = ec.contains("attributes") ? ec["attributes"] : ec;
 
+                        // Helper lambda to safely get string from JSON (handles null values)
+                        auto safeGetString = [&ecAttrs](const std::string& key) -> std::string {
+                            if (ecAttrs.contains(key) && !ecAttrs[key].is_null()) {
+                                if (ecAttrs[key].is_string()) {
+                                    return ecAttrs[key].get<std::string>();
+                                } else if (ecAttrs[key].is_number()) {
+                                    return std::to_string(ecAttrs[key].get<int>());
+                                }
+                            }
+                            return "";
+                        };
+
                         // Determine contact label
                         std::string contactLabel;
-                        bool isPrimary = ecAttrs.value("is_primary", false);
-                        int priority = ecAttrs.value("priority", 0);
+                        bool isPrimary = ecAttrs.contains("is_primary") && !ecAttrs["is_primary"].is_null() && ecAttrs["is_primary"].get<bool>();
+                        int priority = ecAttrs.contains("priority") && !ecAttrs["priority"].is_null() && ecAttrs["priority"].is_number() ? ecAttrs["priority"].get<int>() : 0;
 
                         if (isPrimary || priority == 1) {
                             contactLabel = "Primary Contact";
@@ -298,24 +310,43 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                         }
                         fields.push_back({contactLabel, "", "header"});
 
-                        std::string fullName = ecAttrs.value("first_name", "") + " " + ecAttrs.value("last_name", "");
-                        fields.push_back({"Name", fullName, "text"});
-                        fields.push_back({"Relationship", ecAttrs.value("contact_relationship", ""), "text"});
-                        fields.push_back({"Phone", ecAttrs.value("phone", ""), "phone"});
+                        std::string firstName = safeGetString("first_name");
+                        std::string lastName = safeGetString("last_name");
+                        std::string fullName = firstName;
+                        if (!lastName.empty()) {
+                            fullName += (fullName.empty() ? "" : " ") + lastName;
+                        }
+                        if (!fullName.empty()) {
+                            fields.push_back({"Name", fullName, "text"});
+                        }
 
-                        std::string altPhone = ecAttrs.value("alternate_phone", "");
+                        std::string relationship = safeGetString("contact_relationship");
+                        if (!relationship.empty()) {
+                            fields.push_back({"Relationship", relationship, "text"});
+                        }
+
+                        std::string phone = safeGetString("phone");
+                        if (!phone.empty()) {
+                            fields.push_back({"Phone", phone, "phone"});
+                        }
+
+                        std::string altPhone = safeGetString("alternate_phone");
                         if (!altPhone.empty()) {
                             fields.push_back({"Alternate Phone", altPhone, "phone"});
                         }
-                        fields.push_back({"Email", ecAttrs.value("email", ""), "email"});
+
+                        std::string email = safeGetString("email");
+                        if (!email.empty()) {
+                            fields.push_back({"Email", email, "email"});
+                        }
 
                         // Build address
-                        std::string street1 = ecAttrs.value("street1", "");
-                        std::string street2 = ecAttrs.value("street2", "");
-                        std::string city = ecAttrs.value("city", "");
-                        std::string state = ecAttrs.value("state", "");
-                        std::string postalCode = ecAttrs.value("postal_code", "");
-                        std::string country = ecAttrs.value("country", "");
+                        std::string street1 = safeGetString("street1");
+                        std::string street2 = safeGetString("street2");
+                        std::string city = safeGetString("city");
+                        std::string state = safeGetString("state");
+                        std::string postalCode = safeGetString("postal_code");
+                        std::string country = safeGetString("country");
 
                         if (!street1.empty()) {
                             std::string fullAddress = street1;
@@ -334,8 +365,13 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
 
                         contactNum++;
                     }
+
+                    if (ecItems.empty()) {
+                        fields.push_back({"No Emergency Contacts", "No emergency contacts have been added yet.", "text"});
+                    }
                 } else {
                     std::cerr << "[FormPdfPreviewWidget] EC: No emergency contacts found in response" << std::endl;
+                    fields.push_back({"No Emergency Contacts", "No emergency contacts have been added yet.", "text"});
                 }
             } else if (formType == "academic_history") {
                 std::string ahUrl = "/AcademicHistory?filter[student_id]=" + std::to_string(studentId);
@@ -984,18 +1020,39 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 }
             } else if (formType == "emergency_contact") {
                 auto ecResponse = apiService_->getApiClient()->get("/EmergencyContact?filter[student_id]=" + std::to_string(studentId));
-                if (ecResponse.success) {
+                if (ecResponse.success && !ecResponse.body.empty()) {
                     auto ecJson = nlohmann::json::parse(ecResponse.body);
-                    nlohmann::json ecItems = ecJson.is_array() ? ecJson : (ecJson.contains("data") ? ecJson["data"] : nlohmann::json::array());
+                    nlohmann::json ecItems = nlohmann::json::array();
+                    if (ecJson.is_array()) {
+                        ecItems = ecJson;
+                    } else if (ecJson.contains("data")) {
+                        if (ecJson["data"].is_array()) {
+                            ecItems = ecJson["data"];
+                        } else if (ecJson["data"].is_object()) {
+                            ecItems.push_back(ecJson["data"]);
+                        }
+                    }
 
                     int contactNum = 1;
                     for (const auto& ec : ecItems) {
                         nlohmann::json ecAttrs = ec.contains("attributes") ? ec["attributes"] : ec;
 
+                        // Helper lambda to safely get string from JSON (handles null values)
+                        auto safeGetString = [&ecAttrs](const std::string& key) -> std::string {
+                            if (ecAttrs.contains(key) && !ecAttrs[key].is_null()) {
+                                if (ecAttrs[key].is_string()) {
+                                    return ecAttrs[key].get<std::string>();
+                                } else if (ecAttrs[key].is_number()) {
+                                    return std::to_string(ecAttrs[key].get<int>());
+                                }
+                            }
+                            return "";
+                        };
+
                         // Determine contact label based on priority or is_primary
                         std::string contactLabel;
-                        bool isPrimary = ecAttrs.value("is_primary", false);
-                        int priority = ecAttrs.value("priority", 0);
+                        bool isPrimary = ecAttrs.contains("is_primary") && !ecAttrs["is_primary"].is_null() && ecAttrs["is_primary"].get<bool>();
+                        int priority = ecAttrs.contains("priority") && !ecAttrs["priority"].is_null() && ecAttrs["priority"].is_number() ? ecAttrs["priority"].get<int>() : 0;
 
                         if (isPrimary || priority == 1) {
                             contactLabel = "Primary Contact";
@@ -1012,25 +1069,44 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                         fields.push_back({contactLabel, "", "header"});
 
                         // Name and relationship
-                        std::string fullName = ecAttrs.value("first_name", "") + " " + ecAttrs.value("last_name", "");
-                        fields.push_back({"Name", fullName, "text"});
-                        fields.push_back({"Relationship", ecAttrs.value("contact_relationship", ""), "text"});
+                        std::string firstName = safeGetString("first_name");
+                        std::string lastName = safeGetString("last_name");
+                        std::string fullName = firstName;
+                        if (!lastName.empty()) {
+                            fullName += (fullName.empty() ? "" : " ") + lastName;
+                        }
+                        if (!fullName.empty()) {
+                            fields.push_back({"Name", fullName, "text"});
+                        }
+
+                        std::string relationship = safeGetString("contact_relationship");
+                        if (!relationship.empty()) {
+                            fields.push_back({"Relationship", relationship, "text"});
+                        }
 
                         // Contact info
-                        fields.push_back({"Phone", ecAttrs.value("phone", ""), "phone"});
-                        std::string altPhone = ecAttrs.value("alternate_phone", "");
+                        std::string phone = safeGetString("phone");
+                        if (!phone.empty()) {
+                            fields.push_back({"Phone", phone, "phone"});
+                        }
+
+                        std::string altPhone = safeGetString("alternate_phone");
                         if (!altPhone.empty()) {
                             fields.push_back({"Alternate Phone", altPhone, "phone"});
                         }
-                        fields.push_back({"Email", ecAttrs.value("email", ""), "email"});
+
+                        std::string email = safeGetString("email");
+                        if (!email.empty()) {
+                            fields.push_back({"Email", email, "email"});
+                        }
 
                         // Address
-                        std::string street1 = ecAttrs.value("street1", "");
-                        std::string street2 = ecAttrs.value("street2", "");
-                        std::string city = ecAttrs.value("city", "");
-                        std::string state = ecAttrs.value("state", "");
-                        std::string postalCode = ecAttrs.value("postal_code", "");
-                        std::string country = ecAttrs.value("country", "");
+                        std::string street1 = safeGetString("street1");
+                        std::string street2 = safeGetString("street2");
+                        std::string city = safeGetString("city");
+                        std::string state = safeGetString("state");
+                        std::string postalCode = safeGetString("postal_code");
+                        std::string country = safeGetString("country");
 
                         if (!street1.empty()) {
                             std::string fullAddress = street1;
@@ -1049,6 +1125,12 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
 
                         contactNum++;
                     }
+
+                    if (ecItems.empty()) {
+                        fields.push_back({"No Emergency Contacts", "No emergency contacts have been added yet.", "text"});
+                    }
+                } else {
+                    fields.push_back({"No Emergency Contacts", "No emergency contacts have been added yet.", "text"});
                 }
             } else if (formType == "medical_info") {
                 auto medResponse = apiService_->getApiClient()->get("/MedicalInfo?filter[student_id]=" + std::to_string(studentId));
