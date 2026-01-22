@@ -2,6 +2,8 @@
 #include <Wt/WServer.h>
 #include "app/StudentIntakeApp.h"
 #include "admin/AdminApp.h"
+#include "utils/Logger.h"
+#include <cstdlib>
 
 /**
  * @brief Application factory function for Student Portal
@@ -26,6 +28,18 @@ std::unique_ptr<Wt::WApplication> createAdminApplication(const Wt::WEnvironment&
  */
 int main(int argc, char** argv) {
     try {
+        // Configure logging level from environment variable or default to INFO
+        // Set LOG_LEVEL=DEBUG for verbose output, LOG_LEVEL=NONE to suppress
+        const char* logLevel = std::getenv("LOG_LEVEL");
+        if (logLevel) {
+            StudentIntake::Logger::setLevelFromString(logLevel);
+        } else {
+            StudentIntake::Logger::setLevel(StudentIntake::LogLevel::INFO);
+        }
+
+        // Show log level in output (useful for startup)
+        StudentIntake::Logger::setShowLevel(true);
+
         // Create and configure the server
         Wt::WServer server(argc, argv);
 
@@ -35,22 +49,23 @@ int main(int argc, char** argv) {
         // Add the Admin Portal entry point at /administration path
         server.addEntryPoint(Wt::EntryPointType::Application, createAdminApplication, "/administration");
 
-        std::cerr << "Starting Student Onboarding Application..." << std::endl;
-        std::cerr << "  Student Portal: http://localhost:8080/" << std::endl;
-        std::cerr << "  Admin Portal:   http://localhost:8080/administration" << std::endl;
+        LOG_INFO("Main", "Starting Student Onboarding Application...");
+        LOG_INFO("Main", "  Log level: " << StudentIntake::Logger::getLevelString());
+        LOG_INFO("Main", "  Student Portal: http://localhost:8080/");
+        LOG_INFO("Main", "  Admin Portal:   http://localhost:8080/administration");
 
         // Run the server
         if (server.start()) {
             // Wait for shutdown signal
             int sig = Wt::WServer::waitForShutdown();
-            std::cerr << "Shutdown (signal = " << sig << ")" << std::endl;
+            LOG_INFO("Main", "Shutdown (signal = " << sig << ")");
             server.stop();
         }
     } catch (const Wt::WServer::Exception& e) {
-        std::cerr << "Server exception: " << e.what() << std::endl;
+        LOG_ERROR("Main", "Server exception: " << e.what());
         return 1;
     } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+        LOG_ERROR("Main", "Exception: " << e.what());
         return 1;
     }
 

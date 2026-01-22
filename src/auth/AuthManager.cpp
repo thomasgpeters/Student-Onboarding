@@ -1,8 +1,8 @@
 #include "AuthManager.h"
+#include "utils/Logger.h"
 #include <regex>
 #include <thread>
 #include <functional>
-#include <iostream>
 
 namespace StudentIntake {
 namespace Auth {
@@ -37,8 +37,7 @@ AuthResult AuthManager::parseApiResult(const Api::SubmissionResult& result) {
     } else if (result.success && result.responseData.contains("id") && result.responseData.contains("attributes")) {
         // responseData IS the student object directly (from login query)
         authResult.student = Models::Student::fromJson(result.responseData);
-        std::cout << "[AuthManager] Parsed student directly from responseData, ID: "
-                  << authResult.student.getId() << std::endl;
+        LOG_DEBUG("AuthManager", "Parsed student directly from responseData, ID: " << authResult.student.getId());
     }
 
     return authResult;
@@ -69,26 +68,23 @@ AuthResult AuthManager::login(const std::string& email, const std::string& passw
     // Fallback: If student ID is empty but submissionId has it, use that
     if (authResult.success && authResult.student.getId().empty() && !apiResult.submissionId.empty()) {
         authResult.student.setId(apiResult.submissionId);
-        std::cout << "[AuthManager] Login: Set student ID from submissionId: " << apiResult.submissionId << std::endl;
+        LOG_DEBUG("AuthManager", "Login: Set student ID from submissionId: " << apiResult.submissionId);
     }
 
-    std::cout << "[AuthManager] Login result - success: " << authResult.success
-              << ", student ID: '" << authResult.student.getId() << "'" << std::endl;
-    std::cout.flush();
+    LOG_INFO("AuthManager", "Login result - success: " << authResult.success << ", student ID: '" << authResult.student.getId() << "'");
 
     return authResult;
 }
 
 AuthResult AuthManager::registerStudent(const std::string& email, const std::string& password,
                                          const std::string& firstName, const std::string& lastName) {
-    std::cout << "[AuthManager] registerStudent called for: " << email << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("AuthManager", "registerStudent called for: " << email);
 
     AuthResult result;
 
     // Validate inputs
     if (!isValidEmail(email)) {
-        std::cout << "[AuthManager] Invalid email format" << std::endl;
+        LOG_DEBUG("AuthManager", "Invalid email format");
         result.success = false;
         result.message = "Invalid email format";
         result.errors.push_back("Please enter a valid email address");
@@ -96,7 +92,7 @@ AuthResult AuthManager::registerStudent(const std::string& email, const std::str
     }
 
     if (!isValidPassword(password)) {
-        std::cout << "[AuthManager] Password does not meet requirements" << std::endl;
+        LOG_DEBUG("AuthManager", "Password does not meet requirements");
         result.success = false;
         result.message = "Password does not meet requirements";
         result.errors = getPasswordRequirements();
@@ -117,8 +113,7 @@ AuthResult AuthManager::registerStudent(const std::string& email, const std::str
         return result;
     }
 
-    std::cout << "[AuthManager] Validation passed, creating student object" << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("AuthManager", "Validation passed, creating student object");
 
     // Create student object
     Models::Student student;
@@ -126,18 +121,15 @@ AuthResult AuthManager::registerStudent(const std::string& email, const std::str
     student.setFirstName(firstName);
     student.setLastName(lastName);
 
-    std::cout << "[AuthManager] Calling apiService_->registerStudent" << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("AuthManager", "Calling apiService_->registerStudent");
 
     // Call API
     Api::SubmissionResult apiResult = apiService_->registerStudent(student, password);
 
-    std::cout << "[AuthManager] API result - success: " << apiResult.success
-              << ", message: " << apiResult.message << std::endl;
+    LOG_DEBUG("AuthManager", "API result - success: " << apiResult.success << ", message: " << apiResult.message);
     if (apiResult.success) {
-        std::cout << "[AuthManager] Response data: " << apiResult.responseData.dump() << std::endl;
+        LOG_DEBUG("AuthManager", "Response data: " << apiResult.responseData.dump());
     }
-    std::cout.flush();
 
     result = parseApiResult(apiResult);
 
@@ -149,7 +141,7 @@ AuthResult AuthManager::registerStudent(const std::string& email, const std::str
         // First try submissionId (already parsed in parseSubmissionResponse)
         if (!apiResult.submissionId.empty()) {
             result.student.setId(apiResult.submissionId);
-            std::cout << "[AuthManager] Got ID from submissionId: " << apiResult.submissionId << std::endl;
+            LOG_DEBUG("AuthManager", "Got ID from submissionId: " << apiResult.submissionId);
         }
         // Fallback: Try to extract ID from JSON:API response data
         else if (apiResult.responseData.contains("data")) {
@@ -162,13 +154,12 @@ AuthResult AuthManager::registerStudent(const std::string& email, const std::str
                     studentId = std::to_string(data["id"].get<int>());
                 }
                 result.student.setId(studentId);
-                std::cout << "[AuthManager] Got ID from data.id: " << studentId << std::endl;
+                LOG_DEBUG("AuthManager", "Got ID from data.id: " << studentId);
             }
         }
     }
 
-    std::cout << "[AuthManager] Final student ID: '" << result.student.getId() << "'" << std::endl;
-    std::cout.flush();
+    LOG_DEBUG("AuthManager", "Final student ID: '" << result.student.getId() << "'");
 
     return result;
 }

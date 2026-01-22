@@ -1,7 +1,7 @@
 #include "StudentFormViewer.h"
 #include <Wt/WBreak.h>
-#include <iostream>
 #include <nlohmann/json.hpp>
+#include "utils/Logger.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -85,20 +85,20 @@ void StudentFormViewer::loadStudentForms(int studentId, const std::string& stude
     forms_.clear();
 
     if (!apiService_) {
-        std::cerr << "[FormViewer] API service not available" << std::endl;
+        LOG_WARN("FormViewer", "API service not available");
         updateTable();
         return;
     }
 
     try {
-        std::cerr << "[FormViewer] Loading forms for student: " << studentId << std::endl;
+        LOG_DEBUG("FormViewer", "Loading forms for student: " << studentId);
 
         // Query form submissions for this student
         std::string endpoint = "form_submission?filter[student_id]=" + std::to_string(studentId);
         auto response = apiService_->getApiClient()->get(endpoint);
 
         if (!response.success) {
-            std::cerr << "[FormViewer] Failed to load forms: " << response.errorMessage << std::endl;
+            LOG_ERROR("FormViewer", "Failed to load forms: " << response.errorMessage);
             updateTable();
             return;
         }
@@ -151,10 +151,10 @@ void StudentFormViewer::loadStudentForms(int studentId, const std::string& stude
             }
         }
 
-        std::cerr << "[FormViewer] Loaded " << forms_.size() << " forms" << std::endl;
+        LOG_DEBUG("FormViewer", "Loaded " << forms_.size() << " forms");
 
     } catch (const std::exception& e) {
-        std::cerr << "[FormViewer] Exception loading forms: " << e.what() << std::endl;
+        LOG_ERROR("FormViewer", "Exception loading forms: " << e.what());
     }
 
     updateTable();

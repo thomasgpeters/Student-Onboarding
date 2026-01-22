@@ -1,6 +1,6 @@
 #include "FormTypesListWidget.h"
 #include <Wt/WPushButton.h>
-#include <iostream>
+#include "utils/Logger.h"
 #include <algorithm>
 #include <nlohmann/json.hpp>
 
@@ -116,7 +116,7 @@ void FormTypesListWidget::loadFormTypes() {
     formTypes_.clear();
 
     if (!apiService_) {
-        std::cerr << "[FormTypesList] API service not available" << std::endl;
+        LOG_WARN("FormTypesList", "API service not available");
         updateTable();
         return;
     }
@@ -126,7 +126,7 @@ void FormTypesListWidget::loadFormTypes() {
         auto response = apiService_->getApiClient()->get("/FormType");
 
         if (!response.success) {
-            std::cerr << "[FormTypesList] Failed to load form types: " << response.errorMessage << std::endl;
+            LOG_ERROR("FormTypesList", "Failed to load form types: " << response.errorMessage);
             updateTable();
             return;
         }
@@ -140,7 +140,7 @@ void FormTypesListWidget::loadFormTypes() {
         } else if (json.contains("data")) {
             formTypesArray = json["data"];
         } else {
-            std::cerr << "[FormTypesList] Unexpected response format" << std::endl;
+            LOG_WARN("FormTypesList", "Unexpected response format");
             updateTable();
             return;
         }
@@ -181,10 +181,10 @@ void FormTypesListWidget::loadFormTypes() {
                 return a.displayOrder < b.displayOrder;
             });
 
-        std::cerr << "[FormTypesList] Loaded " << formTypes_.size() << " form types" << std::endl;
+        LOG_INFO("FormTypesList", "Loaded " << formTypes_.size() << " form types");
 
     } catch (const std::exception& e) {
-        std::cerr << "[FormTypesList] Exception loading form types: " << e.what() << std::endl;
+        LOG_ERROR("FormTypesList", "Exception loading form types: " << e.what());
     }
 
     updateTable();

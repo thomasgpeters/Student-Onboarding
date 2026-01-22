@@ -4,7 +4,7 @@
 #include <Wt/WGroupBox.h>
 #include <Wt/WLabel.h>
 #include <Wt/WBreak.h>
-#include <iostream>
+#include "utils/Logger.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -258,11 +258,11 @@ void InstitutionSettingsWidget::createLocationSection() {
 
 void InstitutionSettingsWidget::loadSettings() {
     if (!apiService_) {
-        std::cerr << "[InstitutionSettingsWidget] No API service available" << std::endl;
+        LOG_WARN("InstitutionSettingsWidget", "No API service available");
         return;
     }
 
-    std::cout << "[InstitutionSettingsWidget] Loading institution settings..." << std::endl;
+    LOG_INFO("InstitutionSettingsWidget", "Loading institution settings...");
 
     settings_ = apiService_->getInstitutionSettings();
 
@@ -286,7 +286,7 @@ void InstitutionSettingsWidget::loadSettings() {
     academicYearEdit_->setText(settings_.getAcademicYear());
     accreditationEdit_->setText(settings_.getAccreditationInfo());
 
-    std::cout << "[InstitutionSettingsWidget] Settings loaded: " << settings_.getInstitutionName() << std::endl;
+    LOG_INFO("InstitutionSettingsWidget", "Settings loaded: " << settings_.getInstitutionName());
 }
 
 void InstitutionSettingsWidget::saveSettings() {
@@ -295,7 +295,7 @@ void InstitutionSettingsWidget::saveSettings() {
         return;
     }
 
-    std::cout << "[InstitutionSettingsWidget] Saving institution settings..." << std::endl;
+    LOG_INFO("InstitutionSettingsWidget", "Saving institution settings...");
 
     // Update settings from form fields
     settings_.setInstitutionName(institutionNameEdit_->text().toUTF8());

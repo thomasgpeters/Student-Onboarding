@@ -164,6 +164,7 @@ target_include_directories(student_intake PRIVATE
     ${CMAKE_SOURCE_DIR}/src/models
     ${CMAKE_SOURCE_DIR}/src/session
     ${CMAKE_SOURCE_DIR}/src/widgets
+    ${CMAKE_SOURCE_DIR}/src/utils
     ${CMAKE_SOURCE_DIR}/src/admin
     ${CMAKE_SOURCE_DIR}/src/admin/models
     ${CMAKE_SOURCE_DIR}/src/admin/students

@@ -1,7 +1,7 @@
 #include "FormSubmissionsWidget.h"
 #include <Wt/WBreak.h>
 #include <Wt/WMessageBox.h>
-#include <iostream>
+#include "utils/Logger.h"
 #include <algorithm>
 #include <chrono>
 #include <ctime>
@@ -191,15 +191,15 @@ void FormSubmissionsWidget::setupUI() {
 }
 
 void FormSubmissionsWidget::loadData() {
-    std::cerr << "[FormSubmissionsWidget] loadData() called" << std::endl;
-    std::cerr << "[FormSubmissionsWidget] apiService_ is " << (apiService_ ? "SET" : "NULL") << std::endl;
+    LOG_DEBUG("FormSubmissionsWidget", "loadData() called");
+    LOG_DEBUG("FormSubmissionsWidget", "apiService_ is " << (apiService_ ? "SET" : "NULL"));
 
     // Load form types and programs first (for dropdowns and ID mapping)
     loadFormTypes();
     loadPrograms();
     loadSubmissions();
 
-    std::cerr << "[FormSubmissionsWidget] loadData() complete - loaded " << submissions_.size() << " submissions" << std::endl;
+    LOG_INFO("FormSubmissionsWidget", "loadData() complete - loaded " << submissions_.size() << " submissions");
 }
 
 void FormSubmissionsWidget::clearData() {
@@ -211,20 +211,20 @@ void FormSubmissionsWidget::clearData() {
 }
 
 void FormSubmissionsWidget::loadFormTypes() {
-    std::cerr << "[FormSubmissionsWidget] loadFormTypes() called" << std::endl;
+    LOG_DEBUG("FormSubmissionsWidget", "loadFormTypes() called");
     formTypeIdToCode_.clear();
     formTypeCodeToName_.clear();
 
     if (!apiService_) {
-        std::cerr << "[FormSubmissionsWidget] loadFormTypes() - apiService_ is NULL, returning early" << std::endl;
+        LOG_WARN("FormSubmissionsWidget", "loadFormTypes() - apiService_ is NULL, returning early");
         return;
     }
 
     try {
-        std::cerr << "[FormSubmissionsWidget] Fetching /FormType from API..." << std::endl;
+        LOG_DEBUG("FormSubmissionsWidget", "Fetching /FormType from API...");
         auto response = apiService_->getApiClient()->get("/FormType");
-        std::cerr << "[FormSubmissionsWidget] FormType API response - success: " << response.success
-                  << ", status: " << response.statusCode << std::endl;
+        LOG_DEBUG("FormSubmissionsWidget", "FormType API response - success: " << response.success
+                  << ", status: " << response.statusCode);
         if (response.success) {
             auto json = nlohmann::json::parse(response.body);
             nlohmann::json items;
@@ -235,7 +235,7 @@ void FormSubmissionsWidget::loadFormTypes() {
                 items = json["data"];
             }
 
-            std::cerr << "[FormSubmissionsWidget] Loading " << items.size() << " form types" << std::endl;
+            LOG_DEBUG("FormSubmissionsWidget", "Loading " << items.size() << " form types");
 
             for (const auto& item : items) {
                 int id = 0;
@@ -258,7 +258,7 @@ void FormSubmissionsWidget::loadFormTypes() {
                 if (id > 0 && !code.empty()) {
                     formTypeIdToCode_[id] = code;
                     formTypeCodeToName_[code] = name;
-                    std::cerr << "[FormSubmissionsWidget] FormType: id=" << id << ", code=" << code << ", name=" << name << std::endl;
+                    LOG_DEBUG("FormSubmissionsWidget", "FormType: id=" << id << ", code=" << code << ", name=" << name);
                 }
             }
 
@@ -270,7 +270,7 @@ void FormSubmissionsWidget::loadFormTypes() {
             }
         }
     } catch (const std::exception& e) {
-        std::cerr << "[FormSubmissionsWidget] Error loading form types: " << e.what() << std::endl;
+        LOG_ERROR("FormSubmissionsWidget", "Error loading form types: " << e.what());
     }
 }
 
@@ -291,7 +291,7 @@ void FormSubmissionsWidget::loadPrograms() {
                 items = json["data"];
             }
 
-            std::cerr << "[FormSubmissionsWidget] Loading " << items.size() << " programs" << std::endl;
+            LOG_DEBUG("FormSubmissionsWidget", "Loading " << items.size() << " programs");
 
             for (const auto& item : items) {
                 int id = 0;
@@ -312,7 +312,7 @@ void FormSubmissionsWidget::loadPrograms() {
 
                 if (id > 0 && !name.empty()) {
                     programs_.push_back({id, name});
-                    std::cerr << "[FormSubmissionsWidget] Program: id=" << id << ", name=" << name << std::endl;
+                    LOG_DEBUG("FormSubmissionsWidget", "Program: id=" << id << ", name=" << name);
                 }
             }
 
@@ -324,12 +324,12 @@ void FormSubmissionsWidget::loadPrograms() {
             }
         }
     } catch (const std::exception& e) {
-        std::cerr << "[FormSubmissionsWidget] Error loading programs: " << e.what() << std::endl;
+        LOG_ERROR("FormSubmissionsWidget", "Error loading programs: " << e.what());
     }
 }
 
 void FormSubmissionsWidget::loadSubmissions() {
-    std::cerr << "[FormSubmissionsWidget] loadSubmissions() called" << std::endl;
+    LOG_DEBUG("FormSubmissionsWidget", "loadSubmissions() called");
     submissions_.clear();
 
     // Helper lambdas for safe JSON value extraction (handles null values)
@@ -359,7 +359,7 @@ void FormSubmissionsWidget::loadSubmissions() {
 
     // Try to load from API if available
     if (apiService_) {
-        std::cerr << "[FormSubmissionsWidget] apiService_ is set, loading from API" << std::endl;
+        LOG_DEBUG("FormSubmissionsWidget", "apiService_ is set, loading from API");
         try {
             // First, load students to get names and emails
             auto studentsResponse = apiService_->getApiClient()->get("/Student");
@@ -395,7 +395,7 @@ void FormSubmissionsWidget::loadSubmissions() {
                         studentCache[studentId] = {name, email};
                     }
                 }
-                std::cerr << "[FormSubmissionsWidget] Loaded " << studentCache.size() << " students into cache" << std::endl;
+                LOG_DEBUG("FormSubmissionsWidget", "Loaded " << studentCache.size() << " students into cache");
             }
 
             // Load curricula for program names
@@ -429,12 +429,12 @@ void FormSubmissionsWidget::loadSubmissions() {
                         curriculumCache[currId] = currName;
                     }
                 }
-                std::cerr << "[FormSubmissionsWidget] Loaded " << curriculumCache.size() << " curricula into cache" << std::endl;
+                LOG_DEBUG("FormSubmissionsWidget", "Loaded " << curriculumCache.size() << " curricula into cache");
             }
 
             // Now load form submissions
             auto response = apiService_->getApiClient()->get("/FormSubmission");
-            std::cerr << "[FormSubmissionsWidget] FormSubmission API response - success: " << response.success << std::endl;
+            LOG_DEBUG("FormSubmissionsWidget", "FormSubmission API response - success: " << response.success);
             if (response.success) {
                 auto jsonResponse = nlohmann::json::parse(response.body);
                 nlohmann::json items;
@@ -443,7 +443,7 @@ void FormSubmissionsWidget::loadSubmissions() {
                 } else if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
                     items = jsonResponse["data"];
                 }
-                std::cerr << "[FormSubmissionsWidget] Found " << items.size() << " form submission items" << std::endl;
+                LOG_DEBUG("FormSubmissionsWidget", "Found " << items.size() << " form submission items");
 
                 for (const auto& item : items) {
                     FormSubmissionRecord record;
@@ -485,19 +485,19 @@ void FormSubmissionsWidget::loadSubmissions() {
                     record.programName = "";
 
                     submissions_.push_back(record);
-                    std::cerr << "[FormSubmissionsWidget] Added submission: id=" << record.id
-                              << ", student=" << record.studentName << ", form=" << record.formName << std::endl;
+                    LOG_DEBUG("FormSubmissionsWidget", "Added submission: id=" << record.id
+                              << ", student=" << record.studentName << ", form=" << record.formName);
                 }
             }
-            std::cerr << "[FormSubmissionsWidget] Loaded " << submissions_.size() << " submissions from API" << std::endl;
+            LOG_INFO("FormSubmissionsWidget", "Loaded " << submissions_.size() << " submissions from API");
         } catch (const std::exception& e) {
-            std::cerr << "[FormSubmissionsWidget] Error loading from API: " << e.what() << std::endl;
+            LOG_ERROR("FormSubmissionsWidget", "Error loading from API: " << e.what());
         }
     }
 
     // Log when no submissions found (no mock data - this is a real system now)
     if (submissions_.empty()) {
-        std::cerr << "[FormSubmissionsWidget] No form submissions found in database" << std::endl;
+        LOG_INFO("FormSubmissionsWidget", "No form submissions found in database");
     }
 
     applyFilters();
@@ -752,7 +752,7 @@ void FormSubmissionsWidget::updateTable() {
 }
 
 void FormSubmissionsWidget::approveSubmission(int submissionId) {
-    std::cerr << "[FormSubmissionsWidget] Approving submission: " << submissionId << std::endl;
+    LOG_INFO("FormSubmissionsWidget", "Approving submission: " << submissionId);
 
     if (apiService_) {
         try {
@@ -763,10 +763,10 @@ void FormSubmissionsWidget::approveSubmission(int submissionId) {
 
             auto response = apiService_->getApiClient()->patch("/FormSubmission/" + std::to_string(submissionId), payload.dump());
             if (response.success) {
-                std::cerr << "[FormSubmissionsWidget] Submission approved successfully" << std::endl;
+                LOG_INFO("FormSubmissionsWidget", "Submission approved successfully");
             }
         } catch (const std::exception& e) {
-            std::cerr << "[FormSubmissionsWidget] Error approving submission: " << e.what() << std::endl;
+            LOG_ERROR("FormSubmissionsWidget", "Error approving submission: " << e.what());
         }
     }
 
@@ -783,7 +783,7 @@ void FormSubmissionsWidget::approveSubmission(int submissionId) {
 }
 
 void FormSubmissionsWidget::rejectSubmission(int submissionId) {
-    std::cerr << "[FormSubmissionsWidget] Rejecting submission: " << submissionId << std::endl;
+    LOG_INFO("FormSubmissionsWidget", "Rejecting submission: " << submissionId);
 
     if (apiService_) {
         try {
@@ -794,10 +794,10 @@ void FormSubmissionsWidget::rejectSubmission(int submissionId) {
 
             auto response = apiService_->getApiClient()->patch("/FormSubmission/" + std::to_string(submissionId), payload.dump());
             if (response.success) {
-                std::cerr << "[FormSubmissionsWidget] Submission rejected successfully" << std::endl;
+                LOG_INFO("FormSubmissionsWidget", "Submission rejected successfully");
             }
         } catch (const std::exception& e) {
-            std::cerr << "[FormSubmissionsWidget] Error rejecting submission: " << e.what() << std::endl;
+            LOG_ERROR("FormSubmissionsWidget", "Error rejecting submission: " << e.what());
         }
     }
 

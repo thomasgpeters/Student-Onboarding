@@ -1,4 +1,5 @@
 #include "EmergencyContactForm.h"
+#include "utils/Logger.h"
 #include <Wt/WLabel.h>
 #include <Wt/WBreak.h>
 
@@ -166,13 +167,13 @@ void EmergencyContactForm::removeContact(int index) {
         if (index < static_cast<int>(originalContacts_.size()) && apiService_) {
             const auto& original = originalContacts_[index];
             if (original.hasValidKey()) {
-                std::cout << "[EmergencyContactForm] Deleting contact: " << original.getCompoundKey() << std::endl;
+                LOG_DEBUG("EmergencyContactForm", "Deleting contact: " << original.getCompoundKey());
                 auto result = apiService_->deleteEmergencyContact(
                     original.getStudentId(),
                     original.getRelationship(),
                     original.getPhone());
                 if (!result.success) {
-                    std::cout << "[EmergencyContactForm] Failed to delete contact: " << result.message << std::endl;
+                    LOG_WARN("EmergencyContactForm", "Failed to delete contact: " << result.message);
                 }
             }
             // Keep originalContacts_ in sync with contacts_
@@ -369,7 +370,7 @@ void EmergencyContactForm::saveContactsToApi() {
         // and use PATCH for updates, POST for creates
         Api::SubmissionResult result = apiService_->saveEmergencyContact(contact);
         if (result.success) {
-            std::cout << "[EmergencyContactForm] Saved contact: " << contact.getCompoundKey() << std::endl;
+            LOG_DEBUG("EmergencyContactForm", "Saved contact: " << contact.getCompoundKey());
             // Update originalContacts_ to track the new state
             if (i < originalContacts_.size()) {
                 originalContacts_[i] = contact;
@@ -377,7 +378,7 @@ void EmergencyContactForm::saveContactsToApi() {
                 originalContacts_.push_back(contact);
             }
         } else {
-            std::cout << "[EmergencyContactForm] Failed to save contact: " << result.message << std::endl;
+            LOG_WARN("EmergencyContactForm", "Failed to save contact: " << result.message);
         }
     }
 }

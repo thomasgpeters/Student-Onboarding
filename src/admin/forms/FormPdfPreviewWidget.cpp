@@ -2,7 +2,7 @@
 #include <Wt/WBreak.h>
 #include <Wt/WImage.h>
 #include <Wt/WApplication.h>
-#include <iostream>
+#include "utils/Logger.h"
 #include <sstream>
 #include <iomanip>
 #include <chrono>
@@ -26,9 +26,9 @@ FormPdfPreviewWidget::FormPdfPreviewWidget()
     setupUI();
 
     if (Api::PdfGenerator::isAvailable()) {
-        std::cerr << "[FormPdfPreviewWidget] PDF generation is available (libharu found)" << std::endl;
+        LOG_INFO("FormPdfPreviewWidget", "PDF generation is available (libharu found)");
     } else {
-        std::cerr << "[FormPdfPreviewWidget] PDF generation not available - using HTML fallback" << std::endl;
+        LOG_WARN("FormPdfPreviewWidget", "PDF generation not available - using HTML fallback");
     }
 }
 
@@ -163,14 +163,14 @@ void FormPdfPreviewWidget::showStudentForms(int studentId) {
 
 void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
     if (!apiService_) {
-        std::cerr << "[FormPdfPreviewWidget] No API service available" << std::endl;
+        LOG_WARN("FormPdfPreviewWidget", "No API service available");
         return;
     }
 
     // Clear previous content before loading new data
     clearPreview();
 
-    std::cerr << "[FormPdfPreviewWidget] Loading form submission: " << submissionId << std::endl;
+    LOG_DEBUG("FormPdfPreviewWidget", "Loading form submission: " << submissionId);
 
     try {
         // Load the form submission
@@ -187,10 +187,10 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
             std::string status = attrs.value("status", "pending");
             std::string submittedAt = attrs.value("submitted_at", "");
 
-            std::cerr << "[FormPdfPreviewWidget] Submission " << submissionId
+            LOG_DEBUG("FormPdfPreviewWidget", "Submission " << submissionId
                       << " - student_id: " << studentId
                       << ", form_type_id: " << formTypeId
-                      << ", status: " << status << std::endl;
+                      << ", status: " << status);
 
             // Map form_type_id to form type name and display title
             // Each entry: {form_type_key, {document_title, window_title}}
@@ -212,7 +212,7 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
             // Set the window title to the form name with icon
             setWindowTitle("📋 " + windowTitle);
 
-            std::cerr << "[FormPdfPreviewWidget] Form type: " << formType << ", title: " << formTitle << std::endl;
+            LOG_DEBUG("FormPdfPreviewWidget", "Form type: " << formType << ", title: " << formTitle);
 
             // Load student data
             std::string studentName = "Unknown Student";
@@ -253,13 +253,13 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 }
             } else if (formType == "emergency_contact") {
                 std::string ecUrl = "/EmergencyContact?filter[student_id]=" + std::to_string(studentId);
-                std::cerr << "[FormPdfPreviewWidget] Loading emergency contacts from: " << ecUrl << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Loading emergency contacts from: " << ecUrl);
                 auto ecResponse = apiService_->getApiClient()->get(ecUrl);
-                std::cerr << "[FormPdfPreviewWidget] EC response success: " << ecResponse.success
+                LOG_DEBUG("FormPdfPreviewWidget", "EC response success: " << ecResponse.success
                           << ", status: " << ecResponse.statusCode
-                          << ", body length: " << ecResponse.body.length() << std::endl;
+                          << ", body length: " << ecResponse.body.length());
                 if (ecResponse.success && !ecResponse.body.empty()) {
-                    std::cerr << "[FormPdfPreviewWidget] EC response body: " << ecResponse.body.substr(0, 500) << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "EC response body: " << ecResponse.body.substr(0, 500));
                     auto ecJson = nlohmann::json::parse(ecResponse.body);
 
                     // Handle different JSON response formats
@@ -274,7 +274,7 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                             ecItems.push_back(ecJson["data"]);
                         }
                     }
-                    std::cerr << "[FormPdfPreviewWidget] Found " << ecItems.size() << " emergency contacts" << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Found " << ecItems.size() << " emergency contacts");
 
                     int contactNum = 1;
                     for (const auto& ec : ecItems) {
@@ -370,17 +370,17 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                         fields.push_back({"No Emergency Contacts", "No emergency contacts have been added yet.", "text"});
                     }
                 } else {
-                    std::cerr << "[FormPdfPreviewWidget] EC: No emergency contacts found in response" << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "EC: No emergency contacts found in response");
                     fields.push_back({"No Emergency Contacts", "No emergency contacts have been added yet.", "text"});
                 }
             } else if (formType == "academic_history") {
                 std::string ahUrl = "/AcademicHistory?filter[student_id]=" + std::to_string(studentId);
-                std::cerr << "[FormPdfPreviewWidget] Loading academic history from: " << ahUrl << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Loading academic history from: " << ahUrl);
                 auto ahResponse = apiService_->getApiClient()->get(ahUrl);
-                std::cerr << "[FormPdfPreviewWidget] AH response success: " << ahResponse.success
-                          << ", status: " << ahResponse.statusCode << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "AH response success: " << ahResponse.success
+                          << ", status: " << ahResponse.statusCode);
                 if (ahResponse.success && !ahResponse.body.empty()) {
-                    std::cerr << "[FormPdfPreviewWidget] AH response body: " << ahResponse.body.substr(0, 500) << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "AH response body: " << ahResponse.body.substr(0, 500));
                     auto ahJson = nlohmann::json::parse(ahResponse.body);
 
                     // Handle different JSON response formats
@@ -394,7 +394,7 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                             ahItems.push_back(ahJson["data"]);
                         }
                     }
-                    std::cerr << "[FormPdfPreviewWidget] Found " << ahItems.size() << " academic history records" << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Found " << ahItems.size() << " academic history records");
 
                     // Group by institution type
                     std::vector<std::string> institutionTypes = {"High School", "College", "University", "Trade School"};
@@ -508,12 +508,12 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 }
             } else if (formType == "medical_info") {
                 std::string medUrl = "/MedicalInfo?filter[student_id]=" + std::to_string(studentId);
-                std::cerr << "[FormPdfPreviewWidget] Loading medical info from: " << medUrl << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Loading medical info from: " << medUrl);
                 auto medResponse = apiService_->getApiClient()->get(medUrl);
-                std::cerr << "[FormPdfPreviewWidget] Med response success: " << medResponse.success
-                          << ", status: " << medResponse.statusCode << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Med response success: " << medResponse.success
+                          << ", status: " << medResponse.statusCode);
                 if (medResponse.success && !medResponse.body.empty()) {
-                    std::cerr << "[FormPdfPreviewWidget] Med response body: " << medResponse.body.substr(0, 500) << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Med response body: " << medResponse.body.substr(0, 500));
                     auto medJson = nlohmann::json::parse(medResponse.body);
 
                     // Handle different JSON response formats
@@ -527,7 +527,7 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                             medItems.push_back(medJson["data"]);
                         }
                     }
-                    std::cerr << "[FormPdfPreviewWidget] Found " << medItems.size() << " medical info records" << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Found " << medItems.size() << " medical info records");
                     if (!medItems.empty()) {
                         nlohmann::json med = medItems[0];
                         nlohmann::json medAttrs = med.contains("attributes") ? med["attributes"] : med;
@@ -592,12 +592,12 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 }
             } else if (formType == "financial_aid") {
                 std::string faUrl = "/FinancialAid?filter[student_id]=" + std::to_string(studentId);
-                std::cerr << "[FormPdfPreviewWidget] Loading financial aid from: " << faUrl << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Loading financial aid from: " << faUrl);
                 auto faResponse = apiService_->getApiClient()->get(faUrl);
-                std::cerr << "[FormPdfPreviewWidget] FA response success: " << faResponse.success
-                          << ", status: " << faResponse.statusCode << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "FA response success: " << faResponse.success
+                          << ", status: " << faResponse.statusCode);
                 if (faResponse.success && !faResponse.body.empty()) {
-                    std::cerr << "[FormPdfPreviewWidget] FA response body: " << faResponse.body.substr(0, 500) << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "FA response body: " << faResponse.body.substr(0, 500));
                     auto faJson = nlohmann::json::parse(faResponse.body);
 
                     // Handle different JSON response formats
@@ -611,7 +611,7 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                             faItems.push_back(faJson["data"]);
                         }
                     }
-                    std::cerr << "[FormPdfPreviewWidget] Found " << faItems.size() << " financial aid records" << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Found " << faItems.size() << " financial aid records");
                     if (!faItems.empty()) {
                         nlohmann::json fa = faItems[0];
                         nlohmann::json faAttrs = fa.contains("attributes") ? fa["attributes"] : fa;
@@ -694,12 +694,12 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 }
             } else if (formType == "documents") {
                 std::string docUrl = "/Document?filter[student_id]=" + std::to_string(studentId);
-                std::cerr << "[FormPdfPreviewWidget] Loading documents from: " << docUrl << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Loading documents from: " << docUrl);
                 auto docResponse = apiService_->getApiClient()->get(docUrl);
-                std::cerr << "[FormPdfPreviewWidget] Doc response success: " << docResponse.success
-                          << ", status: " << docResponse.statusCode << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Doc response success: " << docResponse.success
+                          << ", status: " << docResponse.statusCode);
                 if (docResponse.success && !docResponse.body.empty()) {
-                    std::cerr << "[FormPdfPreviewWidget] Doc response body: " << docResponse.body.substr(0, 500) << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Doc response body: " << docResponse.body.substr(0, 500));
                     auto docJson = nlohmann::json::parse(docResponse.body);
 
                     // Handle different JSON response formats
@@ -713,7 +713,7 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                             docItems.push_back(docJson["data"]);
                         }
                     }
-                    std::cerr << "[FormPdfPreviewWidget] Found " << docItems.size() << " document records" << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Found " << docItems.size() << " document records");
 
                     if (!docItems.empty()) {
                         int docNum = 1;
@@ -774,12 +774,12 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                 }
             } else if (formType == "consent") {
                 std::string consentUrl = "/Consent?filter[student_id]=" + std::to_string(studentId);
-                std::cerr << "[FormPdfPreviewWidget] Loading consent from: " << consentUrl << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Loading consent from: " << consentUrl);
                 auto cResponse = apiService_->getApiClient()->get(consentUrl);
-                std::cerr << "[FormPdfPreviewWidget] Consent response success: " << cResponse.success
-                          << ", status: " << cResponse.statusCode << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Consent response success: " << cResponse.success
+                          << ", status: " << cResponse.statusCode);
                 if (cResponse.success && !cResponse.body.empty()) {
-                    std::cerr << "[FormPdfPreviewWidget] Consent response body: " << cResponse.body.substr(0, 500) << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Consent response body: " << cResponse.body.substr(0, 500));
                     auto cJson = nlohmann::json::parse(cResponse.body);
 
                     // Handle different JSON response formats
@@ -793,7 +793,7 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
                             cItems.push_back(cJson["data"]);
                         }
                     }
-                    std::cerr << "[FormPdfPreviewWidget] Found " << cItems.size() << " consent records" << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Found " << cItems.size() << " consent records");
 
                     // Build a map of consent_type -> is_accepted and extract signature
                     std::map<std::string, bool> consentMap;
@@ -872,7 +872,7 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
 
             // If no fields were loaded, add a fallback message with student basic info
             if (fields.empty()) {
-                std::cerr << "[FormPdfPreviewWidget] WARNING: No fields loaded for form type: " << formType << std::endl;
+                LOG_WARN("FormPdfPreviewWidget", "No fields loaded for form type: " << formType);
                 fields.push_back({"Student Information", "", "header"});
                 fields.push_back({"Student Name", studentName, "text"});
                 fields.push_back({"Email", studentEmail, "text"});
@@ -883,22 +883,22 @@ void FormPdfPreviewWidget::loadFormSubmissionData(int submissionId) {
             }
 
             // Set the form data and build preview
-            std::cerr << "[FormPdfPreviewWidget] Setting form data - fields count: " << fields.size() << std::endl;
+            LOG_DEBUG("FormPdfPreviewWidget", "Setting form data - fields count: " << fields.size());
             setFormData(formType, formTitle, studentName, studentEmail, submittedAt, fields);
 
         } else {
-            std::cerr << "[FormPdfPreviewWidget] Failed to load form submission: " << response.errorMessage << std::endl;
+            LOG_ERROR("FormPdfPreviewWidget", "Failed to load form submission: " << response.errorMessage);
         }
     } catch (const std::exception& e) {
-        std::cerr << "[FormPdfPreviewWidget] Error loading submission: " << e.what() << std::endl;
+        LOG_ERROR("FormPdfPreviewWidget", "Error loading submission: " << e.what());
     }
 }
 
 void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
-    std::cerr << "[FormPdfPreviewWidget] Loading all forms for student: " << studentId << std::endl;
+    LOG_DEBUG("FormPdfPreviewWidget", "Loading all forms for student: " << studentId);
 
     if (!apiService_) {
-        std::cerr << "[FormPdfPreviewWidget] No API service available" << std::endl;
+        LOG_WARN("FormPdfPreviewWidget", "No API service available");
         return;
     }
 
@@ -926,7 +926,7 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
             "/FormSubmission?filter[student_id]=" + std::to_string(studentId));
 
         if (!submissionsResponse.success) {
-            std::cerr << "[FormPdfPreviewWidget] Failed to load submissions for student" << std::endl;
+            LOG_ERROR("FormPdfPreviewWidget", "Failed to load submissions for student");
             return;
         }
 
@@ -942,7 +942,7 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
             return;
         }
 
-        std::cerr << "[FormPdfPreviewWidget] Found " << submissions.size() << " submissions" << std::endl;
+        LOG_DEBUG("FormPdfPreviewWidget", "Found " << submissions.size() << " submissions");
 
         // Form type mapping
         std::map<int, std::pair<std::string, std::string>> formTypeMap = {
@@ -1408,12 +1408,12 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                 }
             } else if (formType == "documents") {
                 std::string docUrl = "/Document?filter[student_id]=" + std::to_string(studentId);
-                std::cerr << "[FormPdfPreviewWidget] Loading documents from: " << docUrl << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Loading documents from: " << docUrl);
                 auto docResponse = apiService_->getApiClient()->get(docUrl);
-                std::cerr << "[FormPdfPreviewWidget] Doc response success: " << docResponse.success
-                          << ", status: " << docResponse.statusCode << std::endl;
+                LOG_DEBUG("FormPdfPreviewWidget", "Doc response success: " << docResponse.success
+                          << ", status: " << docResponse.statusCode);
                 if (docResponse.success && !docResponse.body.empty()) {
-                    std::cerr << "[FormPdfPreviewWidget] Doc response body: " << docResponse.body.substr(0, 500) << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Doc response body: " << docResponse.body.substr(0, 500));
                     auto docJson = nlohmann::json::parse(docResponse.body);
 
                     // Handle different JSON response formats
@@ -1427,7 +1427,7 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
                             docItems.push_back(docJson["data"]);
                         }
                     }
-                    std::cerr << "[FormPdfPreviewWidget] Found " << docItems.size() << " document records" << std::endl;
+                    LOG_DEBUG("FormPdfPreviewWidget", "Found " << docItems.size() << " document records");
 
                     if (!docItems.empty()) {
                         int docNum = 1;
@@ -1590,7 +1590,7 @@ void FormPdfPreviewWidget::loadStudentFormsData(int studentId) {
         }
 
     } catch (const std::exception& e) {
-        std::cerr << "[FormPdfPreviewWidget] Error loading student forms: " << e.what() << std::endl;
+        LOG_ERROR("FormPdfPreviewWidget", "Error loading student forms: " << e.what());
         auto errorMsg = documentContent_->addWidget(std::make_unique<Wt::WText>(
             "<p class='text-danger'>Error loading forms: " + std::string(e.what()) + "</p>"));
         errorMsg->setTextFormat(Wt::TextFormat::XHTML);
@@ -1757,9 +1757,9 @@ std::string FormPdfPreviewWidget::formatValue(const std::string& value, const st
 
 void FormPdfPreviewWidget::loadInstitutionSettings() {
     if (apiService_) {
-        std::cerr << "[FormPdfPreviewWidget] Loading institution settings" << std::endl;
+        LOG_DEBUG("FormPdfPreviewWidget", "Loading institution settings");
         institutionSettings_ = apiService_->getInstitutionSettings();
-        std::cerr << "[FormPdfPreviewWidget] Institution: " << institutionSettings_.getInstitutionName() << std::endl;
+        LOG_DEBUG("FormPdfPreviewWidget", "Institution: " << institutionSettings_.getInstitutionName());
     }
 }
 
@@ -1784,7 +1784,7 @@ Api::PdfFormData FormPdfPreviewWidget::buildPdfFormData() {
 
 std::string FormPdfPreviewWidget::generatePdf() {
     if (!pdfGenerator_ || !Api::PdfGenerator::isAvailable()) {
-        std::cerr << "[FormPdfPreviewWidget] PDF generation not available" << std::endl;
+        LOG_WARN("FormPdfPreviewWidget", "PDF generation not available");
         return "";
     }
 
@@ -1792,11 +1792,11 @@ std::string FormPdfPreviewWidget::generatePdf() {
     std::string pdfPath = pdfGenerator_->generateFormPdf(pdfData);
 
     if (pdfPath.empty()) {
-        std::cerr << "[FormPdfPreviewWidget] Failed to generate PDF: "
-                  << pdfGenerator_->getLastError() << std::endl;
+        LOG_ERROR("FormPdfPreviewWidget", "Failed to generate PDF: "
+                  << pdfGenerator_->getLastError());
     } else {
         currentPdfPath_ = pdfPath;
-        std::cerr << "[FormPdfPreviewWidget] Generated PDF at: " << pdfPath << std::endl;
+        LOG_INFO("FormPdfPreviewWidget", "Generated PDF at: " << pdfPath);
     }
 
     return pdfPath;
