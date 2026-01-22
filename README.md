@@ -215,7 +215,8 @@ Student-Onboarding/
 │       ├── 008_add_duration_interval.sql
 │       ├── 009_add_institution_type.sql
 │       ├── 010_academic_history_compound_key.sql
-│       └── 011_emergency_contact_compound_key.sql
+│       ├── 011_emergency_contact_compound_key.sql
+│       └── 012_financial_aid_missing_columns.sql
 ├── scripts/
 │   └── seed_curriculum.sh      # Curriculum seeding script
 ├── docs/
@@ -597,6 +598,46 @@ See `docs/ADMIN_DASHBOARD_DESIGN.md` for full specification and `docs/Administra
 - `docs/DATA_MODEL_CHANGES.md` - Database schema change documentation
 
 ## Recent Changes
+
+### Version 2.3.0 - Financial Aid Data Fixes
+
+#### Database Schema Changes
+
+**Financial Aid Missing Columns** (`database/migrations/012_financial_aid_missing_columns.sql`)
+- Added `applying_for_aid` (BOOLEAN) - whether student wants financial aid
+- Added `household_income_range` (VARCHAR) - stores income range text like "$50,000 - $75,000"
+- Added `special_circumstances` (TEXT) - for financial hardship notes
+- Added `veteran_benefits` (BOOLEAN) - veteran benefits eligibility
+- Added `work_study_interest` (BOOLEAN) - interested in work-study
+- Added `loan_interest` (BOOLEAN) - interested in student loans
+- Added `scholarship_interest` (BOOLEAN) - interested in scholarships/grants
+
+#### Bug Fixes
+
+- **householdIncome data loss**: Fixed critical bug where household income was being set to `aid_types` then overwritten by actual aid type checkboxes
+- **applyingForAid not saved**: Now properly stored in `applying_for_aid` column
+- **specialCircumstances**: Now has dedicated column instead of being appended to scholarship_applications
+- **veteranBenefits**: Now has dedicated boolean column instead of just being in aid_types string
+
+#### API Field Mapping
+
+The submitFinancialAid function now properly maps all form fields:
+
+| Form Field | Database Column | Type |
+|------------|-----------------|------|
+| applyingForAid | applying_for_aid | BOOLEAN |
+| fafsaCompleted | fafsa_completed | BOOLEAN |
+| fafsaId | efc | DOUBLE |
+| employmentStatus | employment_status | VARCHAR |
+| employer | employer_name | VARCHAR |
+| householdIncome | household_income_range | VARCHAR |
+| dependents | dependents_count | INTEGER |
+| veteranBenefits | veteran_benefits | BOOLEAN |
+| scholarshipInterest | scholarship_interest | BOOLEAN |
+| currentScholarships | scholarship_applications | TEXT |
+| workStudyInterest | work_study_interest | BOOLEAN |
+| loanInterest | loan_interest | BOOLEAN |
+| specialCircumstances | special_circumstances | TEXT |
 
 ### Version 2.2.0 - Compound Primary Keys & Consent Form Redesign
 

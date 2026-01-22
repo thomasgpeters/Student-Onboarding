@@ -954,10 +954,11 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
         attributes["student_id"] = studentId;
     }
 
-    // Map form fields to database columns
+    // Basic info
+    attributes["applying_for_aid"] = data.hasField("applyingForAid") ? data.getField("applyingForAid").boolValue : true;
     attributes["fafsa_completed"] = data.hasField("fafsaCompleted") ? data.getField("fafsaCompleted").boolValue : false;
 
-    // fafsaId maps to efc (Expected Family Contribution)
+    // fafsaId maps to efc (Expected Family Contribution / Student Aid Index)
     std::string fafsaId = data.hasField("fafsaId") ? data.getField("fafsaId").stringValue : "";
     if (!fafsaId.empty()) {
         try {
@@ -967,18 +968,20 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
         }
     }
 
-    attributes["employment_status"] = data.hasField("employmentStatus") ? data.getField("employmentStatus").stringValue : "";
+    // Employment info
+    std::string empStatus = data.hasField("employmentStatus") ? data.getField("employmentStatus").stringValue : "";
+    if (empStatus != "Select...") {
+        attributes["employment_status"] = empStatus;
+    }
     attributes["employer_name"] = data.hasField("employer") ? data.getField("employer").stringValue : "";
 
-    // householdIncome maps to annual_income - extract numeric value if possible
+    // Household income - store the range text in dedicated column
     std::string incomeStr = data.hasField("householdIncome") ? data.getField("householdIncome").stringValue : "";
-    // Store the text description in aid_types for now since annual_income expects a number
     if (!incomeStr.empty() && incomeStr != "Select...") {
-        // Just store it as text, backend can handle it
-        attributes["aid_types"] = incomeStr;  // Store income range description
+        attributes["household_income_range"] = incomeStr;
     }
 
-    // dependents maps to dependents_count
+    // Dependents count
     std::string dependentsStr = data.hasField("dependents") ? data.getField("dependents").stringValue : "";
     if (!dependentsStr.empty()) {
         try {
@@ -988,7 +991,15 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
         }
     }
 
-    // Build aid_types from checkboxes
+    // Veteran benefits
+    attributes["veteran_benefits"] = data.hasField("veteranBenefits") ? data.getField("veteranBenefits").boolValue : false;
+
+    // Aid type interests (individual boolean columns)
+    attributes["scholarship_interest"] = data.hasField("scholarshipInterest") ? data.getField("scholarshipInterest").boolValue : false;
+    attributes["work_study_interest"] = data.hasField("workStudyInterest") ? data.getField("workStudyInterest").boolValue : false;
+    attributes["loan_interest"] = data.hasField("loanInterest") ? data.getField("loanInterest").boolValue : false;
+
+    // Build aid_types string for backwards compatibility
     std::vector<std::string> aidTypes;
     if (data.hasField("scholarshipInterest") && data.getField("scholarshipInterest").boolValue) {
         aidTypes.push_back("Scholarships/Grants");
@@ -1011,18 +1022,11 @@ SubmissionResult FormSubmissionService::submitFinancialAid(const std::string& st
         attributes["aid_types"] = aidTypesStr;
     }
 
+    // Scholarship applications
     attributes["scholarship_applications"] = data.hasField("currentScholarships") ? data.getField("currentScholarships").stringValue : "";
 
-    // Store special circumstances in scholarship_applications if no scholarships listed
-    std::string specialCirc = data.hasField("specialCircumstances") ? data.getField("specialCircumstances").stringValue : "";
-    if (!specialCirc.empty()) {
-        std::string existing = attributes.value("scholarship_applications", "");
-        if (!existing.empty()) {
-            attributes["scholarship_applications"] = existing + "\n\nSpecial Circumstances: " + specialCirc;
-        } else {
-            attributes["scholarship_applications"] = "Special Circumstances: " + specialCirc;
-        }
-    }
+    // Special circumstances - now has its own column
+    attributes["special_circumstances"] = data.hasField("specialCircumstances") ? data.getField("specialCircumstances").stringValue : "";
 
     nlohmann::json payload;
     payload["data"] = {
