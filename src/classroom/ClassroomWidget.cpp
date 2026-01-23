@@ -135,7 +135,7 @@ void ClassroomWidget::loadCourse(int courseId) {
     currentCourse_ = classroomService_->getCourse(std::to_string(courseId));
 
     // Get or create enrollment
-    int studentId = std::stoi(session_->getStudentId());
+    int studentId = std::stoi(session_->getStudent().getId());
     currentEnrollment_ = classroomService_->getStudentCourseEnrollment(studentId, courseId);
 
     if (currentEnrollment_.getId().empty()) {
@@ -220,7 +220,7 @@ void ClassroomWidget::startAssessment(int assessmentId) {
     assessmentWidget_->setAssessment(assessment);
     assessmentWidget_->setClassroomService(classroomService_);
     assessmentWidget_->setEnrollmentId(std::stoi(currentEnrollment_.getId()));
-    assessmentWidget_->setStudentId(std::stoi(session_->getStudentId()));
+    assessmentWidget_->setStudentId(std::stoi(session_->getStudent().getId()));
     assessmentWidget_->startAssessment();
 
     contentStack_->setCurrentWidget(assessmentWidget_);
@@ -286,7 +286,7 @@ void ClassroomWidget::onContentCompleted(int contentId) {
         return;
     }
 
-    int studentId = std::stoi(session_->getStudentId());
+    int studentId = std::stoi(session_->getStudent().getId());
 
     // Get module progress
     auto moduleProgress = classroomService_->getModuleProgress(studentId, currentModuleId_);
@@ -322,7 +322,7 @@ void ClassroomWidget::onModuleCompleted(int moduleId) {
         return;
     }
 
-    int studentId = std::stoi(session_->getStudentId());
+    int studentId = std::stoi(session_->getStudent().getId());
     classroomService_->completeModule(studentId, moduleId);
 
     // Check if course is complete
@@ -385,7 +385,7 @@ void ClassroomWidget::logTimeForCurrentActivity() {
     int durationSeconds = static_cast<int>(duration.count());
 
     if (durationSeconds > 0) {
-        int studentId = std::stoi(session_->getStudentId());
+        int studentId = std::stoi(session_->getStudent().getId());
         classroomService_->logTime(
             studentId,
             std::stoi(currentEnrollment_.getId()),
