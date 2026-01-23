@@ -23,6 +23,23 @@ BEGIN
 END $$;
 
 -- =====================================================
+-- STEP 1.5: Schema verification - ensure required columns exist
+-- =====================================================
+-- Add duration_interval column if it doesn't exist (for older databases)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'curriculum' AND column_name = 'duration_interval'
+    ) THEN
+        ALTER TABLE curriculum ADD COLUMN duration_interval VARCHAR(20) DEFAULT 'semester';
+        ALTER TABLE curriculum ADD CONSTRAINT curriculum_duration_interval_check
+            CHECK (duration_interval IN ('semester', 'month', 'week', 'day'));
+        RAISE NOTICE 'Added missing duration_interval column to curriculum table.';
+    END IF;
+END $$;
+
+-- =====================================================
 -- STEP 2: Clear existing curriculum data
 -- =====================================================
 
