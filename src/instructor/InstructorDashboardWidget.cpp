@@ -127,6 +127,7 @@ void InstructorDashboardWidget::createTodayScheduleSection() {
     scheduleTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Type"));
     scheduleTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Student"));
     scheduleTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Status"));
+    scheduleTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Action"));
 
     noSessionsText_ = scheduleSection_->addWidget(std::make_unique<Wt::WText>("No sessions scheduled for today"));
     noSessionsText_->setStyleClass("no-data-text");
@@ -195,7 +196,7 @@ void InstructorDashboardWidget::updateDashboard() {
     }
 
     // Update welcome text
-    std::string welcomeMsg = "Welcome, " + instructor_.getFirstName() + " " + instructor_.getLastName();
+    std::string welcomeMsg = "Welcome, " + instructor_.getName();
     welcomeText_->setText(welcomeMsg);
 
     // Update instructor type
@@ -276,10 +277,12 @@ void InstructorDashboardWidget::updateTodaySchedule() {
         std::string statusClass = "status-badge status-" + session.getStatusString();
         statusText->setStyleClass(statusClass);
 
-        // Make row clickable
+        // Add action button to make session clickable
         std::string sessionId = session.getId();
         scheduleTable_->rowAt(row)->setStyleClass("clickable-row");
-        scheduleTable_->rowAt(row)->clicked().connect([this, sessionId] {
+        auto viewBtn = scheduleTable_->elementAt(row, 4)->addWidget(std::make_unique<Wt::WPushButton>("View"));
+        viewBtn->setStyleClass("btn btn-sm btn-outline-primary");
+        viewBtn->clicked().connect([this, sessionId] {
             sessionSelected_.emit(sessionId);
         });
     }
