@@ -1,38 +1,35 @@
 -- =============================================================================
 -- Student Onboarding System - Installation Script
 -- =============================================================================
--- Single entry point for database installation
 --
--- Usage:
---   # Create database first (if needed)
+-- USAGE - Command Line (psql):
 --   createdb student_onboarding
---
---   # Run installation
+--   psql -U postgres -d student_onboarding -f database/schema.sql
 --   psql -U postgres -d student_onboarding -f database/install.sql
---
---   # Then choose a curriculum mode:
---   psql -U postgres -d student_onboarding -f database/scripts/switch_to_accredited.sql
---   # OR
 --   psql -U postgres -d student_onboarding -f database/scripts/switch_to_vocational.sql
+--
+-- USAGE - GUI Tools (pgAdmin, DBeaver, etc.):
+--   1. Create database 'student_onboarding'
+--   2. Run schema.sql first
+--   3. Run this file (install.sql)
+--   4. Run switch_to_accredited.sql OR switch_to_vocational.sql
 --
 -- =============================================================================
 
-\echo '=============================================='
-\echo 'Student Onboarding System - Installation'
-\echo '=============================================='
-
 -- =====================================================
--- Step 1: Create Schema (tables, indexes, triggers)
+-- Step 1: Verify schema exists
 -- =====================================================
-\echo ''
-\echo 'Step 1: Creating database schema...'
-\i schema.sql
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'form_type') THEN
+        RAISE EXCEPTION 'Schema not found. Please run schema.sql first.';
+    END IF;
+    RAISE NOTICE 'Schema verified. Proceeding with installation...';
+END $$;
 
 -- =====================================================
 -- Step 2: Seed Form Types
 -- =====================================================
-\echo ''
-\echo 'Step 2: Seeding form types...'
 
 INSERT INTO form_type (code, name, description, category, display_order, is_required, required_for_international, required_for_transfer, required_for_veteran, required_for_financial_aid) VALUES
 ('personal_info', 'Personal Information', 'Basic personal details and contact information', 'core', 1, TRUE, FALSE, FALSE, FALSE, FALSE),
@@ -53,8 +50,6 @@ ON CONFLICT (code) DO UPDATE SET
 -- =====================================================
 -- Step 3: Seed Institution Settings
 -- =====================================================
-\echo ''
-\echo 'Step 3: Seeding institution settings...'
 
 -- Branding settings
 INSERT INTO institution_settings (setting_key, setting_value, setting_type, category, display_name, description, is_required, display_order)
@@ -114,8 +109,6 @@ ON CONFLICT (setting_key) DO UPDATE SET
 -- =====================================================
 -- Step 4: Create Default Admin User
 -- =====================================================
-\echo ''
-\echo 'Step 4: Creating default admin user...'
 
 -- Default admin user (password: admin123 - should be changed immediately)
 -- Password hash is bcrypt of 'admin123'
@@ -131,39 +124,39 @@ VALUES (
 ON CONFLICT (email) DO NOTHING;
 
 -- =====================================================
--- Installation Complete
+-- Verification & Summary
 -- =====================================================
-\echo ''
-\echo '=============================================='
-\echo 'Installation Complete!'
-\echo '=============================================='
-\echo ''
-\echo 'Next steps:'
-\echo '  1. Choose a curriculum mode:'
-\echo '     - For universities/colleges (accredited):'
-\echo '       psql -d student_onboarding -f database/scripts/switch_to_accredited.sql'
-\echo ''
-\echo '     - For trade schools/CDL (vocational):'
-\echo '       psql -d student_onboarding -f database/scripts/switch_to_vocational.sql'
-\echo ''
-\echo '  2. Change the default admin password!'
-\echo '     Default login: admin@institution.edu'
-\echo ''
-\echo '  3. Update institution settings in the admin portal'
-\echo ''
-\echo '=============================================='
 
--- =====================================================
--- Verify Installation
--- =====================================================
-\echo ''
-\echo 'Verification:'
+DO $$
+DECLARE
+    table_count INTEGER;
+    form_type_count INTEGER;
+    settings_count INTEGER;
+    admin_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO table_count FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
 
-SELECT 'Tables created: ' || COUNT(*)::text FROM information_schema.tables
-WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
+    SELECT COUNT(*) INTO form_type_count FROM form_type;
+    SELECT COUNT(*) INTO settings_count FROM institution_settings;
+    SELECT COUNT(*) INTO admin_count FROM admin_user;
 
-SELECT 'Form types: ' || COUNT(*)::text FROM form_type;
-
-SELECT 'Institution settings: ' || COUNT(*)::text FROM institution_settings;
-
-SELECT 'Admin users: ' || COUNT(*)::text FROM admin_user;
+    RAISE NOTICE '';
+    RAISE NOTICE '==============================================';
+    RAISE NOTICE 'Installation Complete!';
+    RAISE NOTICE '==============================================';
+    RAISE NOTICE 'Tables created: %', table_count;
+    RAISE NOTICE 'Form types: %', form_type_count;
+    RAISE NOTICE 'Institution settings: %', settings_count;
+    RAISE NOTICE 'Admin users: %', admin_count;
+    RAISE NOTICE '';
+    RAISE NOTICE 'Next steps:';
+    RAISE NOTICE '  1. Run a curriculum mode script:';
+    RAISE NOTICE '     - switch_to_accredited.sql (universities)';
+    RAISE NOTICE '     - switch_to_vocational.sql (trade schools)';
+    RAISE NOTICE '';
+    RAISE NOTICE '  2. Change the default admin password!';
+    RAISE NOTICE '     Login: admin@institution.edu';
+    RAISE NOTICE '     Password: admin123';
+    RAISE NOTICE '==============================================';
+END $$;
