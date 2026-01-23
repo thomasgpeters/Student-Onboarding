@@ -2367,6 +2367,7 @@ textarea.form-control {
    ===================================================== */
 
 .admin-dialog {
+    background: white !important;
     border-radius: 12px !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
 }
@@ -2391,6 +2392,7 @@ textarea.form-control {
     padding: 1.5rem;
     max-height: 60vh;
     overflow-y: auto;
+    background: white;
 }
 
 .admin-dialog-content .form-group {
