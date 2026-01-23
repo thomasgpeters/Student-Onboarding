@@ -398,7 +398,7 @@ void InstitutionSettingsWidget::createLookupDataSection() {
     // Table headers
     departmentTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Code"));
     departmentTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Name"));
-    departmentTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Dean"));
+    departmentTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Director"));
     departmentTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Contact Email"));
     departmentTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
 
@@ -544,7 +544,7 @@ void InstitutionSettingsWidget::showAddDepartmentDialog() {
     // Dean field
     auto deanGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     deanGroup->addStyleClass("form-group");
-    auto deanLabel = deanGroup->addWidget(std::make_unique<Wt::WLabel>("Dean / Director"));
+    auto deanLabel = deanGroup->addWidget(std::make_unique<Wt::WLabel>("Director"));
     dialogDeptDeanEdit_ = deanGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptDeanEdit_->addStyleClass("form-control");
     dialogDeptDeanEdit_->setPlaceholderText("e.g., John Smith");
@@ -627,7 +627,7 @@ void InstitutionSettingsWidget::showEditDepartmentDialog(int departmentId) {
     // Dean field
     auto deanGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     deanGroup->addStyleClass("form-group");
-    auto deanLabel = deanGroup->addWidget(std::make_unique<Wt::WLabel>("Dean / Director"));
+    auto deanLabel = deanGroup->addWidget(std::make_unique<Wt::WLabel>("Director"));
     dialogDeptDeanEdit_ = deanGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptDeanEdit_->addStyleClass("form-control");
     dialogDeptDeanEdit_->setText(deptToEdit->dean);
