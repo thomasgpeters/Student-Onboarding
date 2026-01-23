@@ -698,10 +698,10 @@ void InstitutionSettingsWidget::saveDepartment(bool isNew, int departmentId) {
     try {
         Api::ApiResponse response;
         if (isNew) {
-            response = apiService_->getApiClient()->post("/Department/", payload);
+            response = apiService_->getApiClient()->post("/Department", payload);
         } else {
             payload["data"]["id"] = std::to_string(departmentId);
-            response = apiService_->getApiClient()->patch("/Department/" + std::to_string(departmentId) + "/", payload);
+            response = apiService_->getApiClient()->patch("/Department/" + std::to_string(departmentId), payload);
         }
 
         if (response.success) {
