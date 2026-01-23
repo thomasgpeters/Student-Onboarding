@@ -2854,3 +2854,159 @@ textarea.form-control {
         transform: scale(0.97);
     }
 }
+
+/* =====================================================
+   LOOKUP DATA MANAGEMENT SECTION
+   ===================================================== */
+
+.lookup-data-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e2e8f0;
+}
+
+.lookup-data-section h3 {
+    color: #1e293b;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.lookup-subsection {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.lookup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.lookup-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.lookup-table-container {
+    overflow-x: auto;
+}
+
+.lookup-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.lookup-table th,
+.lookup-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.lookup-table-header {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.lookup-table tbody tr:hover {
+    background: #f1f5f9;
+}
+
+.lookup-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.lookup-actions .btn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+/* Lookup Dialog Styles */
+.lookup-dialog .Wt-dialog {
+    min-width: 400px;
+    max-width: 500px;
+}
+
+.lookup-dialog-content {
+    padding: 1rem 0;
+}
+
+.lookup-dialog-content .form-group {
+    margin-bottom: 1rem;
+}
+
+.lookup-dialog-content .form-group label {
+    display: block;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.lookup-dialog-content .form-control {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.lookup-dialog-content .form-control:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.lookup-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Empty state for lookup tables */
+.lookup-table .text-center.text-muted {
+    padding: 2rem 1rem;
+    font-style: italic;
+    color: #64748b;
+}
+
+/* Responsive adjustments for lookup section */
+@media (max-width: 768px) {
+    .lookup-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .lookup-actions {
+        flex-direction: column;
+    }
+
+    .lookup-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .lookup-dialog .Wt-dialog {
+        min-width: 90%;
+        max-width: 95%;
+    }
+}

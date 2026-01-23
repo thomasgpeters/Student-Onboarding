@@ -6,12 +6,26 @@
 #include <Wt/WTextArea.h>
 #include <Wt/WPushButton.h>
 #include <Wt/WText.h>
+#include <Wt/WTable.h>
+#include <Wt/WDialog.h>
 #include <memory>
+#include <vector>
 #include "api/FormSubmissionService.h"
 #include "models/InstitutionSettings.h"
 
 namespace StudentIntake {
 namespace Admin {
+
+/**
+ * @brief Department data structure for UI
+ */
+struct DepartmentData {
+    int id = 0;
+    std::string code;
+    std::string name;
+    std::string dean;
+    std::string contactEmail;
+};
 
 /**
  * @brief Widget for managing institution/school settings
@@ -28,8 +42,18 @@ private:
     void createBrandingSection();
     void createContactSection();
     void createLocationSection();
+    void createLookupDataSection();
     void saveSettings();
     void showMessage(const std::string& message, bool isError = false);
+
+    // Department management
+    void loadDepartments();
+    void refreshDepartmentTable();
+    void showAddDepartmentDialog();
+    void showEditDepartmentDialog(int departmentId);
+    void saveDepartment(bool isNew, int departmentId = 0);
+    void deleteDepartment(int departmentId);
+    void confirmDeleteDepartment(int departmentId, const std::string& deptName);
 
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     StudentIntake::Models::InstitutionSettings settings_;
@@ -60,6 +84,18 @@ private:
     // UI elements
     Wt::WContainerWidget* messageContainer_;
     Wt::WPushButton* saveButton_;
+
+    // Department management
+    std::vector<DepartmentData> departments_;
+    Wt::WContainerWidget* departmentTableContainer_;
+    Wt::WTable* departmentTable_;
+
+    // Department dialog fields (shared for add/edit)
+    Wt::WDialog* departmentDialog_;
+    Wt::WLineEdit* dialogDeptCodeEdit_;
+    Wt::WLineEdit* dialogDeptNameEdit_;
+    Wt::WLineEdit* dialogDeptDeanEdit_;
+    Wt::WLineEdit* dialogDeptEmailEdit_;
 };
 
 } // namespace Admin
