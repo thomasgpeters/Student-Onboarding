@@ -388,11 +388,11 @@ void InstitutionSettingsWidget::createLookupDataSection() {
 
     // Department table container
     departmentTableContainer_ = deptSubsection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    departmentTableContainer_->addStyleClass("lookup-table-container");
+    departmentTableContainer_->addStyleClass("admin-table-container");
 
     // Create the table
     departmentTable_ = departmentTableContainer_->addWidget(std::make_unique<Wt::WTable>());
-    departmentTable_->addStyleClass("table table-striped table-hover lookup-table");
+    departmentTable_->addStyleClass("admin-data-table");
     departmentTable_->setHeaderCount(1);
 
     // Table headers
@@ -404,7 +404,7 @@ void InstitutionSettingsWidget::createLookupDataSection() {
 
     // Style header cells
     for (int col = 0; col < 5; ++col) {
-        departmentTable_->elementAt(0, col)->addStyleClass("lookup-table-header");
+        departmentTable_->elementAt(0, col)->addStyleClass("admin-table-header");
     }
 }
 
@@ -480,7 +480,7 @@ void InstitutionSettingsWidget::refreshDepartmentTable() {
         int row = departmentTable_->rowCount();
         auto cell = departmentTable_->elementAt(row, 0);
         cell->setColumnSpan(5);
-        cell->addStyleClass("text-center text-muted");
+        cell->addStyleClass("admin-table-cell text-center text-muted");
         cell->addWidget(std::make_unique<Wt::WText>("No departments found. Click 'Add Department' to create one."));
         return;
     }
@@ -489,14 +489,25 @@ void InstitutionSettingsWidget::refreshDepartmentTable() {
     for (const auto& dept : departments_) {
         int row = departmentTable_->rowCount();
 
-        departmentTable_->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(dept.code));
-        departmentTable_->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(dept.name));
-        departmentTable_->elementAt(row, 2)->addWidget(std::make_unique<Wt::WText>(dept.dean));
-        departmentTable_->elementAt(row, 3)->addWidget(std::make_unique<Wt::WText>(dept.contactEmail));
+        auto codeCell = departmentTable_->elementAt(row, 0);
+        codeCell->addStyleClass("admin-table-cell");
+        codeCell->addWidget(std::make_unique<Wt::WText>(dept.code));
+
+        auto nameCell = departmentTable_->elementAt(row, 1);
+        nameCell->addStyleClass("admin-table-cell");
+        nameCell->addWidget(std::make_unique<Wt::WText>(dept.name));
+
+        auto deanCell = departmentTable_->elementAt(row, 2);
+        deanCell->addStyleClass("admin-table-cell");
+        deanCell->addWidget(std::make_unique<Wt::WText>(dept.dean));
+
+        auto emailCell = departmentTable_->elementAt(row, 3);
+        emailCell->addStyleClass("admin-table-cell");
+        emailCell->addWidget(std::make_unique<Wt::WText>(dept.contactEmail));
 
         // Actions cell
         auto actionsCell = departmentTable_->elementAt(row, 4);
-        actionsCell->addStyleClass("lookup-actions");
+        actionsCell->addStyleClass("admin-table-cell admin-table-actions");
 
         auto editBtn = actionsCell->addWidget(std::make_unique<Wt::WPushButton>("Edit"));
         editBtn->addStyleClass("btn btn-sm btn-outline-primary");
