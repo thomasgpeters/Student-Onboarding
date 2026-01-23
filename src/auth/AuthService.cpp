@@ -42,8 +42,8 @@ AuthService::~AuthService() = default;
 // Helper Methods
 // =============================================================================
 
-AuthResult AuthService::parseAuthResponse(const Api::ApiResponse& response) {
-    AuthResult result;
+UnifiedAuthResult AuthService::parseAuthResponse(const Api::ApiResponse& response) {
+    UnifiedAuthResult result;
     result.success = response.success;
 
     if (!response.success) {
@@ -83,6 +83,16 @@ nlohmann::json AuthService::buildJsonApiPayload(const std::string& type,
                                                   const nlohmann::json& attributes) {
     nlohmann::json payload;
     payload["data"]["type"] = type;
+    payload["data"]["attributes"] = attributes;
+    return payload;
+}
+
+nlohmann::json AuthService::buildJsonApiPayload(const std::string& type,
+                                                  const std::string& id,
+                                                  const nlohmann::json& attributes) {
+    nlohmann::json payload;
+    payload["data"]["type"] = type;
+    payload["data"]["id"] = id;
     payload["data"]["attributes"] = attributes;
     return payload;
 }
@@ -128,9 +138,9 @@ void AuthService::recordLoginAttempt(const std::string& email, bool success,
 // Authentication
 // =============================================================================
 
-AuthResult AuthService::login(const std::string& email, const std::string& password,
+UnifiedAuthResult AuthService::login(const std::string& email, const std::string& password,
                                const std::string& ipAddress, const std::string& userAgent) {
-    AuthResult result;
+    UnifiedAuthResult result;
     result.success = false;
 
     // Validate input
@@ -173,7 +183,7 @@ AuthResult AuthService::login(const std::string& email, const std::string& passw
 }
 
 void AuthService::loginAsync(const std::string& email, const std::string& password,
-                              AuthCallback callback,
+                              UnifiedAuthCallback callback,
                               const std::string& ipAddress, const std::string& userAgent) {
     nlohmann::json attrs;
     attrs["email"] = email;
@@ -185,14 +195,14 @@ void AuthService::loginAsync(const std::string& email, const std::string& passwo
 
     apiClient_->postAsync("/auth/login", payload,
         [this, callback, email, ipAddress, userAgent](const Api::ApiResponse& response) {
-            AuthResult result = parseAuthResponse(response);
+            UnifiedAuthResult result = parseAuthResponse(response);
             recordLoginAttempt(email, result.success, result.message, ipAddress, userAgent);
             callback(result);
         });
 }
 
-AuthResult AuthService::logout(const std::string& sessionToken) {
-    AuthResult result;
+UnifiedAuthResult AuthService::logout(const std::string& sessionToken) {
+    UnifiedAuthResult result;
     result.success = false;
 
     if (sessionToken.empty()) {
@@ -231,8 +241,8 @@ bool AuthService::validateSession(const std::string& sessionToken) {
     return !session.isExpired() && session.isActive();
 }
 
-AuthResult AuthService::refreshSession(const std::string& refreshToken) {
-    AuthResult result;
+UnifiedAuthResult AuthService::refreshSession(const std::string& refreshToken) {
+    UnifiedAuthResult result;
     result.success = false;
 
     if (refreshToken.empty()) {
@@ -285,9 +295,9 @@ Models::User AuthService::getUserFromSession(const std::string& sessionToken) {
 // Registration
 // =============================================================================
 
-AuthResult AuthService::registerStudent(const std::string& email, const std::string& password,
+UnifiedAuthResult AuthService::registerStudent(const std::string& email, const std::string& password,
                                           const std::string& firstName, const std::string& lastName) {
-    AuthResult result;
+    UnifiedAuthResult result;
     result.success = false;
 
     // Validate input
@@ -319,10 +329,10 @@ AuthResult AuthService::registerStudent(const std::string& email, const std::str
 
 void AuthService::registerStudentAsync(const std::string& email, const std::string& password,
                                          const std::string& firstName, const std::string& lastName,
-                                         AuthCallback callback) {
+                                         UnifiedAuthCallback callback) {
     // Validate input first
     if (!isValidEmail(email)) {
-        AuthResult result;
+        UnifiedAuthResult result;
         result.success = false;
         result.message = "Invalid email format";
         callback(result);
@@ -330,7 +340,7 @@ void AuthService::registerStudentAsync(const std::string& email, const std::stri
     }
 
     if (!isValidPassword(password)) {
-        AuthResult result;
+        UnifiedAuthResult result;
         result.success = false;
         result.message = getPasswordRequirements();
         callback(result);
@@ -356,8 +366,8 @@ void AuthService::registerStudentAsync(const std::string& email, const std::stri
 // Password Management
 // =============================================================================
 
-AuthResult AuthService::requestPasswordReset(const std::string& email) {
-    AuthResult result;
+UnifiedAuthResult AuthService::requestPasswordReset(const std::string& email) {
+    UnifiedAuthResult result;
     result.success = false;
 
     if (email.empty()) {
@@ -379,8 +389,8 @@ AuthResult AuthService::requestPasswordReset(const std::string& email) {
     return result;
 }
 
-AuthResult AuthService::resetPassword(const std::string& token, const std::string& newPassword) {
-    AuthResult result;
+UnifiedAuthResult AuthService::resetPassword(const std::string& token, const std::string& newPassword) {
+    UnifiedAuthResult result;
     result.success = false;
 
     if (token.empty()) {
@@ -406,9 +416,9 @@ AuthResult AuthService::resetPassword(const std::string& token, const std::strin
     return result;
 }
 
-AuthResult AuthService::changePassword(int userId, const std::string& oldPassword,
+UnifiedAuthResult AuthService::changePassword(int userId, const std::string& oldPassword,
                                          const std::string& newPassword) {
-    AuthResult result;
+    UnifiedAuthResult result;
     result.success = false;
 
     if (!isValidPassword(newPassword)) {
@@ -455,8 +465,8 @@ std::vector<Models::UserRole> AuthService::getUserRoles(int userId) {
     return roles;
 }
 
-AuthResult AuthService::switchRole(const std::string& sessionToken, Models::UserRole newRole) {
-    AuthResult result;
+UnifiedAuthResult AuthService::switchRole(const std::string& sessionToken, Models::UserRole newRole) {
+    UnifiedAuthResult result;
     result.success = false;
 
     if (sessionToken.empty()) {
@@ -533,8 +543,8 @@ Models::AdminProfile AuthService::getAdminProfile(int userId) {
     return Models::AdminProfile();
 }
 
-AuthResult AuthService::updateUserProfile(const Models::User& user) {
-    AuthResult result;
+UnifiedAuthResult AuthService::updateUserProfile(const Models::User& user) {
+    UnifiedAuthResult result;
 
     auto attrs = user.toJson();
     auto payload = buildJsonApiPayload("AppUser", std::to_string(user.getId()), attrs);
@@ -546,8 +556,8 @@ AuthResult AuthService::updateUserProfile(const Models::User& user) {
     return result;
 }
 
-AuthResult AuthService::updateStudentProfile(const Models::StudentProfile& profile) {
-    AuthResult result;
+UnifiedAuthResult AuthService::updateStudentProfile(const Models::StudentProfile& profile) {
+    UnifiedAuthResult result;
 
     auto attrs = profile.toJson();
     auto payload = buildJsonApiPayload("StudentProfile", std::to_string(profile.getId()), attrs);

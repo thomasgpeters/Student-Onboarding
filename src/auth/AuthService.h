@@ -12,9 +12,9 @@ namespace StudentIntake {
 namespace Auth {
 
 /**
- * @brief Result of an authentication operation
+ * @brief Result of a unified authentication operation
  */
-struct AuthResult {
+struct UnifiedAuthResult {
     bool success;
     std::string message;
     std::string sessionToken;
@@ -26,7 +26,7 @@ struct AuthResult {
 /**
  * @brief Callback for async auth operations
  */
-using AuthCallback = std::function<void(const AuthResult&)>;
+using UnifiedAuthCallback = std::function<void(const UnifiedAuthResult&)>;
 
 /**
  * @brief Unified authentication service for all user types
@@ -54,20 +54,20 @@ public:
      * @brief Authenticate a user with email and password
      * @return AuthResult containing user info, roles, and session token
      */
-    AuthResult login(const std::string& email, const std::string& password,
+    UnifiedAuthResult login(const std::string& email, const std::string& password,
                      const std::string& ipAddress = "", const std::string& userAgent = "");
 
     /**
      * @brief Async login
      */
     void loginAsync(const std::string& email, const std::string& password,
-                    AuthCallback callback,
+                    UnifiedAuthCallback callback,
                     const std::string& ipAddress = "", const std::string& userAgent = "");
 
     /**
      * @brief Logout and invalidate session
      */
-    AuthResult logout(const std::string& sessionToken);
+    UnifiedAuthResult logout(const std::string& sessionToken);
 
     /**
      * @brief Validate a session token
@@ -77,7 +77,7 @@ public:
     /**
      * @brief Refresh an expired session
      */
-    AuthResult refreshSession(const std::string& refreshToken);
+    UnifiedAuthResult refreshSession(const std::string& refreshToken);
 
     /**
      * @brief Get user from session token
@@ -91,7 +91,7 @@ public:
     /**
      * @brief Register a new student user
      */
-    AuthResult registerStudent(const std::string& email, const std::string& password,
+    UnifiedAuthResult registerStudent(const std::string& email, const std::string& password,
                                const std::string& firstName, const std::string& lastName);
 
     /**
@@ -99,7 +99,7 @@ public:
      */
     void registerStudentAsync(const std::string& email, const std::string& password,
                               const std::string& firstName, const std::string& lastName,
-                              AuthCallback callback);
+                              UnifiedAuthCallback callback);
 
     // =========================================================================
     // Password Management
@@ -108,17 +108,17 @@ public:
     /**
      * @brief Request a password reset
      */
-    AuthResult requestPasswordReset(const std::string& email);
+    UnifiedAuthResult requestPasswordReset(const std::string& email);
 
     /**
      * @brief Reset password with token
      */
-    AuthResult resetPassword(const std::string& token, const std::string& newPassword);
+    UnifiedAuthResult resetPassword(const std::string& token, const std::string& newPassword);
 
     /**
      * @brief Change password for logged-in user
      */
-    AuthResult changePassword(int userId, const std::string& oldPassword,
+    UnifiedAuthResult changePassword(int userId, const std::string& oldPassword,
                               const std::string& newPassword);
 
     // =========================================================================
@@ -133,7 +133,7 @@ public:
     /**
      * @brief Switch active role for session (for multi-role users)
      */
-    AuthResult switchRole(const std::string& sessionToken, Models::UserRole newRole);
+    UnifiedAuthResult switchRole(const std::string& sessionToken, Models::UserRole newRole);
 
     /**
      * @brief Check if user has a specific role
@@ -162,12 +162,12 @@ public:
     /**
      * @brief Update user profile
      */
-    AuthResult updateUserProfile(const Models::User& user);
+    UnifiedAuthResult updateUserProfile(const Models::User& user);
 
     /**
      * @brief Update student profile
      */
-    AuthResult updateStudentProfile(const Models::StudentProfile& profile);
+    UnifiedAuthResult updateStudentProfile(const Models::StudentProfile& profile);
 
     // =========================================================================
     // Validation Helpers
@@ -193,8 +193,9 @@ private:
     std::shared_ptr<Api::ApiClient> apiClient_;
 
     // Helper methods
-    AuthResult parseAuthResponse(const Api::ApiResponse& response);
+    UnifiedAuthResult parseAuthResponse(const Api::ApiResponse& response);
     nlohmann::json buildJsonApiPayload(const std::string& type, const nlohmann::json& attributes);
+    nlohmann::json buildJsonApiPayload(const std::string& type, const std::string& id, const nlohmann::json& attributes);
     std::string generateSessionToken();
     std::string hashPassword(const std::string& password);
     bool verifyPassword(const std::string& password, const std::string& hash);
