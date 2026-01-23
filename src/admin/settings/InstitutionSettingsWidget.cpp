@@ -4,6 +4,10 @@
 #include <Wt/WGroupBox.h>
 #include <Wt/WLabel.h>
 #include <Wt/WBreak.h>
+#include <Wt/WTable.h>
+#include <Wt/WDialog.h>
+#include <Wt/WMessageBox.h>
+#include <nlohmann/json.hpp>
 #include "utils/Logger.h"
 
 namespace StudentIntake {
@@ -27,7 +31,14 @@ InstitutionSettingsWidget::InstitutionSettingsWidget()
     , academicYearEdit_(nullptr)
     , accreditationEdit_(nullptr)
     , messageContainer_(nullptr)
-    , saveButton_(nullptr) {
+    , saveButton_(nullptr)
+    , departmentTableContainer_(nullptr)
+    , departmentTable_(nullptr)
+    , departmentDialog_(nullptr)
+    , dialogDeptCodeEdit_(nullptr)
+    , dialogDeptNameEdit_(nullptr)
+    , dialogDeptDeanEdit_(nullptr)
+    , dialogDeptEmailEdit_(nullptr) {
     addStyleClass("institution-settings-widget");
     createUI();
 }
@@ -61,6 +72,7 @@ void InstitutionSettingsWidget::createUI() {
     createBrandingSection();
     createContactSection();
     createLocationSection();
+    createLookupDataSection();
 
     // Save button
     auto buttonContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -287,6 +299,9 @@ void InstitutionSettingsWidget::loadSettings() {
     accreditationEdit_->setText(settings_.getAccreditationInfo());
 
     LOG_INFO("InstitutionSettingsWidget", "Settings loaded: " << settings_.getInstitutionName());
+
+    // Load lookup data
+    loadDepartments();
 }
 
 void InstitutionSettingsWidget::saveSettings() {
@@ -343,6 +358,394 @@ void InstitutionSettingsWidget::showMessage(const std::string& message, bool isE
             "  var el = document.querySelector('.settings-message');"
             "  if (el) el.style.display = 'none';"
             "}, 5000);");
+    }
+}
+
+void InstitutionSettingsWidget::createLookupDataSection() {
+    auto section = addWidget(std::make_unique<Wt::WContainerWidget>());
+    section->addStyleClass("settings-section lookup-data-section");
+
+    auto sectionTitle = section->addWidget(std::make_unique<Wt::WText>("<h3>Lookup Data Management</h3>"));
+    sectionTitle->setTextFormat(Wt::TextFormat::XHTML);
+
+    auto sectionDesc = section->addWidget(std::make_unique<Wt::WText>(
+        "<p class='text-muted'>Manage departments and other reference data used throughout the application.</p>"));
+    sectionDesc->setTextFormat(Wt::TextFormat::XHTML);
+
+    // Department subsection
+    auto deptSubsection = section->addWidget(std::make_unique<Wt::WContainerWidget>());
+    deptSubsection->addStyleClass("lookup-subsection");
+
+    auto deptHeader = deptSubsection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    deptHeader->addStyleClass("lookup-header");
+
+    auto deptTitle = deptHeader->addWidget(std::make_unique<Wt::WText>("<h4>Departments</h4>"));
+    deptTitle->setTextFormat(Wt::TextFormat::XHTML);
+
+    auto addDeptBtn = deptHeader->addWidget(std::make_unique<Wt::WPushButton>("+ Add Department"));
+    addDeptBtn->addStyleClass("btn btn-primary btn-sm");
+    addDeptBtn->clicked().connect(this, &InstitutionSettingsWidget::showAddDepartmentDialog);
+
+    // Department table container
+    departmentTableContainer_ = deptSubsection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    departmentTableContainer_->addStyleClass("lookup-table-container");
+
+    // Create the table
+    departmentTable_ = departmentTableContainer_->addWidget(std::make_unique<Wt::WTable>());
+    departmentTable_->addStyleClass("table table-striped table-hover lookup-table");
+    departmentTable_->setHeaderCount(1);
+
+    // Table headers
+    departmentTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Code"));
+    departmentTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Name"));
+    departmentTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Dean"));
+    departmentTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Contact Email"));
+    departmentTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
+
+    // Style header cells
+    for (int col = 0; col < 5; ++col) {
+        departmentTable_->elementAt(0, col)->addStyleClass("lookup-table-header");
+    }
+}
+
+void InstitutionSettingsWidget::loadDepartments() {
+    if (!apiService_) return;
+
+    departments_.clear();
+
+    try {
+        auto response = apiService_->getApiClient()->get("/Department");
+        if (response.success) {
+            auto jsonResponse = nlohmann::json::parse(response.body);
+
+            nlohmann::json items;
+            if (jsonResponse.is_array()) {
+                items = jsonResponse;
+            } else if (jsonResponse.contains("data")) {
+                items = jsonResponse["data"];
+            }
+
+            for (const auto& item : items) {
+                nlohmann::json attrs = item.contains("attributes") ? item["attributes"] : item;
+
+                DepartmentData dept;
+                // Get ID
+                if (item.contains("id")) {
+                    if (item["id"].is_number()) {
+                        dept.id = item["id"].get<int>();
+                    } else if (item["id"].is_string()) {
+                        dept.id = std::stoi(item["id"].get<std::string>());
+                    }
+                }
+                // Get code
+                if (attrs.contains("code") && !attrs["code"].is_null()) {
+                    dept.code = attrs["code"].get<std::string>();
+                }
+                // Get name
+                if (attrs.contains("name") && !attrs["name"].is_null()) {
+                    dept.name = attrs["name"].get<std::string>();
+                }
+                // Get dean
+                if (attrs.contains("dean") && !attrs["dean"].is_null()) {
+                    dept.dean = attrs["dean"].get<std::string>();
+                }
+                // Get contact_email
+                if (attrs.contains("contact_email") && !attrs["contact_email"].is_null()) {
+                    dept.contactEmail = attrs["contact_email"].get<std::string>();
+                }
+
+                if (dept.id > 0) {
+                    departments_.push_back(dept);
+                }
+            }
+
+            LOG_DEBUG("InstitutionSettingsWidget", "Loaded " << departments_.size() << " departments");
+        }
+    } catch (const std::exception& e) {
+        LOG_ERROR("InstitutionSettingsWidget", "Error loading departments: " << e.what());
+    }
+
+    refreshDepartmentTable();
+}
+
+void InstitutionSettingsWidget::refreshDepartmentTable() {
+    if (!departmentTable_) return;
+
+    // Clear existing rows (keep header)
+    while (departmentTable_->rowCount() > 1) {
+        departmentTable_->deleteRow(1);
+    }
+
+    if (departments_.empty()) {
+        int row = departmentTable_->rowCount();
+        auto cell = departmentTable_->elementAt(row, 0);
+        cell->setColumnSpan(5);
+        cell->addStyleClass("text-center text-muted");
+        cell->addWidget(std::make_unique<Wt::WText>("No departments found. Click 'Add Department' to create one."));
+        return;
+    }
+
+    // Add department rows
+    for (const auto& dept : departments_) {
+        int row = departmentTable_->rowCount();
+
+        departmentTable_->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(dept.code));
+        departmentTable_->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(dept.name));
+        departmentTable_->elementAt(row, 2)->addWidget(std::make_unique<Wt::WText>(dept.dean));
+        departmentTable_->elementAt(row, 3)->addWidget(std::make_unique<Wt::WText>(dept.contactEmail));
+
+        // Actions cell
+        auto actionsCell = departmentTable_->elementAt(row, 4);
+        actionsCell->addStyleClass("lookup-actions");
+
+        auto editBtn = actionsCell->addWidget(std::make_unique<Wt::WPushButton>("Edit"));
+        editBtn->addStyleClass("btn btn-sm btn-outline-primary");
+        int deptId = dept.id;
+        editBtn->clicked().connect([this, deptId]() {
+            showEditDepartmentDialog(deptId);
+        });
+
+        auto deleteBtn = actionsCell->addWidget(std::make_unique<Wt::WPushButton>("Delete"));
+        deleteBtn->addStyleClass("btn btn-sm btn-outline-danger");
+        std::string deptName = dept.name;
+        deleteBtn->clicked().connect([this, deptId, deptName]() {
+            confirmDeleteDepartment(deptId, deptName);
+        });
+    }
+}
+
+void InstitutionSettingsWidget::showAddDepartmentDialog() {
+    departmentDialog_ = addChild(std::make_unique<Wt::WDialog>("Add Department"));
+    departmentDialog_->setModal(true);
+    departmentDialog_->setClosable(true);
+    departmentDialog_->addStyleClass("lookup-dialog");
+
+    auto content = departmentDialog_->contents();
+    content->addStyleClass("lookup-dialog-content");
+
+    // Code field
+    auto codeGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    codeGroup->addStyleClass("form-group");
+    auto codeLabel = codeGroup->addWidget(std::make_unique<Wt::WLabel>("Code *"));
+    dialogDeptCodeEdit_ = codeGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    dialogDeptCodeEdit_->addStyleClass("form-control");
+    dialogDeptCodeEdit_->setPlaceholderText("e.g., CDL, AUTO, MED");
+    codeLabel->setBuddy(dialogDeptCodeEdit_);
+
+    // Name field
+    auto nameGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    nameGroup->addStyleClass("form-group");
+    auto nameLabel = nameGroup->addWidget(std::make_unique<Wt::WLabel>("Name *"));
+    dialogDeptNameEdit_ = nameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    dialogDeptNameEdit_->addStyleClass("form-control");
+    dialogDeptNameEdit_->setPlaceholderText("e.g., Professional Driving");
+    nameLabel->setBuddy(dialogDeptNameEdit_);
+
+    // Dean field
+    auto deanGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    deanGroup->addStyleClass("form-group");
+    auto deanLabel = deanGroup->addWidget(std::make_unique<Wt::WLabel>("Dean / Director"));
+    dialogDeptDeanEdit_ = deanGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    dialogDeptDeanEdit_->addStyleClass("form-control");
+    dialogDeptDeanEdit_->setPlaceholderText("e.g., John Smith");
+    deanLabel->setBuddy(dialogDeptDeanEdit_);
+
+    // Email field
+    auto emailGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    emailGroup->addStyleClass("form-group");
+    auto emailLabel = emailGroup->addWidget(std::make_unique<Wt::WLabel>("Contact Email"));
+    dialogDeptEmailEdit_ = emailGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    dialogDeptEmailEdit_->addStyleClass("form-control");
+    dialogDeptEmailEdit_->setPlaceholderText("e.g., department@school.edu");
+    emailLabel->setBuddy(dialogDeptEmailEdit_);
+
+    // Footer buttons
+    auto footer = departmentDialog_->footer();
+    footer->addStyleClass("lookup-dialog-footer");
+
+    auto cancelBtn = footer->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
+    cancelBtn->addStyleClass("btn btn-secondary");
+    cancelBtn->clicked().connect([this]() {
+        departmentDialog_->reject();
+    });
+
+    auto saveBtn = footer->addWidget(std::make_unique<Wt::WPushButton>("Save"));
+    saveBtn->addStyleClass("btn btn-primary");
+    saveBtn->clicked().connect([this]() {
+        saveDepartment(true);
+    });
+
+    departmentDialog_->finished().connect([this](Wt::DialogCode code) {
+        removeChild(departmentDialog_);
+        departmentDialog_ = nullptr;
+    });
+
+    departmentDialog_->show();
+}
+
+void InstitutionSettingsWidget::showEditDepartmentDialog(int departmentId) {
+    // Find the department
+    DepartmentData* deptToEdit = nullptr;
+    for (auto& dept : departments_) {
+        if (dept.id == departmentId) {
+            deptToEdit = &dept;
+            break;
+        }
+    }
+
+    if (!deptToEdit) {
+        showMessage("Department not found", true);
+        return;
+    }
+
+    departmentDialog_ = addChild(std::make_unique<Wt::WDialog>("Edit Department"));
+    departmentDialog_->setModal(true);
+    departmentDialog_->setClosable(true);
+    departmentDialog_->addStyleClass("lookup-dialog");
+
+    auto content = departmentDialog_->contents();
+    content->addStyleClass("lookup-dialog-content");
+
+    // Code field
+    auto codeGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    codeGroup->addStyleClass("form-group");
+    auto codeLabel = codeGroup->addWidget(std::make_unique<Wt::WLabel>("Code *"));
+    dialogDeptCodeEdit_ = codeGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    dialogDeptCodeEdit_->addStyleClass("form-control");
+    dialogDeptCodeEdit_->setText(deptToEdit->code);
+    codeLabel->setBuddy(dialogDeptCodeEdit_);
+
+    // Name field
+    auto nameGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    nameGroup->addStyleClass("form-group");
+    auto nameLabel = nameGroup->addWidget(std::make_unique<Wt::WLabel>("Name *"));
+    dialogDeptNameEdit_ = nameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    dialogDeptNameEdit_->addStyleClass("form-control");
+    dialogDeptNameEdit_->setText(deptToEdit->name);
+    nameLabel->setBuddy(dialogDeptNameEdit_);
+
+    // Dean field
+    auto deanGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    deanGroup->addStyleClass("form-group");
+    auto deanLabel = deanGroup->addWidget(std::make_unique<Wt::WLabel>("Dean / Director"));
+    dialogDeptDeanEdit_ = deanGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    dialogDeptDeanEdit_->addStyleClass("form-control");
+    dialogDeptDeanEdit_->setText(deptToEdit->dean);
+    deanLabel->setBuddy(dialogDeptDeanEdit_);
+
+    // Email field
+    auto emailGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    emailGroup->addStyleClass("form-group");
+    auto emailLabel = emailGroup->addWidget(std::make_unique<Wt::WLabel>("Contact Email"));
+    dialogDeptEmailEdit_ = emailGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    dialogDeptEmailEdit_->addStyleClass("form-control");
+    dialogDeptEmailEdit_->setText(deptToEdit->contactEmail);
+    emailLabel->setBuddy(dialogDeptEmailEdit_);
+
+    // Footer buttons
+    auto footer = departmentDialog_->footer();
+    footer->addStyleClass("lookup-dialog-footer");
+
+    auto cancelBtn = footer->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
+    cancelBtn->addStyleClass("btn btn-secondary");
+    cancelBtn->clicked().connect([this]() {
+        departmentDialog_->reject();
+    });
+
+    auto saveBtn = footer->addWidget(std::make_unique<Wt::WPushButton>("Save"));
+    saveBtn->addStyleClass("btn btn-primary");
+    int deptId = departmentId;
+    saveBtn->clicked().connect([this, deptId]() {
+        saveDepartment(false, deptId);
+    });
+
+    departmentDialog_->finished().connect([this](Wt::DialogCode code) {
+        removeChild(departmentDialog_);
+        departmentDialog_ = nullptr;
+    });
+
+    departmentDialog_->show();
+}
+
+void InstitutionSettingsWidget::saveDepartment(bool isNew, int departmentId) {
+    if (!apiService_) {
+        showMessage("Error: API service not available", true);
+        return;
+    }
+
+    // Validate required fields
+    std::string code = dialogDeptCodeEdit_->text().toUTF8();
+    std::string name = dialogDeptNameEdit_->text().toUTF8();
+
+    if (code.empty() || name.empty()) {
+        showMessage("Code and Name are required fields", true);
+        return;
+    }
+
+    // Build JSON payload
+    nlohmann::json payload;
+    payload["code"] = code;
+    payload["name"] = name;
+    payload["dean"] = dialogDeptDeanEdit_->text().toUTF8();
+    payload["contact_email"] = dialogDeptEmailEdit_->text().toUTF8();
+
+    try {
+        Api::ApiResponse response;
+        if (isNew) {
+            response = apiService_->getApiClient()->post("/Department", payload);
+        } else {
+            response = apiService_->getApiClient()->put("/Department/" + std::to_string(departmentId), payload);
+        }
+
+        if (response.success) {
+            departmentDialog_->accept();
+            showMessage(isNew ? "Department created successfully!" : "Department updated successfully!", false);
+            loadDepartments();
+        } else {
+            showMessage("Error saving department: " + response.body, true);
+        }
+    } catch (const std::exception& e) {
+        showMessage(std::string("Error saving department: ") + e.what(), true);
+    }
+}
+
+void InstitutionSettingsWidget::confirmDeleteDepartment(int departmentId, const std::string& deptName) {
+    auto messageBox = addChild(std::make_unique<Wt::WMessageBox>(
+        "Confirm Delete",
+        "Are you sure you want to delete the department '" + deptName + "'?\n\n"
+        "This may affect programs assigned to this department.",
+        Wt::Icon::Warning,
+        Wt::StandardButton::Yes | Wt::StandardButton::No
+    ));
+
+    messageBox->setModal(true);
+    messageBox->buttonClicked().connect([this, messageBox, departmentId](Wt::StandardButton btn) {
+        if (btn == Wt::StandardButton::Yes) {
+            deleteDepartment(departmentId);
+        }
+        removeChild(messageBox);
+    });
+
+    messageBox->show();
+}
+
+void InstitutionSettingsWidget::deleteDepartment(int departmentId) {
+    if (!apiService_) {
+        showMessage("Error: API service not available", true);
+        return;
+    }
+
+    try {
+        auto response = apiService_->getApiClient()->deleteResource("/Department/" + std::to_string(departmentId));
+
+        if (response.success) {
+            showMessage("Department deleted successfully!", false);
+            loadDepartments();
+        } else {
+            showMessage("Error deleting department: " + response.body, true);
+        }
+    } catch (const std::exception& e) {
+        showMessage(std::string("Error deleting department: ") + e.what(), true);
     }
 }
 
