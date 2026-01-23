@@ -147,62 +147,95 @@ nlohmann::json User::toJson() const {
 User User::fromJson(const nlohmann::json& json) {
     User user;
 
-    if (json.contains("id") && json["id"].is_number()) {
-        user.id_ = json["id"].get<int>();
-    }
-    if (json.contains("email") && json["email"].is_string()) {
-        user.email_ = json["email"].get<std::string>();
-    }
-    if (json.contains("password_hash") && json["password_hash"].is_string()) {
-        user.passwordHash_ = json["password_hash"].get<std::string>();
-    }
-    if (json.contains("first_name") && json["first_name"].is_string()) {
-        user.firstName_ = json["first_name"].get<std::string>();
-    }
-    if (json.contains("last_name") && json["last_name"].is_string()) {
-        user.lastName_ = json["last_name"].get<std::string>();
-    }
-    if (json.contains("middle_name") && json["middle_name"].is_string()) {
-        user.middleName_ = json["middle_name"].get<std::string>();
-    }
-    if (json.contains("preferred_name") && json["preferred_name"].is_string()) {
-        user.preferredName_ = json["preferred_name"].get<std::string>();
-    }
-    if (json.contains("phone_number") && json["phone_number"].is_string()) {
-        user.phoneNumber_ = json["phone_number"].get<std::string>();
-    }
-    if (json.contains("is_active") && json["is_active"].is_boolean()) {
-        user.isActive_ = json["is_active"].get<bool>();
-    }
-    if (json.contains("login_enabled") && json["login_enabled"].is_boolean()) {
-        user.loginEnabled_ = json["login_enabled"].get<bool>();
-    }
-    if (json.contains("email_verified") && json["email_verified"].is_boolean()) {
-        user.emailVerified_ = json["email_verified"].get<bool>();
-    }
-    if (json.contains("last_login_at") && json["last_login_at"].is_string()) {
-        user.lastLoginAt_ = json["last_login_at"].get<std::string>();
-    }
-    if (json.contains("failed_login_attempts") && json["failed_login_attempts"].is_number()) {
-        user.failedLoginAttempts_ = json["failed_login_attempts"].get<int>();
-    }
-    if (json.contains("locked_until") && json["locked_until"].is_string()) {
-        user.lockedUntil_ = json["locked_until"].get<std::string>();
-    }
-    if (json.contains("created_at") && json["created_at"].is_string()) {
-        user.createdAt_ = json["created_at"].get<std::string>();
-    }
-    if (json.contains("updated_at") && json["updated_at"].is_string()) {
-        user.updatedAt_ = json["updated_at"].get<std::string>();
+    // Handle JSON:API format - get attributes if present
+    const nlohmann::json& attrs = json.contains("attributes") ? json["attributes"] : json;
+
+    // Parse ID - can be at top level (JSON:API) or in attributes, can be string or int
+    if (json.contains("id")) {
+        if (json["id"].is_number()) {
+            user.id_ = json["id"].get<int>();
+        } else if (json["id"].is_string()) {
+            try {
+                user.id_ = std::stoi(json["id"].get<std::string>());
+            } catch (...) {
+                user.id_ = 0;
+            }
+        }
     }
 
-    // Parse roles
-    if (json.contains("roles") && json["roles"].is_array()) {
-        for (const auto& role : json["roles"]) {
+    // Parse email
+    if (attrs.contains("email") && attrs["email"].is_string()) {
+        user.email_ = attrs["email"].get<std::string>();
+    }
+
+    // Parse password hash
+    if (attrs.contains("password_hash") && attrs["password_hash"].is_string()) {
+        user.passwordHash_ = attrs["password_hash"].get<std::string>();
+    }
+
+    // Parse name fields
+    if (attrs.contains("first_name") && attrs["first_name"].is_string()) {
+        user.firstName_ = attrs["first_name"].get<std::string>();
+    }
+    if (attrs.contains("last_name") && attrs["last_name"].is_string()) {
+        user.lastName_ = attrs["last_name"].get<std::string>();
+    }
+    if (attrs.contains("middle_name") && attrs["middle_name"].is_string()) {
+        user.middleName_ = attrs["middle_name"].get<std::string>();
+    }
+    if (attrs.contains("preferred_name") && attrs["preferred_name"].is_string()) {
+        user.preferredName_ = attrs["preferred_name"].get<std::string>();
+    }
+    if (attrs.contains("phone_number") && attrs["phone_number"].is_string()) {
+        user.phoneNumber_ = attrs["phone_number"].get<std::string>();
+    }
+
+    // Parse account status flags - default to true if not present (for Student fallback)
+    if (attrs.contains("is_active") && attrs["is_active"].is_boolean()) {
+        user.isActive_ = attrs["is_active"].get<bool>();
+    } else {
+        user.isActive_ = true;  // Default active for Student records
+    }
+
+    if (attrs.contains("login_enabled") && attrs["login_enabled"].is_boolean()) {
+        user.loginEnabled_ = attrs["login_enabled"].get<bool>();
+    } else {
+        user.loginEnabled_ = true;  // Default enabled for Student records
+    }
+
+    if (attrs.contains("email_verified") && attrs["email_verified"].is_boolean()) {
+        user.emailVerified_ = attrs["email_verified"].get<bool>();
+    }
+
+    // Parse timestamps
+    if (attrs.contains("last_login_at") && attrs["last_login_at"].is_string()) {
+        user.lastLoginAt_ = attrs["last_login_at"].get<std::string>();
+    }
+    if (attrs.contains("created_at") && attrs["created_at"].is_string()) {
+        user.createdAt_ = attrs["created_at"].get<std::string>();
+    }
+    if (attrs.contains("updated_at") && attrs["updated_at"].is_string()) {
+        user.updatedAt_ = attrs["updated_at"].get<std::string>();
+    }
+
+    // Parse login attempt tracking
+    if (attrs.contains("failed_login_attempts") && attrs["failed_login_attempts"].is_number()) {
+        user.failedLoginAttempts_ = attrs["failed_login_attempts"].get<int>();
+    }
+    if (attrs.contains("locked_until") && attrs["locked_until"].is_string()) {
+        user.lockedUntil_ = attrs["locked_until"].get<std::string>();
+    }
+
+    // Parse roles - from array or default to Student if from Student table
+    if (attrs.contains("roles") && attrs["roles"].is_array()) {
+        for (const auto& role : attrs["roles"]) {
             if (role.is_string()) {
                 user.roles_.push_back(stringToRole(role.get<std::string>()));
             }
         }
+    } else if (attrs.contains("student_type") || attrs.contains("curriculum_id")) {
+        // This appears to be from Student table - default to Student role
+        user.roles_.push_back(UserRole::Student);
     }
 
     return user;
