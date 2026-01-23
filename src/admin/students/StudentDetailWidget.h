@@ -14,6 +14,7 @@
 #include <Wt/WDateEdit.h>
 #include <memory>
 #include <vector>
+#include <map>
 #include "../../models/Student.h"
 #include "../../api/FormSubmissionService.h"
 
@@ -70,6 +71,8 @@ private:
     void loadFormSubmissions();
     void loadStudentAddress();
     void loadAcademicHistory();
+    void loadCurriculum();
+    std::string getProgramName(const std::string& curriculumId) const;
     void updateFormSubmissionsTable();
     void updateAcademicHistoryTable();
     void onRevokeAccess();
@@ -83,6 +86,9 @@ private:
     ::StudentIntake::Models::Student currentStudent_;
     bool isRevoked_;
     int currentStudentId_;
+
+    // Curriculum data for program name lookup
+    std::map<std::string, std::string> curriculumMap_;  // id -> name
 
     // Form submissions data
     std::vector<StudentFormRecord> formSubmissions_;
