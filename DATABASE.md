@@ -32,6 +32,7 @@ The Student Onboarding System uses PostgreSQL as its database backend. The schem
 | `database/install.sql` | Single installation script with seed data |
 | `database/scripts/switch_to_accredited.sql` | Switch to university/college mode |
 | `database/scripts/switch_to_vocational.sql` | Switch to trade school/CDL mode |
+| `database/migrations/003_add_endorsement_support.sql` | Upgrade: adds multi-program enrollment |
 
 ---
 

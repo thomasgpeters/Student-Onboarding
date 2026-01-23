@@ -55,6 +55,7 @@ database/
 │   └── README.md                 # Scripts documentation
 │
 └── migrations/
+    ├── 003_add_endorsement_support.sql  # Upgrade: adds multi-program enrollment
     └── archive/                  # Historical migration files (reference only)
         ├── README.md
         ├── 001_add_student_fields.sql
@@ -63,6 +64,8 @@ database/
 ```
 
 > **Note:** Individual migration files have been consolidated into `schema.sql` and `install.sql` for simpler deployments. The archived migrations are kept for historical reference only.
+>
+> **Upgrades:** The `migrations/` folder contains upgrade scripts for existing databases. Run these in numerical order when upgrading.
 
 ### Settings Architecture
 
@@ -123,6 +126,8 @@ Designed for traditional academic institutions offering degree programs.
 ### Vocational Mode
 
 Designed for trade schools, CDL training centers, and vocational institutions.
+
+**Multi-Program Enrollment:** Students select one base program (e.g., Class A CDL) and can add multiple endorsements (e.g., Tanker, HazMat). See [Migration 003](#upgrading-existing-databases) for database requirements.
 
 #### Departments
 
@@ -287,6 +292,28 @@ psql -U postgres -d student_onboarding -f database/scripts/switch_to_accredited.
 # OR for trade schools/CDL (vocational):
 psql -U postgres -d student_onboarding -f database/scripts/switch_to_vocational.sql
 ```
+
+### Upgrading Existing Databases
+
+For existing installations, run applicable migration scripts in numerical order:
+
+```bash
+# Check your current schema version by looking at what tables/columns exist
+psql -U postgres -d student_onboarding -c "\d curriculum" | grep is_endorsement
+
+# If is_endorsement column doesn't exist, run migration 003:
+psql -U postgres -d student_onboarding -f database/migrations/003_add_endorsement_support.sql
+
+# Then re-run the curriculum mode script to populate endorsement data:
+psql -U postgres -d student_onboarding -f database/scripts/switch_to_vocational.sql
+```
+
+**Migration 003: Multi-Program Endorsement Support**
+- Adds `is_endorsement` column to `curriculum` table
+- Creates `student_endorsement` junction table
+- Enables vocational students to enroll in base program + multiple endorsements
+
+---
 
 ### Step 1: Backup Your Database
 
@@ -610,6 +637,7 @@ The API returns `duration_interval` field; use `getFormattedDuration()` in the C
 | 1.0 | 2024-01 | Initial migration system |
 | 1.1 | 2024-01 | Added duration_interval support |
 | 1.2 | 2024-01 | Added institution_type settings |
+| 2.4.0 | 2025-01 | Added multi-program endorsement support (migration 003) |
 
 ---
 
