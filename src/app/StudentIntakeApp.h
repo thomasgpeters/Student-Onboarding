@@ -11,7 +11,9 @@
 #include "api/ApiClient.h"
 #include "api/FormSubmissionService.h"
 #include "auth/AuthManager.h"
+#include "auth/AuthService.h"
 #include "auth/LoginWidget.h"
+#include "auth/UnifiedLoginWidget.h"
 #include "auth/RegisterWidget.h"
 #include "curriculum/CurriculumManager.h"
 #include "curriculum/CurriculumSelector.h"
@@ -20,9 +22,11 @@
 #include "widgets/ProgressWidget.h"
 #include "widgets/FormContainer.h"
 #include "widgets/DashboardWidget.h"
+#include "widgets/RoleNavigationWidget.h"
 #include "api/ClassroomService.h"
 #include "api/InstructorService.h"
 #include "models/Instructor.h"
+#include "models/User.h"
 
 // Forward declaration
 namespace StudentIntake {
@@ -59,6 +63,7 @@ public:
         Forms,
         Completion,
         Classroom,  // Online course learning environment
+        Administration,  // Admin main view
         InstructorDashboard,  // Instructor main view
         InstructorStudents,   // View student progress
         InstructorSchedule,   // Session scheduling
@@ -85,6 +90,7 @@ private:
     void showForms();
     void showCompletion();
     void showClassroom();
+    void showAdministration();
     void showInstructorDashboard();
     void showInstructorStudents();
     void showInstructorSchedule();
@@ -114,6 +120,11 @@ private:
     void handleScheduleSession();
     void handleAddFeedback(int studentId);
 
+    // Unified authentication handlers
+    void handleUnifiedLoginSuccess(const Models::User& user);
+    void handleRoleSwitch(Models::UserRole role);
+    void routeUserByRole(const Models::User& user);
+
     // Configuration
     AppConfig& config_;
 
@@ -126,11 +137,13 @@ private:
     std::shared_ptr<Api::ClassroomService> classroomService_;
     std::shared_ptr<Api::InstructorService> instructorService_;
     std::shared_ptr<Auth::AuthManager> authManager_;
+    std::shared_ptr<Auth::AuthService> authService_;
     std::shared_ptr<Curriculum::CurriculumManager> curriculumManager_;
     std::shared_ptr<Forms::FormFactory> formFactory_;
     std::shared_ptr<Session::StudentSession> session_;
 
-    // Instructor state
+    // User state
+    Models::User currentUser_;
     Models::Instructor currentInstructor_;
     bool isInstructorMode_;
 
@@ -140,8 +153,10 @@ private:
     Wt::WContainerWidget* contentContainer_;  // Changed from WStackedWidget
 
     // Views
+    Auth::UnifiedLoginWidget* unifiedLoginWidget_;
     Auth::LoginWidget* loginWidget_;
     Auth::RegisterWidget* registerWidget_;
+    Widgets::RoleNavigationWidget* roleNavigationWidget_;
     Curriculum::CurriculumSelector* curriculumSelector_;
     Widgets::DashboardWidget* dashboardWidget_;
     Wt::WContainerWidget* formsView_;
@@ -151,6 +166,7 @@ private:
     Wt::WContainerWidget* completionView_;
     Classroom::ClassroomWidget* classroomWidget_;
     Classroom::AssessmentReportWidget* assessmentReportWidget_;
+    Wt::WContainerWidget* administrationView_;
 
     // Instructor views
     Instructor::InstructorDashboardWidget* instructorDashboardWidget_;
