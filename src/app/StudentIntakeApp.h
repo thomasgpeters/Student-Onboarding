@@ -20,6 +20,15 @@
 #include "widgets/ProgressWidget.h"
 #include "widgets/FormContainer.h"
 #include "widgets/DashboardWidget.h"
+#include "api/ClassroomService.h"
+
+// Forward declaration
+namespace StudentIntake {
+namespace Classroom {
+    class ClassroomWidget;
+    class AssessmentReportWidget;
+}
+}
 
 namespace StudentIntake {
 namespace App {
@@ -39,7 +48,8 @@ public:
         CurriculumSelection,
         Dashboard,
         Forms,
-        Completion
+        Completion,
+        Classroom  // Online course learning environment
     };
 
     // State management
@@ -60,6 +70,7 @@ private:
     void showDashboard();
     void showForms();
     void showCompletion();
+    void showClassroom();
 
     // Event handlers
     void handleLoginSuccess();
@@ -69,6 +80,9 @@ private:
     void handleChangeProgram();
     void handleFormCompleted(const std::string& formId);
     void handleAllFormsCompleted();
+    void handleEnterClassroom();
+    void handleClassroomBack();
+    void handleCourseCompleted();
 
     // Configuration
     AppConfig& config_;
@@ -79,6 +93,7 @@ private:
     // Services
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Api::FormSubmissionService> apiService_;
+    std::shared_ptr<Api::ClassroomService> classroomService_;
     std::shared_ptr<Auth::AuthManager> authManager_;
     std::shared_ptr<Curriculum::CurriculumManager> curriculumManager_;
     std::shared_ptr<Forms::FormFactory> formFactory_;
@@ -99,6 +114,8 @@ private:
     Widgets::ProgressWidget* progressWidget_;
     Widgets::FormContainer* formContainer_;
     Wt::WContainerWidget* completionView_;
+    Classroom::ClassroomWidget* classroomWidget_;
+    Classroom::AssessmentReportWidget* assessmentReportWidget_;
 };
 
 } // namespace App

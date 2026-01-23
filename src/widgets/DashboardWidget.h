@@ -29,12 +29,18 @@ public:
     Wt::Signal<std::string>& viewFormClicked() { return viewFormClicked_; }
     Wt::Signal<>& additionalFormsClicked() { return additionalFormsClicked_; }
     Wt::Signal<>& changeProgramClicked() { return changeProgramClicked_; }
+    Wt::Signal<>& enterClassroomClicked() { return enterClassroomClicked_; }
+
+    // Check if the student's program has an online classroom
+    void setHasOnlineCourse(bool has) { hasOnlineCourse_ = has; }
+    bool hasOnlineCourse() const { return hasOnlineCourse_; }
 
 private:
     void setupUI();
     void updateDisplay();
     void updateCompletedFormsDisplay();
     void updateRecommendedFormsDisplay();
+    void updateClassroomSection();
 
     std::shared_ptr<Session::StudentSession> session_;
 
@@ -57,11 +63,17 @@ private:
     Wt::WContainerWidget* recommendedFormsSection_;
     Wt::WContainerWidget* recommendedFormsList_;
 
+    // Classroom section (visible if program has online course and onboarding complete)
+    Wt::WContainerWidget* classroomSection_;
+    Wt::WPushButton* enterClassroomButton_;
+    bool hasOnlineCourse_;
+
     Wt::Signal<> continueClicked_;
     Wt::Signal<> startOverClicked_;
     Wt::Signal<std::string> viewFormClicked_;
     Wt::Signal<> additionalFormsClicked_;
     Wt::Signal<> changeProgramClicked_;
+    Wt::Signal<> enterClassroomClicked_;
 };
 
 } // namespace Widgets
