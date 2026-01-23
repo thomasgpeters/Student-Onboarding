@@ -81,7 +81,7 @@ private:
 
     // Event handlers
     void handleLoginSuccess();
-    void handleUnifiedLoginSuccess(const Models::User& user);
+    void handleUnifiedLoginSuccess(const StudentIntake::Models::User& user);
     void handleLogout();
     void handleSectionChange(AdminSection section);
     void handleStudentSelected(int studentId);
@@ -113,7 +113,7 @@ private:
     std::shared_ptr<Auth::AuthService> authService_;
     std::shared_ptr<AdminAuthManager> authManager_;  // Legacy - kept for backward compatibility
     std::shared_ptr<Models::AdminSession> session_;
-    Models::User currentUser_;  // Currently authenticated user
+    StudentIntake::Models::User currentUser_;  // Currently authenticated user
 
     // UI Components
     Wt::WContainerWidget* mainContainer_;
