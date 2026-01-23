@@ -199,8 +199,19 @@ User User::fromJson(const nlohmann::json& json) {
 
     if (attrs.contains("login_enabled") && attrs["login_enabled"].is_boolean()) {
         user.loginEnabled_ = attrs["login_enabled"].get<bool>();
+    } else if (attrs.contains("is_login_revoked") && attrs["is_login_revoked"].is_boolean()) {
+        // For Student records, is_login_revoked is the inverse of login_enabled
+        user.loginEnabled_ = !attrs["is_login_revoked"].get<bool>();
     } else {
         user.loginEnabled_ = true;  // Default enabled for Student records
+    }
+
+    // Also check status field for Student records - "revoked" means no login
+    if (attrs.contains("status") && attrs["status"].is_string()) {
+        std::string status = attrs["status"].get<std::string>();
+        if (status == "revoked") {
+            user.isActive_ = false;
+        }
     }
 
     if (attrs.contains("email_verified") && attrs["email_verified"].is_boolean()) {
