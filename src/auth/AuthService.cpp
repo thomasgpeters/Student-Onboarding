@@ -1,0 +1,596 @@
+#include "AuthService.h"
+#include <regex>
+#include <random>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+
+namespace StudentIntake {
+namespace Auth {
+
+// Helper to get current timestamp
+static std::string getCurrentTimestamp() {
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    std::ostringstream oss;
+    oss << std::put_time(std::gmtime(&time), "%Y-%m-%dT%H:%M:%SZ");
+    return oss.str();
+}
+
+// Helper to get session expiry (24 hours from now)
+static std::string getSessionExpiry() {
+    auto now = std::chrono::system_clock::now();
+    auto expiry = now + std::chrono::hours(24);
+    auto time = std::chrono::system_clock::to_time_t(expiry);
+    std::ostringstream oss;
+    oss << std::put_time(std::gmtime(&time), "%Y-%m-%dT%H:%M:%SZ");
+    return oss.str();
+}
+
+AuthService::AuthService()
+    : apiClient_(std::make_shared<Api::ApiClient>()) {
+}
+
+AuthService::AuthService(std::shared_ptr<Api::ApiClient> apiClient)
+    : apiClient_(apiClient) {
+}
+
+AuthService::~AuthService() = default;
+
+// =============================================================================
+// Helper Methods
+// =============================================================================
+
+AuthResult AuthService::parseAuthResponse(const Api::ApiResponse& response) {
+    AuthResult result;
+    result.success = response.success;
+
+    if (!response.success) {
+        result.message = response.errorMessage;
+        result.errors.push_back(response.errorMessage);
+        return result;
+    }
+
+    if (response.data.contains("data")) {
+        auto& data = response.data["data"];
+
+        // Parse user
+        if (data.contains("user")) {
+            result.user = Models::User::fromJson(data["user"]);
+        } else if (data.contains("attributes")) {
+            result.user = Models::User::fromJson(data["attributes"]);
+        }
+
+        // Parse tokens
+        if (data.contains("session_token")) {
+            result.sessionToken = data["session_token"].get<std::string>();
+        }
+        if (data.contains("refresh_token")) {
+            result.refreshToken = data["refresh_token"].get<std::string>();
+        }
+
+        // Parse message
+        if (data.contains("message")) {
+            result.message = data["message"].get<std::string>();
+        }
+    }
+
+    return result;
+}
+
+nlohmann::json AuthService::buildJsonApiPayload(const std::string& type,
+                                                  const nlohmann::json& attributes) {
+    nlohmann::json payload;
+    payload["data"]["type"] = type;
+    payload["data"]["attributes"] = attributes;
+    return payload;
+}
+
+std::string AuthService::generateSessionToken() {
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, sizeof(alphanum) - 2);
+
+    std::string token;
+    token.reserve(64);
+    for (int i = 0; i < 64; ++i) {
+        token += alphanum[dis(gen)];
+    }
+
+    return token;
+}
+
+void AuthService::recordLoginAttempt(const std::string& email, bool success,
+                                      const std::string& reason,
+                                      const std::string& ipAddress,
+                                      const std::string& userAgent) {
+    nlohmann::json attrs;
+    attrs["email"] = email;
+    attrs["action"] = success ? "login_success" : "login_failed";
+    attrs["success"] = success;
+    attrs["failure_reason"] = reason;
+    attrs["ip_address"] = ipAddress;
+    attrs["user_agent"] = userAgent;
+    attrs["created_at"] = getCurrentTimestamp();
+
+    auto payload = buildJsonApiPayload("LoginAudit", attrs);
+    // Fire and forget - don't wait for response
+    apiClient_->post("/LoginAudit", payload);
+}
+
+// =============================================================================
+// Authentication
+// =============================================================================
+
+AuthResult AuthService::login(const std::string& email, const std::string& password,
+                               const std::string& ipAddress, const std::string& userAgent) {
+    AuthResult result;
+    result.success = false;
+
+    // Validate input
+    if (email.empty() || password.empty()) {
+        result.message = "Email and password are required";
+        result.errors.push_back(result.message);
+        return result;
+    }
+
+    // Call API to authenticate
+    nlohmann::json attrs;
+    attrs["email"] = email;
+    attrs["password"] = password;
+    attrs["ip_address"] = ipAddress;
+    attrs["user_agent"] = userAgent;
+
+    auto payload = buildJsonApiPayload("AuthLogin", attrs);
+    auto response = apiClient_->post("/auth/login", payload);
+
+    if (!response.success) {
+        result.message = response.errorMessage;
+        if (result.message.empty()) {
+            result.message = "Invalid email or password";
+        }
+        result.errors.push_back(result.message);
+        recordLoginAttempt(email, false, result.message, ipAddress, userAgent);
+        return result;
+    }
+
+    // Parse response
+    result = parseAuthResponse(response);
+
+    if (result.success) {
+        recordLoginAttempt(email, true, "", ipAddress, userAgent);
+    } else {
+        recordLoginAttempt(email, false, result.message, ipAddress, userAgent);
+    }
+
+    return result;
+}
+
+void AuthService::loginAsync(const std::string& email, const std::string& password,
+                              AuthCallback callback,
+                              const std::string& ipAddress, const std::string& userAgent) {
+    nlohmann::json attrs;
+    attrs["email"] = email;
+    attrs["password"] = password;
+    attrs["ip_address"] = ipAddress;
+    attrs["user_agent"] = userAgent;
+
+    auto payload = buildJsonApiPayload("AuthLogin", attrs);
+
+    apiClient_->postAsync("/auth/login", payload,
+        [this, callback, email, ipAddress, userAgent](const Api::ApiResponse& response) {
+            AuthResult result = parseAuthResponse(response);
+            recordLoginAttempt(email, result.success, result.message, ipAddress, userAgent);
+            callback(result);
+        });
+}
+
+AuthResult AuthService::logout(const std::string& sessionToken) {
+    AuthResult result;
+    result.success = false;
+
+    if (sessionToken.empty()) {
+        result.message = "Session token is required";
+        return result;
+    }
+
+    nlohmann::json attrs;
+    attrs["session_token"] = sessionToken;
+
+    auto payload = buildJsonApiPayload("AuthLogout", attrs);
+    auto response = apiClient_->post("/auth/logout", payload);
+
+    result.success = response.success;
+    result.message = response.success ? "Logged out successfully" : response.errorMessage;
+
+    return result;
+}
+
+bool AuthService::validateSession(const std::string& sessionToken) {
+    if (sessionToken.empty()) return false;
+
+    std::string endpoint = "/UserSession?filter[session_token]=" + sessionToken +
+                          "&filter[is_active]=true";
+    auto response = apiClient_->get(endpoint);
+
+    if (!response.success || !response.data.contains("data")) {
+        return false;
+    }
+
+    auto& data = response.data["data"];
+    if (data.empty()) return false;
+
+    // Check expiry
+    auto session = Models::UserSession::fromJson(data[0]);
+    return !session.isExpired() && session.isActive();
+}
+
+AuthResult AuthService::refreshSession(const std::string& refreshToken) {
+    AuthResult result;
+    result.success = false;
+
+    if (refreshToken.empty()) {
+        result.message = "Refresh token is required";
+        return result;
+    }
+
+    nlohmann::json attrs;
+    attrs["refresh_token"] = refreshToken;
+
+    auto payload = buildJsonApiPayload("AuthRefresh", attrs);
+    auto response = apiClient_->post("/auth/refresh", payload);
+
+    return parseAuthResponse(response);
+}
+
+Models::User AuthService::getUserFromSession(const std::string& sessionToken) {
+    if (sessionToken.empty()) {
+        return Models::User();
+    }
+
+    // Get session
+    std::string endpoint = "/UserSession?filter[session_token]=" + sessionToken +
+                          "&filter[is_active]=true";
+    auto sessionResponse = apiClient_->get(endpoint);
+
+    if (!sessionResponse.success || !sessionResponse.data.contains("data") ||
+        sessionResponse.data["data"].empty()) {
+        return Models::User();
+    }
+
+    auto session = Models::UserSession::fromJson(sessionResponse.data["data"][0]);
+
+    // Get user
+    auto userResponse = apiClient_->get("/AppUser/" + std::to_string(session.getUserId()));
+
+    if (!userResponse.success || !userResponse.data.contains("data")) {
+        return Models::User();
+    }
+
+    Models::User user = Models::User::fromJson(userResponse.data["data"]);
+
+    // Get roles
+    user.setRoles(getUserRoles(user.getId()));
+
+    return user;
+}
+
+// =============================================================================
+// Registration
+// =============================================================================
+
+AuthResult AuthService::registerStudent(const std::string& email, const std::string& password,
+                                          const std::string& firstName, const std::string& lastName) {
+    AuthResult result;
+    result.success = false;
+
+    // Validate input
+    if (!isValidEmail(email)) {
+        result.message = "Invalid email format";
+        result.errors.push_back(result.message);
+        return result;
+    }
+
+    if (!isValidPassword(password)) {
+        result.message = getPasswordRequirements();
+        result.errors.push_back(result.message);
+        return result;
+    }
+
+    // Create user
+    nlohmann::json attrs;
+    attrs["email"] = email;
+    attrs["password"] = password;
+    attrs["first_name"] = firstName;
+    attrs["last_name"] = lastName;
+    attrs["role"] = "student";
+
+    auto payload = buildJsonApiPayload("AuthRegister", attrs);
+    auto response = apiClient_->post("/auth/register", payload);
+
+    return parseAuthResponse(response);
+}
+
+void AuthService::registerStudentAsync(const std::string& email, const std::string& password,
+                                         const std::string& firstName, const std::string& lastName,
+                                         AuthCallback callback) {
+    // Validate input first
+    if (!isValidEmail(email)) {
+        AuthResult result;
+        result.success = false;
+        result.message = "Invalid email format";
+        callback(result);
+        return;
+    }
+
+    if (!isValidPassword(password)) {
+        AuthResult result;
+        result.success = false;
+        result.message = getPasswordRequirements();
+        callback(result);
+        return;
+    }
+
+    nlohmann::json attrs;
+    attrs["email"] = email;
+    attrs["password"] = password;
+    attrs["first_name"] = firstName;
+    attrs["last_name"] = lastName;
+    attrs["role"] = "student";
+
+    auto payload = buildJsonApiPayload("AuthRegister", attrs);
+
+    apiClient_->postAsync("/auth/register", payload,
+        [this, callback](const Api::ApiResponse& response) {
+            callback(parseAuthResponse(response));
+        });
+}
+
+// =============================================================================
+// Password Management
+// =============================================================================
+
+AuthResult AuthService::requestPasswordReset(const std::string& email) {
+    AuthResult result;
+    result.success = false;
+
+    if (email.empty()) {
+        result.message = "Email is required";
+        return result;
+    }
+
+    nlohmann::json attrs;
+    attrs["email"] = email;
+
+    auto payload = buildJsonApiPayload("PasswordReset", attrs);
+    auto response = apiClient_->post("/auth/password-reset-request", payload);
+
+    result.success = response.success;
+    result.message = response.success ?
+        "If an account exists with this email, a password reset link has been sent." :
+        response.errorMessage;
+
+    return result;
+}
+
+AuthResult AuthService::resetPassword(const std::string& token, const std::string& newPassword) {
+    AuthResult result;
+    result.success = false;
+
+    if (token.empty()) {
+        result.message = "Reset token is required";
+        return result;
+    }
+
+    if (!isValidPassword(newPassword)) {
+        result.message = getPasswordRequirements();
+        return result;
+    }
+
+    nlohmann::json attrs;
+    attrs["token"] = token;
+    attrs["new_password"] = newPassword;
+
+    auto payload = buildJsonApiPayload("PasswordReset", attrs);
+    auto response = apiClient_->post("/auth/password-reset", payload);
+
+    result.success = response.success;
+    result.message = response.success ? "Password reset successfully" : response.errorMessage;
+
+    return result;
+}
+
+AuthResult AuthService::changePassword(int userId, const std::string& oldPassword,
+                                         const std::string& newPassword) {
+    AuthResult result;
+    result.success = false;
+
+    if (!isValidPassword(newPassword)) {
+        result.message = getPasswordRequirements();
+        return result;
+    }
+
+    nlohmann::json attrs;
+    attrs["user_id"] = userId;
+    attrs["old_password"] = oldPassword;
+    attrs["new_password"] = newPassword;
+
+    auto payload = buildJsonApiPayload("PasswordChange", attrs);
+    auto response = apiClient_->post("/auth/change-password", payload);
+
+    result.success = response.success;
+    result.message = response.success ? "Password changed successfully" : response.errorMessage;
+
+    return result;
+}
+
+// =============================================================================
+// Role Management
+// =============================================================================
+
+std::vector<Models::UserRole> AuthService::getUserRoles(int userId) {
+    std::vector<Models::UserRole> roles;
+
+    std::string endpoint = "/UserRoles?filter[user_id]=" + std::to_string(userId) +
+                          "&filter[is_active]=true";
+    auto response = apiClient_->get(endpoint);
+
+    if (response.success && response.data.contains("data")) {
+        for (const auto& item : response.data["data"]) {
+            if (item.contains("role") && item["role"].is_string()) {
+                roles.push_back(Models::User::stringToRole(item["role"].get<std::string>()));
+            } else if (item.contains("attributes") && item["attributes"].contains("role")) {
+                roles.push_back(Models::User::stringToRole(
+                    item["attributes"]["role"].get<std::string>()));
+            }
+        }
+    }
+
+    return roles;
+}
+
+AuthResult AuthService::switchRole(const std::string& sessionToken, Models::UserRole newRole) {
+    AuthResult result;
+    result.success = false;
+
+    if (sessionToken.empty()) {
+        result.message = "Session token is required";
+        return result;
+    }
+
+    // Get current session
+    std::string endpoint = "/UserSession?filter[session_token]=" + sessionToken;
+    auto sessionResponse = apiClient_->get(endpoint);
+
+    if (!sessionResponse.success || !sessionResponse.data.contains("data") ||
+        sessionResponse.data["data"].empty()) {
+        result.message = "Invalid session";
+        return result;
+    }
+
+    auto session = Models::UserSession::fromJson(sessionResponse.data["data"][0]);
+
+    // Check if user has the requested role
+    if (!userHasRole(session.getUserId(), newRole)) {
+        result.message = "User does not have the requested role";
+        return result;
+    }
+
+    // Update session with new active role
+    nlohmann::json attrs;
+    attrs["active_role"] = Models::User::roleToString(newRole);
+
+    auto payload = buildJsonApiPayload("UserSession", std::to_string(session.getId()), attrs);
+    auto updateResponse = apiClient_->patch("/UserSession/" + std::to_string(session.getId()), payload);
+
+    result.success = updateResponse.success;
+    result.message = updateResponse.success ? "Role switched successfully" : updateResponse.errorMessage;
+
+    // Return updated user
+    result.user = getUserFromSession(sessionToken);
+
+    return result;
+}
+
+bool AuthService::userHasRole(int userId, Models::UserRole role) {
+    auto roles = getUserRoles(userId);
+    return std::find(roles.begin(), roles.end(), role) != roles.end();
+}
+
+std::string AuthService::getRouteForUser(const Models::User& user) {
+    return user.getHomeRoute();
+}
+
+// =============================================================================
+// Profile Management
+// =============================================================================
+
+Models::StudentProfile AuthService::getStudentProfile(int userId) {
+    std::string endpoint = "/StudentProfile?filter[user_id]=" + std::to_string(userId);
+    auto response = apiClient_->get(endpoint);
+
+    if (response.success && response.data.contains("data") && !response.data["data"].empty()) {
+        return Models::StudentProfile::fromJson(response.data["data"][0]);
+    }
+
+    return Models::StudentProfile();
+}
+
+Models::AdminProfile AuthService::getAdminProfile(int userId) {
+    std::string endpoint = "/AdminProfile?filter[user_id]=" + std::to_string(userId);
+    auto response = apiClient_->get(endpoint);
+
+    if (response.success && response.data.contains("data") && !response.data["data"].empty()) {
+        return Models::AdminProfile::fromJson(response.data["data"][0]);
+    }
+
+    return Models::AdminProfile();
+}
+
+AuthResult AuthService::updateUserProfile(const Models::User& user) {
+    AuthResult result;
+
+    auto attrs = user.toJson();
+    auto payload = buildJsonApiPayload("AppUser", std::to_string(user.getId()), attrs);
+    auto response = apiClient_->patch("/AppUser/" + std::to_string(user.getId()), payload);
+
+    result.success = response.success;
+    result.message = response.success ? "Profile updated successfully" : response.errorMessage;
+
+    return result;
+}
+
+AuthResult AuthService::updateStudentProfile(const Models::StudentProfile& profile) {
+    AuthResult result;
+
+    auto attrs = profile.toJson();
+    auto payload = buildJsonApiPayload("StudentProfile", std::to_string(profile.getId()), attrs);
+    auto response = apiClient_->patch("/StudentProfile/" + std::to_string(profile.getId()), payload);
+
+    result.success = response.success;
+    result.message = response.success ? "Profile updated successfully" : response.errorMessage;
+
+    return result;
+}
+
+// =============================================================================
+// Validation Helpers
+// =============================================================================
+
+bool AuthService::isValidEmail(const std::string& email) {
+    if (email.empty()) return false;
+
+    // Basic email regex pattern
+    std::regex pattern(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})");
+    return std::regex_match(email, pattern);
+}
+
+bool AuthService::isValidPassword(const std::string& password) {
+    if (password.length() < 8) return false;
+
+    bool hasUpper = false;
+    bool hasLower = false;
+    bool hasDigit = false;
+
+    for (char c : password) {
+        if (std::isupper(c)) hasUpper = true;
+        if (std::islower(c)) hasLower = true;
+        if (std::isdigit(c)) hasDigit = true;
+    }
+
+    return hasUpper && hasLower && hasDigit;
+}
+
+std::string AuthService::getPasswordRequirements() {
+    return "Password must be at least 8 characters and contain at least one uppercase letter, "
+           "one lowercase letter, and one digit.";
+}
+
+} // namespace Auth
+} // namespace StudentIntake
