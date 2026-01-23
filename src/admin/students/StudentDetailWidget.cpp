@@ -288,16 +288,31 @@ void StudentDetailWidget::loadStudent(int studentId) {
                 } else {
                     isRevoked_ = false;
                 }
+                // Load curriculum_id for program lookup
+                if (attrs.contains("curriculum_id") && !attrs["curriculum_id"].is_null()) {
+                    if (attrs["curriculum_id"].is_string()) {
+                        currentStudent_.setCurriculumId(attrs["curriculum_id"].get<std::string>());
+                    } else {
+                        currentStudent_.setCurriculumId(std::to_string(attrs["curriculum_id"].get<int>()));
+                    }
+                }
             }
         }
 
+        // Load curriculum data for program name lookup
+        loadCurriculum();
         updateDisplay();
         loadStudentAddress();
         loadFormSubmissions();
-        // Academic history is loaded when checkbox is checked
-        // Reset checkbox state - it will be unchecked by default
-        hasPreviousEducationCheckbox_->setChecked(false);
-        academicHistoryContainer_->hide();
+        // Load academic history and set checkbox state based on whether records exist
+        loadAcademicHistory();
+        if (!academicHistory_.empty()) {
+            hasPreviousEducationCheckbox_->setChecked(true);
+            academicHistoryContainer_->show();
+        } else {
+            hasPreviousEducationCheckbox_->setChecked(false);
+            academicHistoryContainer_->hide();
+        }
         LOG_DEBUG("StudentDetail", "Loaded student: " << currentStudent_.getFullName());
 
     } catch (const std::exception& e) {
@@ -357,6 +372,60 @@ void StudentDetailWidget::loadStudentAddress() {
     }
 
     addressText_->setText("Not provided");
+}
+
+void StudentDetailWidget::loadCurriculum() {
+    if (!apiService_) {
+        LOG_WARN("StudentDetail", "API service not available for curriculum load");
+        return;
+    }
+
+    try {
+        auto response = apiService_->getApiClient()->get("/Curriculum");
+
+        if (!response.success) {
+            LOG_ERROR("StudentDetail", "Failed to load curriculum: " << response.errorMessage);
+            return;
+        }
+
+        auto json = nlohmann::json::parse(response.body);
+        nlohmann::json items = json.is_array() ? json :
+            (json.contains("data") ? json["data"] : nlohmann::json::array());
+
+        curriculumMap_.clear();
+        for (const auto& currData : items) {
+            std::string id;
+            if (currData.contains("id")) {
+                if (currData["id"].is_string()) {
+                    id = currData["id"].get<std::string>();
+                } else {
+                    id = std::to_string(currData["id"].get<int>());
+                }
+            }
+
+            const auto& attrs = currData.contains("attributes") ? currData["attributes"] : currData;
+            std::string programName = attrs.value("name", "Unknown Program");
+
+            if (!id.empty()) {
+                curriculumMap_[id] = programName;
+            }
+        }
+
+        LOG_DEBUG("StudentDetail", "Loaded " << curriculumMap_.size() << " curriculum entries");
+    } catch (const std::exception& e) {
+        LOG_ERROR("StudentDetail", "Exception loading curriculum: " << e.what());
+    }
+}
+
+std::string StudentDetailWidget::getProgramName(const std::string& curriculumId) const {
+    if (curriculumId.empty()) {
+        return "Not Selected";
+    }
+    auto it = curriculumMap_.find(curriculumId);
+    if (it != curriculumMap_.end()) {
+        return it->second;
+    }
+    return "Unknown Program";
 }
 
 void StudentDetailWidget::loadFormSubmissions() {
@@ -730,7 +799,7 @@ void StudentDetailWidget::updateDisplay() {
     }
 
     // Update info cards
-    programText_->setText("Computer Science - BS"); // Placeholder
+    programText_->setText(getProgramName(currentStudent_.getCurriculumId()));
     enrolledText_->setText(formatDate(currentStudent_.getCreatedAt()));
 
     std::string phone = currentStudent_.getPhoneNumber();
