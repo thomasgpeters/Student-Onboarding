@@ -45,10 +45,11 @@ InstructorResult InstructorService::parseResponse(const ApiResponse& response) {
     InstructorResult result;
     result.success = response.success;
     result.message = response.errorMessage;
-    result.responseData = response.data;
+    auto json = response.getJson();
+    result.responseData = json;
 
-    if (response.success && response.data.contains("data")) {
-        auto& data = response.data["data"];
+    if (response.success && json.contains("data")) {
+        auto& data = json["data"];
         if (data.contains("id")) {
             if (data["id"].is_string()) {
                 result.id = data["id"].get<std::string>();
@@ -171,9 +172,10 @@ CalendarEvent InstructorService::parseCalendarEvent(const nlohmann::json& json) 
 Models::Instructor InstructorService::getInstructorByUserId(int userId) {
     std::string endpoint = "/Instructor?filter[user_id]=" + std::to_string(userId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data") && !response.data["data"].empty()) {
-        return Models::Instructor::fromJson(response.data["data"][0]);
+    if (response.success && json.contains("data") && !json["data"].empty()) {
+        return Models::Instructor::fromJson(json["data"][0]);
     }
 
     return Models::Instructor();
@@ -181,9 +183,10 @@ Models::Instructor InstructorService::getInstructorByUserId(int userId) {
 
 Models::Instructor InstructorService::getInstructor(const std::string& instructorId) {
     auto response = apiClient_->get("/Instructor/" + instructorId);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        return Models::Instructor::fromJson(response.data["data"]);
+    if (response.success && json.contains("data")) {
+        return Models::Instructor::fromJson(json["data"]);
     }
 
     return Models::Instructor();
@@ -192,9 +195,10 @@ Models::Instructor InstructorService::getInstructor(const std::string& instructo
 std::vector<Models::Instructor> InstructorService::getAllInstructors() {
     std::vector<Models::Instructor> instructors;
     auto response = apiClient_->get("/Instructor");
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             instructors.push_back(Models::Instructor::fromJson(item));
         }
     }
@@ -207,9 +211,10 @@ std::vector<Models::Instructor> InstructorService::getInstructorsByType(Models::
     std::string typeStr = Models::Instructor::instructorTypeToString(type);
     std::string endpoint = "/Instructor?filter[instructor_type]=" + typeStr;
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             instructors.push_back(Models::Instructor::fromJson(item));
         }
     }
@@ -229,9 +234,10 @@ std::vector<Models::InstructorQualification> InstructorService::getInstructorQua
     std::vector<Models::InstructorQualification> qualifications;
     std::string endpoint = "/InstructorQualification?filter[instructor_id]=" + std::to_string(instructorId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             qualifications.push_back(Models::InstructorQualification::fromJson(item));
         }
     }
@@ -263,9 +269,10 @@ std::vector<Models::InstructorAssignment> InstructorService::getInstructorAssign
     std::vector<Models::InstructorAssignment> assignments;
     std::string endpoint = "/InstructorAssignment?filter[instructor_id]=" + std::to_string(instructorId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             assignments.push_back(Models::InstructorAssignment::fromJson(item));
         }
     }
@@ -278,9 +285,10 @@ std::vector<Models::InstructorAssignment> InstructorService::getActiveAssignment
     std::string endpoint = "/InstructorAssignment?filter[instructor_id]=" + std::to_string(instructorId)
                          + "&filter[is_active]=true";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             assignments.push_back(Models::InstructorAssignment::fromJson(item));
         }
     }
@@ -335,9 +343,10 @@ std::vector<StudentProgressSummary> InstructorService::getAssignedStudentProgres
         // Get enrollment details
         std::string enrollmentEndpoint = "/StudentCourseEnrollment/" + std::to_string(assignment.getEnrollmentId());
         auto enrollmentResponse = apiClient_->get(enrollmentEndpoint);
+        auto enrollmentJson = enrollmentResponse.getJson();
 
-        if (enrollmentResponse.success && enrollmentResponse.data.contains("data")) {
-            auto& data = enrollmentResponse.data["data"];
+        if (enrollmentResponse.success && enrollmentJson.contains("data")) {
+            auto& data = enrollmentJson["data"];
             if (data.contains("attributes")) {
                 auto& attrs = data["attributes"];
                 if (attrs.contains("progress_percentage")) {
@@ -352,9 +361,10 @@ std::vector<StudentProgressSummary> InstructorService::getAssignedStudentProgres
         // Get student details
         std::string studentEndpoint = "/Student/" + std::to_string(assignment.getStudentId());
         auto studentResponse = apiClient_->get(studentEndpoint);
+        auto studentJson = studentResponse.getJson();
 
-        if (studentResponse.success && studentResponse.data.contains("data")) {
-            auto& data = studentResponse.data["data"];
+        if (studentResponse.success && studentJson.contains("data")) {
+            auto& data = studentJson["data"];
             if (data.contains("attributes")) {
                 auto& attrs = data["attributes"];
                 if (attrs.contains("first_name") && attrs.contains("last_name")) {
@@ -380,9 +390,10 @@ StudentProgressSummary InstructorService::getStudentProgressDetail(int instructo
     // Get student details
     std::string studentEndpoint = "/Student/" + std::to_string(studentId);
     auto studentResponse = apiClient_->get(studentEndpoint);
+    auto studentJson = studentResponse.getJson();
 
-    if (studentResponse.success && studentResponse.data.contains("data")) {
-        auto& data = studentResponse.data["data"];
+    if (studentResponse.success && studentJson.contains("data")) {
+        auto& data = studentJson["data"];
         if (data.contains("attributes")) {
             auto& attrs = data["attributes"];
             if (attrs.contains("first_name") && attrs.contains("last_name")) {
@@ -398,10 +409,11 @@ StudentProgressSummary InstructorService::getStudentProgressDetail(int instructo
     // Get enrollments
     std::string enrollmentEndpoint = "/StudentCourseEnrollment?filter[student_id]=" + std::to_string(studentId);
     auto enrollmentResponse = apiClient_->get(enrollmentEndpoint);
+    auto enrollmentJson = enrollmentResponse.getJson();
 
-    if (enrollmentResponse.success && enrollmentResponse.data.contains("data")
-        && !enrollmentResponse.data["data"].empty()) {
-        auto& enrollment = enrollmentResponse.data["data"][0];
+    if (enrollmentResponse.success && enrollmentJson.contains("data")
+        && !enrollmentJson["data"].empty()) {
+        auto& enrollment = enrollmentJson["data"][0];
         if (enrollment.contains("id")) {
             if (enrollment["id"].is_number()) {
                 summary.enrollmentId = enrollment["id"].get<int>();
@@ -431,11 +443,12 @@ std::vector<Models::StudentModuleProgress> InstructorService::getStudentCoursePr
     std::string enrollmentEndpoint = "/StudentCourseEnrollment?filter[student_id]=" + std::to_string(studentId)
                                    + "&filter[course_id]=" + std::to_string(courseId);
     auto enrollmentResponse = apiClient_->get(enrollmentEndpoint);
+    auto enrollmentJson = enrollmentResponse.getJson();
 
-    if (enrollmentResponse.success && enrollmentResponse.data.contains("data")
-        && !enrollmentResponse.data["data"].empty()) {
+    if (enrollmentResponse.success && enrollmentJson.contains("data")
+        && !enrollmentJson["data"].empty()) {
         std::string enrollmentId;
-        auto& enrollment = enrollmentResponse.data["data"][0];
+        auto& enrollment = enrollmentJson["data"][0];
         if (enrollment.contains("id")) {
             if (enrollment["id"].is_string()) {
                 enrollmentId = enrollment["id"].get<std::string>();
@@ -447,9 +460,10 @@ std::vector<Models::StudentModuleProgress> InstructorService::getStudentCoursePr
         // Get module progress
         std::string progressEndpoint = "/StudentModuleProgress?filter[enrollment_id]=" + enrollmentId;
         auto progressResponse = apiClient_->get(progressEndpoint);
+        auto progressJson = progressResponse.getJson();
 
-        if (progressResponse.success && progressResponse.data.contains("data")) {
-            for (const auto& item : progressResponse.data["data"]) {
+        if (progressResponse.success && progressJson.contains("data")) {
+            for (const auto& item : progressJson["data"]) {
                 progressList.push_back(Models::StudentModuleProgress::fromJson(item));
             }
         }
@@ -463,9 +477,10 @@ std::vector<Models::StudentSkillProgress> InstructorService::getStudentSkillProg
     std::string endpoint = "/StudentSkillProgress?filter[student_id]=" + std::to_string(studentId)
                          + "&filter[enrollment_id]=" + std::to_string(enrollmentId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             progressList.push_back(Models::StudentSkillProgress::fromJson(item));
         }
     }
@@ -497,9 +512,10 @@ std::vector<Models::ScheduledSession> InstructorService::getInstructorSessions(i
     std::string endpoint = "/ScheduledSession?filter[instructor_id]=" + std::to_string(instructorId)
                          + "&sort=scheduled_date,start_time";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             sessions.push_back(Models::ScheduledSession::fromJson(item));
         }
     }
@@ -516,9 +532,10 @@ std::vector<Models::ScheduledSession> InstructorService::getSessionsByDateRange(
                          + "&filter[scheduled_date][lte]=" + endDate
                          + "&sort=scheduled_date,start_time";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             sessions.push_back(Models::ScheduledSession::fromJson(item));
         }
     }
@@ -540,9 +557,10 @@ std::vector<Models::ScheduledSession> InstructorService::getUpcomingSessions(int
                          + "&sort=scheduled_date,start_time"
                          + "&page[limit]=" + std::to_string(limit);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             sessions.push_back(Models::ScheduledSession::fromJson(item));
         }
     }
@@ -555,9 +573,10 @@ std::vector<Models::ScheduledSession> InstructorService::getStudentSessions(int 
     std::string endpoint = "/ScheduledSession?filter[student_id]=" + std::to_string(studentId)
                          + "&sort=-scheduled_date,-start_time";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             sessions.push_back(Models::ScheduledSession::fromJson(item));
         }
     }
@@ -567,9 +586,10 @@ std::vector<Models::ScheduledSession> InstructorService::getStudentSessions(int 
 
 Models::ScheduledSession InstructorService::getSession(const std::string& sessionId) {
     auto response = apiClient_->get("/ScheduledSession/" + sessionId);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        return Models::ScheduledSession::fromJson(response.data["data"]);
+    if (response.success && json.contains("data")) {
+        return Models::ScheduledSession::fromJson(json["data"]);
     }
 
     return Models::ScheduledSession();
@@ -696,9 +716,10 @@ std::vector<Models::InstructorAvailability> InstructorService::getInstructorAvai
     std::vector<Models::InstructorAvailability> availability;
     std::string endpoint = "/InstructorAvailability?filter[instructor_id]=" + std::to_string(instructorId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             availability.push_back(Models::InstructorAvailability::fromJson(item));
         }
     }
@@ -750,9 +771,10 @@ std::vector<Models::StudentFeedback> InstructorService::getInstructorFeedback(in
     std::string endpoint = "/StudentFeedback?filter[instructor_id]=" + std::to_string(instructorId)
                          + "&sort=-created_at";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             feedbackList.push_back(Models::StudentFeedback::fromJson(item));
         }
     }
@@ -766,9 +788,10 @@ std::vector<Models::StudentFeedback> InstructorService::getStudentFeedback(int s
                          + "&filter[visible_to_student]=true"
                          + "&sort=-created_at";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             feedbackList.push_back(Models::StudentFeedback::fromJson(item));
         }
     }
@@ -782,9 +805,10 @@ std::vector<Models::StudentFeedback> InstructorService::getStudentFeedbackByInst
                          + "&filter[instructor_id]=" + std::to_string(instructorId)
                          + "&sort=-created_at";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             feedbackList.push_back(Models::StudentFeedback::fromJson(item));
         }
     }
@@ -796,9 +820,10 @@ std::vector<Models::StudentFeedback> InstructorService::getSessionFeedback(int s
     std::vector<Models::StudentFeedback> feedbackList;
     std::string endpoint = "/StudentFeedback?filter[session_id]=" + std::to_string(sessionId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             feedbackList.push_back(Models::StudentFeedback::fromJson(item));
         }
     }
@@ -813,9 +838,10 @@ std::vector<Models::StudentFeedback> InstructorService::getPendingFollowUps(int 
                          + "&filter[follow_up_completed]=false"
                          + "&sort=follow_up_date";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             feedbackList.push_back(Models::StudentFeedback::fromJson(item));
         }
     }
@@ -825,9 +851,10 @@ std::vector<Models::StudentFeedback> InstructorService::getPendingFollowUps(int 
 
 Models::StudentFeedback InstructorService::getFeedback(const std::string& feedbackId) {
     auto response = apiClient_->get("/StudentFeedback/" + feedbackId);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        return Models::StudentFeedback::fromJson(response.data["data"]);
+    if (response.success && json.contains("data")) {
+        return Models::StudentFeedback::fromJson(json["data"]);
     }
 
     return Models::StudentFeedback();
@@ -886,9 +913,10 @@ std::vector<Models::SkillCategory> InstructorService::getSkillCategories() {
     std::vector<Models::SkillCategory> categories;
     std::string endpoint = "/SkillCategory?sort=display_order";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             categories.push_back(Models::SkillCategory::fromJson(item));
         }
     }
@@ -901,9 +929,10 @@ std::vector<Models::SkillItem> InstructorService::getSkillItems(int categoryId) 
     std::string endpoint = "/SkillItem?filter[category_id]=" + std::to_string(categoryId)
                          + "&sort=display_order";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             items.push_back(Models::SkillItem::fromJson(item));
         }
     }
@@ -915,9 +944,10 @@ std::vector<Models::SkillItem> InstructorService::getAllSkillItems() {
     std::vector<Models::SkillItem> items;
     std::string endpoint = "/SkillItem?sort=category_id,display_order";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             items.push_back(Models::SkillItem::fromJson(item));
         }
     }
@@ -930,9 +960,10 @@ std::vector<Models::StudentSkillProgress> InstructorService::getSkillProgress(in
     std::string endpoint = "/StudentSkillProgress?filter[student_id]=" + std::to_string(studentId)
                          + "&filter[enrollment_id]=" + std::to_string(enrollmentId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             progressList.push_back(Models::StudentSkillProgress::fromJson(item));
         }
     }
@@ -945,9 +976,10 @@ std::vector<Models::SkillValidation> InstructorService::getInstructorValidations
     std::string endpoint = "/SkillValidation?filter[instructor_id]=" + std::to_string(instructorId)
                          + "&sort=-validated_at";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             validations.push_back(Models::SkillValidation::fromJson(item));
         }
     }
@@ -960,9 +992,10 @@ std::vector<Models::SkillValidation> InstructorService::getStudentValidations(in
     std::string endpoint = "/SkillValidation?filter[student_id]=" + std::to_string(studentId)
                          + "&sort=-validated_at";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             validations.push_back(Models::SkillValidation::fromJson(item));
         }
     }
@@ -974,9 +1007,10 @@ std::vector<Models::SkillValidation> InstructorService::getSessionValidations(in
     std::vector<Models::SkillValidation> validations;
     std::string endpoint = "/SkillValidation?filter[session_id]=" + std::to_string(sessionId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             validations.push_back(Models::SkillValidation::fromJson(item));
         }
     }
@@ -986,9 +1020,10 @@ std::vector<Models::SkillValidation> InstructorService::getSessionValidations(in
 
 Models::SkillValidation InstructorService::getValidation(const std::string& validationId) {
     auto response = apiClient_->get("/SkillValidation/" + validationId);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        return Models::SkillValidation::fromJson(response.data["data"]);
+    if (response.success && json.contains("data")) {
+        return Models::SkillValidation::fromJson(json["data"]);
     }
 
     return Models::SkillValidation();
@@ -1098,7 +1133,7 @@ nlohmann::json InstructorService::getCdlTestResults(int studentId) {
     auto response = apiClient_->get(endpoint);
 
     if (response.success) {
-        return response.data;
+        return response.getJson();
     }
 
     return nlohmann::json::object();
@@ -1231,7 +1266,7 @@ nlohmann::json InstructorService::getNotifications(int instructorId) {
     auto response = apiClient_->get(endpoint);
 
     if (response.success) {
-        return response.data;
+        return response.getJson();
     }
 
     return nlohmann::json::array();
@@ -1299,9 +1334,10 @@ void InstructorService::getAssignedStudentProgressAsync(int instructorId,
     apiClient_->getAsync(endpoint,
         [this, instructorId, callback](const ApiResponse& response) {
             std::vector<StudentProgressSummary> summaries;
+            auto json = response.getJson();
 
-            if (response.success && response.data.contains("data")) {
-                for (const auto& item : response.data["data"]) {
+            if (response.success && json.contains("data")) {
+                for (const auto& item : json["data"]) {
                     auto assignment = Models::InstructorAssignment::fromJson(item);
                     StudentProgressSummary summary;
                     summary.studentId = assignment.getStudentId();
