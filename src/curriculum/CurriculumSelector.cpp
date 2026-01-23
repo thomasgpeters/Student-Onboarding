@@ -399,9 +399,9 @@ void CurriculumSelector::showEndorsementSelection(const Models::Curriculum& base
     selectedEndorsements_.clear();
 
     // Update the base program info display (HTML-encode dynamic values to prevent XSS and XHTML parsing issues)
-    std::string encodedName = Wt::Utils::htmlEncode(baseProgram.getName()).toUTF8();
-    std::string encodedCdlClass = Wt::Utils::htmlEncode(baseProgram.getCdlClass()).toUTF8();
-    std::string encodedDuration = Wt::Utils::htmlEncode(baseProgram.getFormattedDuration()).toUTF8();
+    std::string encodedName = Wt::Utils::htmlEncode(baseProgram.getName());
+    std::string encodedCdlClass = Wt::Utils::htmlEncode(baseProgram.getCdlClass());
+    std::string encodedDuration = Wt::Utils::htmlEncode(baseProgram.getFormattedDuration());
 
     std::string baseInfo = "<strong>Selected Program:</strong> " + encodedName;
     if (!baseProgram.getCdlClass().empty()) {
