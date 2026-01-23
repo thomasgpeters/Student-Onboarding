@@ -473,7 +473,7 @@ void InstitutionSettingsWidget::refreshDepartmentTable() {
 
     // Clear existing rows (keep header)
     while (departmentTable_->rowCount() > 1) {
-        departmentTable_->deleteRow(1);
+        departmentTable_->removeRow(departmentTable_->rowCount() - 1);
     }
 
     if (departments_.empty()) {
@@ -736,7 +736,7 @@ void InstitutionSettingsWidget::deleteDepartment(int departmentId) {
     }
 
     try {
-        auto response = apiService_->getApiClient()->deleteResource("/Department/" + std::to_string(departmentId));
+        auto response = apiService_->getApiClient()->del("/Department/" + std::to_string(departmentId));
 
         if (response.success) {
             showMessage("Department deleted successfully!", false);
