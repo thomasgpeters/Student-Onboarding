@@ -69,6 +69,10 @@ set(MODEL_SOURCES
     src/models/InstitutionSettings.cpp
     src/models/User.cpp
     src/models/Instructor.cpp
+    src/models/Course.cpp
+    src/models/StudentProgress.cpp
+    src/models/Assessment.cpp
+    src/models/TrainingSession.cpp
 )
 
 set(SESSION_SOURCES
