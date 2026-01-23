@@ -30,6 +30,8 @@ public:
     Wt::Signal<>& viewStudentsClicked() { return viewStudentsClicked_; }
     Wt::Signal<>& viewFormsClicked() { return viewFormsClicked_; }
     Wt::Signal<>& viewCurriculumClicked() { return viewCurriculumClicked_; }
+    Wt::Signal<>& viewSettingsClicked() { return viewSettingsClicked_; }
+    Wt::Signal<>& viewTodaysStudentsClicked() { return viewTodaysStudentsClicked_; }
 
 private:
     void setupUI();
@@ -42,20 +44,24 @@ private:
     // UI elements
     Wt::WText* welcomeText_;
     Wt::WText* studentCountText_;
-    Wt::WText* pendingFormsText_;
+    Wt::WText* todaysStudentsText_;
+    Wt::WText* completedOnboardingText_;
     Wt::WText* programCountText_;
     Wt::WContainerWidget* activityContainer_;
     Wt::WContainerWidget* quickActionsContainer_;
 
     // Statistics
     int totalStudents_;
-    int pendingForms_;
+    int todaysStudents_;
+    int completedOnboarding_;
     int activePrograms_;
 
     // Signals
     Wt::Signal<> viewStudentsClicked_;
     Wt::Signal<> viewFormsClicked_;
     Wt::Signal<> viewCurriculumClicked_;
+    Wt::Signal<> viewSettingsClicked_;
+    Wt::Signal<> viewTodaysStudentsClicked_;
 };
 
 } // namespace Admin

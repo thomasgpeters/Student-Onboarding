@@ -1,6 +1,8 @@
 #include "AdminDashboard.h"
 #include <Wt/WBreak.h>
 #include <nlohmann/json.hpp>
+#include <chrono>
+#include <ctime>
 #include "utils/Logger.h"
 
 namespace StudentIntake {
@@ -12,12 +14,14 @@ AdminDashboard::AdminDashboard()
     , apiService_(nullptr)
     , welcomeText_(nullptr)
     , studentCountText_(nullptr)
-    , pendingFormsText_(nullptr)
+    , todaysStudentsText_(nullptr)
+    , completedOnboardingText_(nullptr)
     , programCountText_(nullptr)
     , activityContainer_(nullptr)
     , quickActionsContainer_(nullptr)
     , totalStudents_(0)
-    , pendingForms_(0)
+    , todaysStudents_(0)
+    , completedOnboarding_(0)
     , activePrograms_(0) {
     setupUI();
 }
@@ -44,7 +48,7 @@ void AdminDashboard::setupUI() {
     auto statsContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
     statsContainer->addStyleClass("admin-stats-container");
 
-    // Students card
+    // Total Students card
     auto studentsCard = statsContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
     studentsCard->addStyleClass("admin-stat-card");
     studentsCard->clicked().connect([this]() { viewStudentsClicked_.emit(); });
@@ -55,22 +59,36 @@ void AdminDashboard::setupUI() {
     studentCountText_ = studentsCard->addWidget(std::make_unique<Wt::WText>("0"));
     studentCountText_->addStyleClass("admin-stat-number");
 
-    auto studentsLabel = studentsCard->addWidget(std::make_unique<Wt::WText>("Students Enrolled"));
+    auto studentsLabel = studentsCard->addWidget(std::make_unique<Wt::WText>("Total Students"));
     studentsLabel->addStyleClass("admin-stat-label");
 
-    // Pending Forms card
-    auto formsCard = statsContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
-    formsCard->addStyleClass("admin-stat-card");
-    formsCard->clicked().connect([this]() { viewFormsClicked_.emit(); });
+    // Today's Registrations card
+    auto todaysCard = statsContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    todaysCard->addStyleClass("admin-stat-card");
+    todaysCard->clicked().connect([this]() { viewTodaysStudentsClicked_.emit(); });
 
-    auto formsIcon = formsCard->addWidget(std::make_unique<Wt::WText>("📋"));
-    formsIcon->addStyleClass("admin-stat-icon");
+    auto todaysIcon = todaysCard->addWidget(std::make_unique<Wt::WText>("📅"));
+    todaysIcon->addStyleClass("admin-stat-icon");
 
-    pendingFormsText_ = formsCard->addWidget(std::make_unique<Wt::WText>("0"));
-    pendingFormsText_->addStyleClass("admin-stat-number");
+    todaysStudentsText_ = todaysCard->addWidget(std::make_unique<Wt::WText>("0"));
+    todaysStudentsText_->addStyleClass("admin-stat-number");
 
-    auto formsLabel = formsCard->addWidget(std::make_unique<Wt::WText>("Pending Forms"));
-    formsLabel->addStyleClass("admin-stat-label");
+    auto todaysLabel = todaysCard->addWidget(std::make_unique<Wt::WText>("Today's Registrations"));
+    todaysLabel->addStyleClass("admin-stat-label");
+
+    // Completed Onboarding card
+    auto completedCard = statsContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    completedCard->addStyleClass("admin-stat-card");
+    completedCard->clicked().connect([this]() { viewStudentsClicked_.emit(); });
+
+    auto completedIcon = completedCard->addWidget(std::make_unique<Wt::WText>("✅"));
+    completedIcon->addStyleClass("admin-stat-icon");
+
+    completedOnboardingText_ = completedCard->addWidget(std::make_unique<Wt::WText>("0"));
+    completedOnboardingText_->addStyleClass("admin-stat-number");
+
+    auto completedLabel = completedCard->addWidget(std::make_unique<Wt::WText>("Completed Onboarding"));
+    completedLabel->addStyleClass("admin-stat-label");
 
     // Programs card
     auto programsCard = statsContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -130,20 +148,25 @@ void AdminDashboard::setupUI() {
     quickActionsContainer_ = actionsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     quickActionsContainer_->addStyleClass("admin-quick-actions");
 
-    // Review Forms button
-    auto reviewBtn = quickActionsContainer_->addWidget(std::make_unique<Wt::WPushButton>("Review Pending Forms"));
-    reviewBtn->addStyleClass("btn btn-primary");
-    reviewBtn->clicked().connect([this]() { viewFormsClicked_.emit(); });
-
-    // Add Program button
-    auto addProgramBtn = quickActionsContainer_->addWidget(std::make_unique<Wt::WPushButton>("Add New Program"));
-    addProgramBtn->addStyleClass("btn btn-outline-primary");
-    addProgramBtn->clicked().connect([this]() { viewCurriculumClicked_.emit(); });
-
     // View All Students button
     auto viewStudentsBtn = quickActionsContainer_->addWidget(std::make_unique<Wt::WPushButton>("View All Students"));
-    viewStudentsBtn->addStyleClass("btn btn-outline-secondary");
+    viewStudentsBtn->addStyleClass("btn btn-primary");
     viewStudentsBtn->clicked().connect([this]() { viewStudentsClicked_.emit(); });
+
+    // Today's Registrations button
+    auto todaysBtn = quickActionsContainer_->addWidget(std::make_unique<Wt::WPushButton>("Today's Registrations"));
+    todaysBtn->addStyleClass("btn btn-outline-primary");
+    todaysBtn->clicked().connect([this]() { viewTodaysStudentsClicked_.emit(); });
+
+    // Manage Programs button
+    auto programsBtn = quickActionsContainer_->addWidget(std::make_unique<Wt::WPushButton>("Manage Programs"));
+    programsBtn->addStyleClass("btn btn-outline-primary");
+    programsBtn->clicked().connect([this]() { viewCurriculumClicked_.emit(); });
+
+    // Institution Settings button
+    auto settingsBtn = quickActionsContainer_->addWidget(std::make_unique<Wt::WPushButton>("Institution Settings"));
+    settingsBtn->addStyleClass("btn btn-outline-secondary");
+    settingsBtn->clicked().connect([this]() { viewSettingsClicked_.emit(); });
 }
 
 void AdminDashboard::refresh() {
@@ -154,7 +177,8 @@ void AdminDashboard::refresh() {
 void AdminDashboard::loadStatistics() {
     // Reset to zero before loading
     totalStudents_ = 0;
-    pendingForms_ = 0;
+    todaysStudents_ = 0;
+    completedOnboarding_ = 0;
     activePrograms_ = 0;
 
     if (!apiService_) {
@@ -163,21 +187,41 @@ void AdminDashboard::loadStatistics() {
     }
 
     try {
-        // Fetch student count (ApiLogicServer uses PascalCase endpoints)
+        // Fetch all students and calculate statistics
         auto studentsResponse = apiService_->getApiClient()->get("/Student");
         if (studentsResponse.success) {
             auto jsonResponse = nlohmann::json::parse(studentsResponse.body);
             if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
-                totalStudents_ = static_cast<int>(jsonResponse["data"].size());
-            }
-        }
+                auto& students = jsonResponse["data"];
+                totalStudents_ = static_cast<int>(students.size());
 
-        // Fetch pending forms count
-        auto formsResponse = apiService_->getApiClient()->get("/FormSubmission?filter[status]=pending");
-        if (formsResponse.success) {
-            auto jsonResponse = nlohmann::json::parse(formsResponse.body);
-            if (jsonResponse.contains("data") && jsonResponse["data"].is_array()) {
-                pendingForms_ = static_cast<int>(jsonResponse["data"].size());
+                // Get today's date in YYYY-MM-DD format
+                auto now = std::chrono::system_clock::now();
+                auto time = std::chrono::system_clock::to_time_t(now);
+                std::tm tm = *std::localtime(&time);
+                char todayStr[11];
+                std::strftime(todayStr, sizeof(todayStr), "%Y-%m-%d", &tm);
+                std::string today(todayStr);
+
+                for (const auto& student : students) {
+                    const auto& attrs = student.contains("attributes") ? student["attributes"] : student;
+
+                    // Count today's registrations
+                    if (attrs.contains("created_at") && !attrs["created_at"].is_null()) {
+                        std::string createdAt = attrs["created_at"].get<std::string>();
+                        if (createdAt.substr(0, 10) == today) {
+                            todaysStudents_++;
+                        }
+                    }
+
+                    // Count completed onboarding
+                    if (attrs.contains("intake_status") && !attrs["intake_status"].is_null()) {
+                        std::string status = attrs["intake_status"].get<std::string>();
+                        if (status == "completed" || status == "approved") {
+                            completedOnboarding_++;
+                        }
+                    }
+                }
             }
         }
 
@@ -190,9 +234,10 @@ void AdminDashboard::loadStatistics() {
             }
         }
 
-        LOG_DEBUG("AdminDashboard", "Loaded statistics - Students: " << totalStudents_
-                  << ", Pending Forms: " << pendingForms_
-                  << ", Active Programs: " << activePrograms_);
+        LOG_DEBUG("AdminDashboard", "Loaded statistics - Total: " << totalStudents_
+                  << ", Today: " << todaysStudents_
+                  << ", Completed: " << completedOnboarding_
+                  << ", Programs: " << activePrograms_);
 
     } catch (const std::exception& e) {
         LOG_ERROR("AdminDashboard", "Error loading statistics: " << e.what());
@@ -208,7 +253,8 @@ void AdminDashboard::updateDisplay() {
 
     // Update statistics
     studentCountText_->setText(std::to_string(totalStudents_));
-    pendingFormsText_->setText(std::to_string(pendingForms_));
+    todaysStudentsText_->setText(std::to_string(todaysStudents_));
+    completedOnboardingText_->setText(std::to_string(completedOnboarding_));
     programCountText_->setText(std::to_string(activePrograms_));
 }
 
