@@ -304,10 +304,15 @@ void StudentDetailWidget::loadStudent(int studentId) {
         updateDisplay();
         loadStudentAddress();
         loadFormSubmissions();
-        // Academic history is loaded when checkbox is checked
-        // Reset checkbox state - it will be unchecked by default
-        hasPreviousEducationCheckbox_->setChecked(false);
-        academicHistoryContainer_->hide();
+        // Load academic history and set checkbox state based on whether records exist
+        loadAcademicHistory();
+        if (!academicHistory_.empty()) {
+            hasPreviousEducationCheckbox_->setChecked(true);
+            academicHistoryContainer_->show();
+        } else {
+            hasPreviousEducationCheckbox_->setChecked(false);
+            academicHistoryContainer_->hide();
+        }
         LOG_DEBUG("StudentDetail", "Loaded student: " << currentStudent_.getFullName());
 
     } catch (const std::exception& e) {
