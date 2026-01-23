@@ -52,8 +52,9 @@ UnifiedAuthResult AuthService::parseAuthResponse(const Api::ApiResponse& respons
         return result;
     }
 
-    if (response.data.contains("data")) {
-        auto& data = response.data["data"];
+    auto json = response.getJson();
+    if (json.contains("data")) {
+        auto& data = json["data"];
 
         // Parse user
         if (data.contains("user")) {
@@ -228,12 +229,13 @@ bool AuthService::validateSession(const std::string& sessionToken) {
     std::string endpoint = "/UserSession?filter[session_token]=" + sessionToken +
                           "&filter[is_active]=true";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (!response.success || !response.data.contains("data")) {
+    if (!response.success || !json.contains("data")) {
         return false;
     }
 
-    auto& data = response.data["data"];
+    auto& data = json["data"];
     if (data.empty()) return false;
 
     // Check expiry
@@ -268,22 +270,24 @@ Models::User AuthService::getUserFromSession(const std::string& sessionToken) {
     std::string endpoint = "/UserSession?filter[session_token]=" + sessionToken +
                           "&filter[is_active]=true";
     auto sessionResponse = apiClient_->get(endpoint);
+    auto sessionJson = sessionResponse.getJson();
 
-    if (!sessionResponse.success || !sessionResponse.data.contains("data") ||
-        sessionResponse.data["data"].empty()) {
+    if (!sessionResponse.success || !sessionJson.contains("data") ||
+        sessionJson["data"].empty()) {
         return Models::User();
     }
 
-    auto session = Models::UserSession::fromJson(sessionResponse.data["data"][0]);
+    auto session = Models::UserSession::fromJson(sessionJson["data"][0]);
 
     // Get user
     auto userResponse = apiClient_->get("/AppUser/" + std::to_string(session.getUserId()));
+    auto userJson = userResponse.getJson();
 
-    if (!userResponse.success || !userResponse.data.contains("data")) {
+    if (!userResponse.success || !userJson.contains("data")) {
         return Models::User();
     }
 
-    Models::User user = Models::User::fromJson(userResponse.data["data"]);
+    Models::User user = Models::User::fromJson(userJson["data"]);
 
     // Get roles
     user.setRoles(getUserRoles(user.getId()));
@@ -450,9 +454,10 @@ std::vector<Models::UserRole> AuthService::getUserRoles(int userId) {
     std::string endpoint = "/UserRoles?filter[user_id]=" + std::to_string(userId) +
                           "&filter[is_active]=true";
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data")) {
-        for (const auto& item : response.data["data"]) {
+    if (response.success && json.contains("data")) {
+        for (const auto& item : json["data"]) {
             if (item.contains("role") && item["role"].is_string()) {
                 roles.push_back(Models::User::stringToRole(item["role"].get<std::string>()));
             } else if (item.contains("attributes") && item["attributes"].contains("role")) {
@@ -477,14 +482,15 @@ UnifiedAuthResult AuthService::switchRole(const std::string& sessionToken, Model
     // Get current session
     std::string endpoint = "/UserSession?filter[session_token]=" + sessionToken;
     auto sessionResponse = apiClient_->get(endpoint);
+    auto sessionJson = sessionResponse.getJson();
 
-    if (!sessionResponse.success || !sessionResponse.data.contains("data") ||
-        sessionResponse.data["data"].empty()) {
+    if (!sessionResponse.success || !sessionJson.contains("data") ||
+        sessionJson["data"].empty()) {
         result.message = "Invalid session";
         return result;
     }
 
-    auto session = Models::UserSession::fromJson(sessionResponse.data["data"][0]);
+    auto session = Models::UserSession::fromJson(sessionJson["data"][0]);
 
     // Check if user has the requested role
     if (!userHasRole(session.getUserId(), newRole)) {
@@ -524,9 +530,10 @@ std::string AuthService::getRouteForUser(const Models::User& user) {
 Models::StudentProfile AuthService::getStudentProfile(int userId) {
     std::string endpoint = "/StudentProfile?filter[user_id]=" + std::to_string(userId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data") && !response.data["data"].empty()) {
-        return Models::StudentProfile::fromJson(response.data["data"][0]);
+    if (response.success && json.contains("data") && !json["data"].empty()) {
+        return Models::StudentProfile::fromJson(json["data"][0]);
     }
 
     return Models::StudentProfile();
@@ -535,9 +542,10 @@ Models::StudentProfile AuthService::getStudentProfile(int userId) {
 Models::AdminProfile AuthService::getAdminProfile(int userId) {
     std::string endpoint = "/AdminProfile?filter[user_id]=" + std::to_string(userId);
     auto response = apiClient_->get(endpoint);
+    auto json = response.getJson();
 
-    if (response.success && response.data.contains("data") && !response.data["data"].empty()) {
-        return Models::AdminProfile::fromJson(response.data["data"][0]);
+    if (response.success && json.contains("data") && !json["data"].empty()) {
+        return Models::AdminProfile::fromJson(json["data"][0]);
     }
 
     return Models::AdminProfile();
