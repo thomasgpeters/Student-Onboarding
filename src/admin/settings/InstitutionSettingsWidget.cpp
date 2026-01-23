@@ -726,6 +726,10 @@ void InstitutionSettingsWidget::confirmDeleteDepartment(int departmentId, const 
     ));
 
     messageBox->setModal(true);
+    messageBox->addStyleClass("admin-dialog");
+    messageBox->setWidth(Wt::WLength(400));
+
+    // Style the footer buttons
     messageBox->buttonClicked().connect([this, messageBox, departmentId](Wt::StandardButton btn) {
         if (btn == Wt::StandardButton::Yes) {
             deleteDepartment(departmentId);
