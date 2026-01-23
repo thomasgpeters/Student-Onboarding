@@ -112,6 +112,8 @@ void AdminApp::setupUI() {
     dashboardWidget_->viewStudentsClicked().connect([this]() { setState(AppState::Students); });
     dashboardWidget_->viewFormsClicked().connect([this]() { setState(AppState::Forms); });
     dashboardWidget_->viewCurriculumClicked().connect([this]() { setState(AppState::Curriculum); });
+    dashboardWidget_->viewSettingsClicked().connect([this]() { setState(AppState::Settings); });
+    dashboardWidget_->viewTodaysStudentsClicked().connect([this]() { setState(AppState::Students); });
     dashboardWidget_->hide();
 
     // Student List widget (hidden initially)
