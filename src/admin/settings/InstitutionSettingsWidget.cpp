@@ -529,50 +529,47 @@ void InstitutionSettingsWidget::showAddDepartmentDialog() {
     departmentDialog_ = addChild(std::make_unique<Wt::WDialog>("Add Department"));
     departmentDialog_->setModal(true);
     departmentDialog_->setClosable(true);
-    departmentDialog_->addStyleClass("lookup-dialog");
+    departmentDialog_->addStyleClass("admin-dialog");
+    departmentDialog_->setWidth(Wt::WLength(450));
 
     auto content = departmentDialog_->contents();
-    content->addStyleClass("lookup-dialog-content");
+    content->addStyleClass("admin-dialog-content");
 
     // Code field
     auto codeGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     codeGroup->addStyleClass("form-group");
-    auto codeLabel = codeGroup->addWidget(std::make_unique<Wt::WLabel>("Code *"));
+    codeGroup->addWidget(std::make_unique<Wt::WText>("Code *"))->addStyleClass("form-label");
     dialogDeptCodeEdit_ = codeGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptCodeEdit_->addStyleClass("form-control");
     dialogDeptCodeEdit_->setPlaceholderText("e.g., CDL, AUTO, MED");
-    codeLabel->setBuddy(dialogDeptCodeEdit_);
 
     // Name field
     auto nameGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     nameGroup->addStyleClass("form-group");
-    auto nameLabel = nameGroup->addWidget(std::make_unique<Wt::WLabel>("Name *"));
+    nameGroup->addWidget(std::make_unique<Wt::WText>("Name *"))->addStyleClass("form-label");
     dialogDeptNameEdit_ = nameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptNameEdit_->addStyleClass("form-control");
     dialogDeptNameEdit_->setPlaceholderText("e.g., Professional Driving");
-    nameLabel->setBuddy(dialogDeptNameEdit_);
 
-    // Dean field
-    auto deanGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
-    deanGroup->addStyleClass("form-group");
-    auto deanLabel = deanGroup->addWidget(std::make_unique<Wt::WLabel>("Director"));
-    dialogDeptDeanEdit_ = deanGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    // Director field
+    auto directorGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    directorGroup->addStyleClass("form-group");
+    directorGroup->addWidget(std::make_unique<Wt::WText>("Director"))->addStyleClass("form-label");
+    dialogDeptDeanEdit_ = directorGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptDeanEdit_->addStyleClass("form-control");
     dialogDeptDeanEdit_->setPlaceholderText("e.g., John Smith");
-    deanLabel->setBuddy(dialogDeptDeanEdit_);
 
     // Email field
     auto emailGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     emailGroup->addStyleClass("form-group");
-    auto emailLabel = emailGroup->addWidget(std::make_unique<Wt::WLabel>("Contact Email"));
+    emailGroup->addWidget(std::make_unique<Wt::WText>("Contact Email"))->addStyleClass("form-label");
     dialogDeptEmailEdit_ = emailGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptEmailEdit_->addStyleClass("form-control");
     dialogDeptEmailEdit_->setPlaceholderText("e.g., department@school.edu");
-    emailLabel->setBuddy(dialogDeptEmailEdit_);
 
     // Footer buttons
     auto footer = departmentDialog_->footer();
-    footer->addStyleClass("lookup-dialog-footer");
+    footer->addStyleClass("admin-dialog-buttons");
 
     auto cancelBtn = footer->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
     cancelBtn->addStyleClass("btn btn-secondary");
@@ -612,50 +609,47 @@ void InstitutionSettingsWidget::showEditDepartmentDialog(int departmentId) {
     departmentDialog_ = addChild(std::make_unique<Wt::WDialog>("Edit Department"));
     departmentDialog_->setModal(true);
     departmentDialog_->setClosable(true);
-    departmentDialog_->addStyleClass("lookup-dialog");
+    departmentDialog_->addStyleClass("admin-dialog");
+    departmentDialog_->setWidth(Wt::WLength(450));
 
     auto content = departmentDialog_->contents();
-    content->addStyleClass("lookup-dialog-content");
+    content->addStyleClass("admin-dialog-content");
 
     // Code field
     auto codeGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     codeGroup->addStyleClass("form-group");
-    auto codeLabel = codeGroup->addWidget(std::make_unique<Wt::WLabel>("Code *"));
+    codeGroup->addWidget(std::make_unique<Wt::WText>("Code *"))->addStyleClass("form-label");
     dialogDeptCodeEdit_ = codeGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptCodeEdit_->addStyleClass("form-control");
     dialogDeptCodeEdit_->setText(deptToEdit->code);
-    codeLabel->setBuddy(dialogDeptCodeEdit_);
 
     // Name field
     auto nameGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     nameGroup->addStyleClass("form-group");
-    auto nameLabel = nameGroup->addWidget(std::make_unique<Wt::WLabel>("Name *"));
+    nameGroup->addWidget(std::make_unique<Wt::WText>("Name *"))->addStyleClass("form-label");
     dialogDeptNameEdit_ = nameGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptNameEdit_->addStyleClass("form-control");
     dialogDeptNameEdit_->setText(deptToEdit->name);
-    nameLabel->setBuddy(dialogDeptNameEdit_);
 
-    // Dean field
-    auto deanGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
-    deanGroup->addStyleClass("form-group");
-    auto deanLabel = deanGroup->addWidget(std::make_unique<Wt::WLabel>("Director"));
-    dialogDeptDeanEdit_ = deanGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    // Director field
+    auto directorGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
+    directorGroup->addStyleClass("form-group");
+    directorGroup->addWidget(std::make_unique<Wt::WText>("Director"))->addStyleClass("form-label");
+    dialogDeptDeanEdit_ = directorGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptDeanEdit_->addStyleClass("form-control");
     dialogDeptDeanEdit_->setText(deptToEdit->dean);
-    deanLabel->setBuddy(dialogDeptDeanEdit_);
 
     // Email field
     auto emailGroup = content->addWidget(std::make_unique<Wt::WContainerWidget>());
     emailGroup->addStyleClass("form-group");
-    auto emailLabel = emailGroup->addWidget(std::make_unique<Wt::WLabel>("Contact Email"));
+    emailGroup->addWidget(std::make_unique<Wt::WText>("Contact Email"))->addStyleClass("form-label");
     dialogDeptEmailEdit_ = emailGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     dialogDeptEmailEdit_->addStyleClass("form-control");
     dialogDeptEmailEdit_->setText(deptToEdit->contactEmail);
-    emailLabel->setBuddy(dialogDeptEmailEdit_);
 
     // Footer buttons
     auto footer = departmentDialog_->footer();
-    footer->addStyleClass("lookup-dialog-footer");
+    footer->addStyleClass("admin-dialog-buttons");
 
     auto cancelBtn = footer->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
     cancelBtn->addStyleClass("btn btn-secondary");
