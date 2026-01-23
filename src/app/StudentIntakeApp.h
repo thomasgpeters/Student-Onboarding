@@ -21,12 +21,21 @@
 #include "widgets/FormContainer.h"
 #include "widgets/DashboardWidget.h"
 #include "api/ClassroomService.h"
+#include "api/InstructorService.h"
+#include "models/Instructor.h"
 
 // Forward declaration
 namespace StudentIntake {
 namespace Classroom {
     class ClassroomWidget;
     class AssessmentReportWidget;
+}
+namespace Instructor {
+    class InstructorDashboardWidget;
+    class StudentProgressViewWidget;
+    class SchedulingWidget;
+    class FeedbackWidget;
+    class ValidationWidget;
 }
 }
 
@@ -49,7 +58,12 @@ public:
         Dashboard,
         Forms,
         Completion,
-        Classroom  // Online course learning environment
+        Classroom,  // Online course learning environment
+        InstructorDashboard,  // Instructor main view
+        InstructorStudents,   // View student progress
+        InstructorSchedule,   // Session scheduling
+        InstructorFeedback,   // Feedback management
+        InstructorValidation  // Skill validation
     };
 
     // State management
@@ -71,6 +85,11 @@ private:
     void showForms();
     void showCompletion();
     void showClassroom();
+    void showInstructorDashboard();
+    void showInstructorStudents();
+    void showInstructorSchedule();
+    void showInstructorFeedback();
+    void showInstructorValidation();
 
     // Event handlers
     void handleLoginSuccess();
@@ -84,6 +103,17 @@ private:
     void handleClassroomBack();
     void handleCourseCompleted();
 
+    // Instructor event handlers
+    void handleInstructorLogin();
+    void handleInstructorBack();
+    void handleViewStudents();
+    void handleViewSchedule();
+    void handleViewFeedback();
+    void handleViewValidations();
+    void handleStudentSelected(int studentId);
+    void handleScheduleSession();
+    void handleAddFeedback(int studentId);
+
     // Configuration
     AppConfig& config_;
 
@@ -94,10 +124,15 @@ private:
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Api::FormSubmissionService> apiService_;
     std::shared_ptr<Api::ClassroomService> classroomService_;
+    std::shared_ptr<Api::InstructorService> instructorService_;
     std::shared_ptr<Auth::AuthManager> authManager_;
     std::shared_ptr<Curriculum::CurriculumManager> curriculumManager_;
     std::shared_ptr<Forms::FormFactory> formFactory_;
     std::shared_ptr<Session::StudentSession> session_;
+
+    // Instructor state
+    Models::Instructor currentInstructor_;
+    bool isInstructorMode_;
 
     // UI Components
     Wt::WContainerWidget* mainContainer_;
@@ -116,6 +151,13 @@ private:
     Wt::WContainerWidget* completionView_;
     Classroom::ClassroomWidget* classroomWidget_;
     Classroom::AssessmentReportWidget* assessmentReportWidget_;
+
+    // Instructor views
+    Instructor::InstructorDashboardWidget* instructorDashboardWidget_;
+    Instructor::StudentProgressViewWidget* studentProgressWidget_;
+    Instructor::SchedulingWidget* schedulingWidget_;
+    Instructor::FeedbackWidget* feedbackWidget_;
+    Instructor::ValidationWidget* validationWidget_;
 };
 
 } // namespace App
