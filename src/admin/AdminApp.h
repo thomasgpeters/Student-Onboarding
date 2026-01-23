@@ -8,6 +8,9 @@
 #include "app/AppConfig.h"
 #include "api/ApiClient.h"
 #include "api/FormSubmissionService.h"
+#include "auth/AuthService.h"
+#include "auth/UnifiedLoginWidget.h"
+#include "models/User.h"
 #include "admin/AdminAuthManager.h"
 #include "admin/AdminLoginWidget.h"
 #include "admin/AdminNavigation.h"
@@ -78,6 +81,7 @@ private:
 
     // Event handlers
     void handleLoginSuccess();
+    void handleUnifiedLoginSuccess(const Models::User& user);
     void handleLogout();
     void handleSectionChange(AdminSection section);
     void handleStudentSelected(int studentId);
@@ -106,8 +110,10 @@ private:
     // Services
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Api::FormSubmissionService> apiService_;
-    std::shared_ptr<AdminAuthManager> authManager_;
+    std::shared_ptr<Auth::AuthService> authService_;
+    std::shared_ptr<AdminAuthManager> authManager_;  // Legacy - kept for backward compatibility
     std::shared_ptr<Models::AdminSession> session_;
+    Models::User currentUser_;  // Currently authenticated user
 
     // UI Components
     Wt::WContainerWidget* mainContainer_;
@@ -117,7 +123,8 @@ private:
     Wt::WContainerWidget* contentContainer_;
 
     // Views
-    AdminLoginWidget* loginWidget_;
+    Auth::UnifiedLoginWidget* unifiedLoginWidget_;
+    AdminLoginWidget* loginWidget_;  // Legacy - kept for fallback
     AdminDashboard* dashboardWidget_;
     StudentListWidget* studentListWidget_;
     StudentDetailWidget* studentDetailWidget_;

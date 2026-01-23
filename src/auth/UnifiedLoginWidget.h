@@ -48,6 +48,8 @@ public:
     // Actions
     void reset();
     void focus();
+    void showError(const std::string& message);
+    void clearError();
 
     // Get the authenticated user (after successful login)
     const Models::User& getAuthenticatedUser() const { return authenticatedUser_; }
@@ -58,8 +60,6 @@ public:
 private:
     void setupUI();
     void handleLogin();
-    void showError(const std::string& message);
-    void clearError();
     void setLoading(bool loading);
 
     std::shared_ptr<AuthService> authService_;
