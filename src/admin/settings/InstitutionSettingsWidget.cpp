@@ -687,19 +687,21 @@ void InstitutionSettingsWidget::saveDepartment(bool isNew, int departmentId) {
         return;
     }
 
-    // Build JSON payload
+    // Build JSON payload using JSON:API format
     nlohmann::json payload;
-    payload["code"] = code;
-    payload["name"] = name;
-    payload["dean"] = dialogDeptDeanEdit_->text().toUTF8();
-    payload["contact_email"] = dialogDeptEmailEdit_->text().toUTF8();
+    payload["data"]["type"] = "Department";
+    payload["data"]["attributes"]["code"] = code;
+    payload["data"]["attributes"]["name"] = name;
+    payload["data"]["attributes"]["dean"] = dialogDeptDeanEdit_->text().toUTF8();
+    payload["data"]["attributes"]["contact_email"] = dialogDeptEmailEdit_->text().toUTF8();
 
     try {
         Api::ApiResponse response;
         if (isNew) {
             response = apiService_->getApiClient()->post("/Department", payload);
         } else {
-            response = apiService_->getApiClient()->put("/Department/" + std::to_string(departmentId), payload);
+            payload["data"]["id"] = std::to_string(departmentId);
+            response = apiService_->getApiClient()->patch("/Department/" + std::to_string(departmentId), payload);
         }
 
         if (response.success) {
