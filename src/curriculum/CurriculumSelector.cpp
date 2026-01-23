@@ -4,6 +4,7 @@
 #include <Wt/WBreak.h>
 #include <Wt/WLabel.h>
 #include <Wt/WCheckBox.h>
+#include <Wt/Utils.h>
 #include <algorithm>
 
 namespace StudentIntake {
@@ -397,14 +398,19 @@ void CurriculumSelector::showEndorsementSelection(const Models::Curriculum& base
     selectedBaseProgram_ = baseProgram;
     selectedEndorsements_.clear();
 
-    // Update the base program info display
-    std::string baseInfo = "<strong>Selected Program:</strong> " + baseProgram.getName();
+    // Update the base program info display (HTML-encode dynamic values to prevent XSS and XHTML parsing issues)
+    std::string encodedName = Wt::Utils::htmlEncode(baseProgram.getName()).toUTF8();
+    std::string encodedCdlClass = Wt::Utils::htmlEncode(baseProgram.getCdlClass()).toUTF8();
+    std::string encodedDuration = Wt::Utils::htmlEncode(baseProgram.getFormattedDuration()).toUTF8();
+
+    std::string baseInfo = "<strong>Selected Program:</strong> " + encodedName;
     if (!baseProgram.getCdlClass().empty()) {
-        baseInfo += " <span style='color: #2563eb;'>(Class " + baseProgram.getCdlClass() + ")</span>";
+        baseInfo += " <span style='color: #2563eb;'>(Class " + encodedCdlClass + ")</span>";
     }
-    baseInfo += "<br><span style='font-size: 0.875rem; color: #64748b;'>Duration: " +
-                baseProgram.getFormattedDuration() + "</span>";
+    baseInfo += "<br/><span style='font-size: 0.875rem; color: #64748b;'>Duration: " +
+                encodedDuration + "</span>";
     selectedBaseText_->setText(baseInfo);
+    selectedBaseText_->setTextFormat(Wt::TextFormat::XHTML);
 
     // Find available endorsements for this CDL class
     availableEndorsements_.clear();
