@@ -32,6 +32,7 @@ The Student Onboarding System uses PostgreSQL as its database backend. The schem
 | `database/install.sql` | Single installation script with seed data |
 | `database/scripts/switch_to_accredited.sql` | Switch to university/college mode |
 | `database/scripts/switch_to_vocational.sql` | Switch to trade school/CDL mode |
+| `database/migrations/003_add_endorsement_support.sql` | Upgrade: adds multi-program enrollment |
 
 ---
 
@@ -71,8 +72,10 @@ After installation, the default admin account is:
 │   department    │────<│   curriculum    │
 └─────────────────┘     └────────┬────────┘
                                  │
-                                 │ curriculum_id
-                                 ↓
+                      ┌──────────┴──────────┐
+                      │ curriculum_id       │ (base program)
+                      │                     │
+                      ↓                     │
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  form_type      │────<│ form_submission │>────│    student      │
 └─────────────────┘     └─────────────────┘     └────────┬────────┘
@@ -83,6 +86,12 @@ After installation, the default admin account is:
               ┌─────────────────┐            ┌─────────────────┐            ┌─────────────────┐
               │emergency_contact│            │ academic_history │            │  financial_aid  │
               └─────────────────┘            └─────────────────┘            └─────────────────┘
+                                                         │
+                                                         │ (vocational mode only)
+                                                         ↓
+                                             ┌─────────────────────┐
+                                             │ student_endorsement │>──── curriculum (endorsements)
+                                             └─────────────────────┘
 ```
 
 ### Table Categories
@@ -92,6 +101,7 @@ After installation, the default admin account is:
 | Core | `student`, `form_type`, `form_submission` |
 | Curriculum | `department`, `curriculum`, `curriculum_prerequisite`, `curriculum_form_requirement` |
 | Student Data | `emergency_contact`, `academic_history`, `financial_aid`, `medical_info`, `consent` |
+| Enrollment | `student_endorsement` (vocational mode multi-program enrollment) |
 | Admin | `admin_user`, `admin_session` |
 | Settings | `institution_settings` |
 
@@ -121,6 +131,51 @@ Primary table for student records.
 | `needs_financial_aid` | BOOLEAN | Financial aid flag |
 | `created_at` | TIMESTAMP | Record creation time |
 | `updated_at` | TIMESTAMP | Last update time |
+
+### student_endorsement
+
+Junction table for multi-program enrollment in vocational mode. Students select one base program (stored in `student.curriculum_id`) and can add multiple endorsements tracked here.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | SERIAL PK | Unique identifier |
+| `student_id` | INTEGER FK | FK to student (required) |
+| `curriculum_id` | INTEGER FK | FK to curriculum (must be endorsement) |
+| `enrollment_status` | VARCHAR(50) | enrolled, in_progress, completed, withdrawn |
+| `enrolled_at` | TIMESTAMP | Enrollment timestamp |
+| `completed_at` | TIMESTAMP | Completion timestamp (nullable) |
+| `created_at` | TIMESTAMP | Record creation time |
+| `updated_at` | TIMESTAMP | Last update time |
+
+**Constraints:**
+- `UNIQUE(student_id, curriculum_id)` - Each student can only enroll in each endorsement once
+- `enrollment_status` must be one of: enrolled, in_progress, completed, withdrawn
+
+**Usage Example:**
+
+```sql
+-- Student 1 enrolled in Class A CDL (base) with Tanker and HazMat endorsements
+-- Base program in student table:
+UPDATE student SET curriculum_id = 5 WHERE id = 1;  -- Class A CDL Training
+
+-- Endorsements in student_endorsement table:
+INSERT INTO student_endorsement (student_id, curriculum_id, enrollment_status)
+VALUES
+    (1, 7, 'enrolled'),   -- Tanker (N) endorsement
+    (1, 8, 'enrolled');   -- HazMat (H) endorsement
+
+-- Query student's complete enrollment:
+SELECT
+    s.first_name, s.last_name,
+    base.name AS base_program,
+    STRING_AGG(endorse.name, ', ') AS endorsements
+FROM student s
+JOIN curriculum base ON s.curriculum_id = base.id
+LEFT JOIN student_endorsement se ON s.id = se.student_id
+LEFT JOIN curriculum endorse ON se.curriculum_id = endorse.id
+WHERE s.id = 1
+GROUP BY s.id, s.first_name, s.last_name, base.name;
+```
 
 ### emergency_contact
 
@@ -193,7 +248,15 @@ Program/course definitions.
 | `program_type` | VARCHAR(50) | academic, vocational, cdl |
 | `cdl_class` | VARCHAR(10) | CDL class (A, B) for CDL programs |
 | `endorsements` | JSONB | CDL endorsements array |
+| `is_endorsement` | BOOLEAN | TRUE for add-on endorsements, FALSE for base programs |
 | `training_hours_*` | INTEGER | Training hour breakdowns |
+
+**Program Types (Vocational Mode):**
+
+| is_endorsement | Description | Examples |
+|----------------|-------------|----------|
+| `FALSE` | Base program - primary enrollment | Class A CDL Training, Class B CDL Training |
+| `TRUE` | Endorsement - add-on to base program | Tanker (N), HazMat (H), Doubles/Triples (T) |
 
 ### institution_settings
 
@@ -312,6 +375,18 @@ psql -U postgres -d student_onboarding -f database/scripts/switch_to_vocational.
 - 8 vocational departments
 - 9 CDL programs (Class A, Class B)
 - Duration measured in weeks/days
+- **Multi-program enrollment**: Students select one base program + optional endorsements
+
+**CDL Program Structure:**
+
+| Base Programs | Available Endorsements |
+|---------------|------------------------|
+| Class A CDL Training (4 weeks) | Doubles/Triples (T), Tanker (N), HazMat (H), Air Brakes |
+| Class B CDL Training (3 weeks) | Passenger (P), School Bus (S), Air Brakes |
+
+Enrollment is tracked via:
+- `student.curriculum_id` → Base program (e.g., Class A CDL)
+- `student_endorsement` table → Additional endorsements (e.g., Tanker, HazMat)
 
 ### Switching Modes
 
