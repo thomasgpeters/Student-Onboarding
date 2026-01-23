@@ -2386,6 +2386,7 @@ textarea.form-control {
 
 .admin-dialog .Wt-dialog-body {
     padding: 0 !important;
+    background: white !important;
 }
 
 .admin-dialog-content {
@@ -2433,9 +2434,10 @@ textarea.form-control {
 }
 
 /* Admin Message Box (Delete Confirmation) Styles */
+.admin-dialog .body,
 .admin-dialog .Wt-msgbox-body {
-    padding: 1.5rem;
-    background: white;
+    padding: 1.5rem !important;
+    background: white !important;
 }
 
 .admin-dialog .Wt-msgbox-icon {
