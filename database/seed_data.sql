@@ -303,11 +303,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM student WHERE email = 'john.smith@email.com') THEN
         INSERT INTO student (email, password_hash, first_name, last_name, middle_name,
                             date_of_birth, gender, citizenship_status,
-                            curriculum_id, status, enrollment_date, is_veteran)
+                            curriculum_id, enrollment_date, is_veteran)
         VALUES ('john.smith@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'John', 'Smith', 'Robert',
                 '1992-05-15', 'male', 'US Citizen',
-                v_curriculum_class_a, 'active', '2026-01-06', TRUE);
+                v_curriculum_class_a, '2026-01-06', TRUE);
         RAISE NOTICE 'Created student: john.smith@email.com (Class A, Veteran)';
     END IF;
 
@@ -315,11 +315,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM student WHERE email = 'maria.garcia@email.com') THEN
         INSERT INTO student (email, password_hash, first_name, last_name,
                             date_of_birth, gender, citizenship_status,
-                            curriculum_id, status, enrollment_date)
+                            curriculum_id, enrollment_date)
         VALUES ('maria.garcia@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'Maria', 'Garcia',
                 '1988-11-22', 'female', 'US Citizen',
-                v_curriculum_class_a, 'active', '2025-12-02');
+                v_curriculum_class_a, '2025-12-02');
         RAISE NOTICE 'Created student: maria.garcia@email.com (Class A)';
     END IF;
 
@@ -327,11 +327,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM student WHERE email = 'david.lee@email.com') THEN
         INSERT INTO student (email, password_hash, first_name, last_name,
                             date_of_birth, gender, citizenship_status,
-                            curriculum_id, status, enrollment_date)
+                            curriculum_id, enrollment_date)
         VALUES ('david.lee@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'David', 'Lee',
                 '1995-03-08', 'male', 'US Citizen',
-                v_curriculum_class_a, 'active', '2025-11-04');
+                v_curriculum_class_a, '2025-11-04');
         RAISE NOTICE 'Created student: david.lee@email.com (Class A)';
     END IF;
 
@@ -339,11 +339,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM student WHERE email = 'lisa.chen@email.com') THEN
         INSERT INTO student (email, password_hash, first_name, last_name,
                             date_of_birth, gender, citizenship_status,
-                            curriculum_id, status, enrollment_date)
+                            curriculum_id, enrollment_date)
         VALUES ('lisa.chen@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'Lisa', 'Chen',
                 '1990-07-19', 'female', 'US Citizen',
-                v_curriculum_class_b, 'active', '2026-01-06');
+                v_curriculum_class_b, '2026-01-06');
         RAISE NOTICE 'Created student: lisa.chen@email.com (Class B)';
     END IF;
 
@@ -351,35 +351,35 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM student WHERE email = 'kevin.brown@email.com') THEN
         INSERT INTO student (email, password_hash, first_name, last_name,
                             date_of_birth, gender, citizenship_status,
-                            curriculum_id, status, enrollment_date)
+                            curriculum_id, enrollment_date)
         VALUES ('kevin.brown@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'Kevin', 'Brown',
                 '1985-12-03', 'male', 'US Citizen',
-                v_curriculum_class_b, 'completed', '2025-10-07');
-        RAISE NOTICE 'Created student: kevin.brown@email.com (Class B, Completed)';
+                v_curriculum_class_b, '2025-10-07');
+        RAISE NOTICE 'Created student: kevin.brown@email.com (Class B)';
     END IF;
 
-    -- Student 6: Amanda Wilson - Class A, pending
+    -- Student 6: Amanda Wilson - Class A
     IF NOT EXISTS (SELECT 1 FROM student WHERE email = 'amanda.wilson@email.com') THEN
         INSERT INTO student (email, password_hash, first_name, last_name,
                             date_of_birth, gender,
-                            curriculum_id, status, enrollment_date)
+                            curriculum_id, enrollment_date)
         VALUES ('amanda.wilson@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'Amanda', 'Wilson',
                 '1998-09-25', 'female',
-                v_curriculum_class_a, 'pending', '2026-01-20');
-        RAISE NOTICE 'Created student: amanda.wilson@email.com (Class A, Pending)';
+                v_curriculum_class_a, '2026-01-20');
+        RAISE NOTICE 'Created student: amanda.wilson@email.com (Class A)';
     END IF;
 
     -- Student 7: Marcus Taylor - Class A
     IF NOT EXISTS (SELECT 1 FROM student WHERE email = 'marcus.taylor@email.com') THEN
         INSERT INTO student (email, password_hash, first_name, last_name,
                             date_of_birth, gender, citizenship_status,
-                            curriculum_id, status, enrollment_date)
+                            curriculum_id, enrollment_date)
         VALUES ('marcus.taylor@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'Marcus', 'Taylor',
                 '1993-02-14', 'male', 'US Citizen',
-                v_curriculum_class_a, 'active', '2026-01-06');
+                v_curriculum_class_a, '2026-01-06');
         RAISE NOTICE 'Created student: marcus.taylor@email.com (Class A)';
     END IF;
 
@@ -387,11 +387,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM student WHERE email = 'carlos.rodriguez@email.com') THEN
         INSERT INTO student (email, password_hash, first_name, last_name,
                             date_of_birth, gender, citizenship_status,
-                            curriculum_id, status, enrollment_date)
+                            curriculum_id, enrollment_date)
         VALUES ('carlos.rodriguez@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'Carlos', 'Rodriguez',
                 '1991-08-30', 'male', 'Permanent Resident',
-                v_curriculum_class_a, 'active', '2026-01-13');
+                v_curriculum_class_a, '2026-01-13');
         RAISE NOTICE 'Created student: carlos.rodriguez@email.com (Class A, Perm Resident)';
     END IF;
 
