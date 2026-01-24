@@ -468,44 +468,15 @@ BEGIN
 END $$;
 
 -- =====================================================
--- SECTION 6: STUDENT ENDORSEMENTS
+-- SECTION 6: STUDENT ENDORSEMENTS (SKIPPED)
 -- =====================================================
+-- Note: The student_endorsement table tracks curriculum enrollments,
+-- not individual CDL endorsement codes. Students are already enrolled
+-- in their primary curriculum via the student.curriculum_id field.
 
 DO $$
-DECLARE
-    v_student_id INTEGER;
 BEGIN
-    RAISE NOTICE '=== Creating Student Endorsements ===';
-
-    -- John Smith - pursuing Tanker (N)
-    SELECT id INTO v_student_id FROM student WHERE email = 'john.smith@email.com';
-    IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_endorsement WHERE student_id = v_student_id AND endorsement_code = 'N') THEN
-        INSERT INTO student_endorsement (student_id, endorsement_code, endorsement_name, status, target_date)
-        VALUES (v_student_id, 'N', 'Tanker', 'in_progress', '2026-02-01');
-    END IF;
-
-    -- Maria Garcia - pursuing HazMat (H)
-    SELECT id INTO v_student_id FROM student WHERE email = 'maria.garcia@email.com';
-    IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_endorsement WHERE student_id = v_student_id AND endorsement_code = 'H') THEN
-        INSERT INTO student_endorsement (student_id, endorsement_code, endorsement_name, status, target_date)
-        VALUES (v_student_id, 'H', 'Hazardous Materials', 'in_progress', '2026-01-15');
-    END IF;
-
-    -- Lisa Chen - pursuing Passenger (P)
-    SELECT id INTO v_student_id FROM student WHERE email = 'lisa.chen@email.com';
-    IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_endorsement WHERE student_id = v_student_id AND endorsement_code = 'P') THEN
-        INSERT INTO student_endorsement (student_id, endorsement_code, endorsement_name, status, target_date)
-        VALUES (v_student_id, 'P', 'Passenger', 'in_progress', '2026-01-25');
-    END IF;
-
-    -- Kevin Brown - completed School Bus (S)
-    SELECT id INTO v_student_id FROM student WHERE email = 'kevin.brown@email.com';
-    IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_endorsement WHERE student_id = v_student_id AND endorsement_code = 'S') THEN
-        INSERT INTO student_endorsement (student_id, endorsement_code, endorsement_name, status, obtained_date)
-        VALUES (v_student_id, 'S', 'School Bus', 'obtained', '2025-10-25');
-    END IF;
-
-    RAISE NOTICE '=== Student Endorsements Created ===';
+    RAISE NOTICE '=== Skipping Student Endorsements (tracked via curriculum) ===';
 END $$;
 
 -- =====================================================
@@ -518,7 +489,6 @@ DECLARE
     instructor_count INTEGER;
     student_count INTEGER;
     address_count INTEGER;
-    endorsement_count INTEGER;
     v_has_instructor_table BOOLEAN;
     v_instructor_detail_count INTEGER;
     v_availability_count INTEGER;
@@ -527,7 +497,6 @@ BEGIN
     SELECT COUNT(*) INTO instructor_count FROM admin_user WHERE role = 'instructor';
     SELECT COUNT(*) INTO student_count FROM student;
     SELECT COUNT(*) INTO address_count FROM student_address;
-    SELECT COUNT(*) INTO endorsement_count FROM student_endorsement;
 
     SELECT EXISTS (
         SELECT FROM information_schema.tables
@@ -557,7 +526,6 @@ BEGIN
     RAISE NOTICE 'STUDENT DATA:';
     RAISE NOTICE '  - Students: %', student_count;
     RAISE NOTICE '  - Addresses: %', address_count;
-    RAISE NOTICE '  - Endorsements: %', endorsement_count;
     RAISE NOTICE '';
     RAISE NOTICE 'TEST CREDENTIALS (password: Password123!):';
     RAISE NOTICE '';
