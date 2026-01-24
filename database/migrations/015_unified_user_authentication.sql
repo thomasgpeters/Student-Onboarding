@@ -286,18 +286,18 @@ DECLARE
     v_role user_role;
 BEGIN
     -- Check for admin first (highest priority)
-    IF user_has_role(p_user_id, 'admin') THEN
-        RETURN 'admin';
+    IF user_has_role(p_user_id, 'admin'::user_role) THEN
+        RETURN 'admin'::user_role;
     END IF;
 
     -- Check for instructor
-    IF user_has_role(p_user_id, 'instructor') THEN
-        RETURN 'instructor';
+    IF user_has_role(p_user_id, 'instructor'::user_role) THEN
+        RETURN 'instructor'::user_role;
     END IF;
 
     -- Default to student
-    IF user_has_role(p_user_id, 'student') THEN
-        RETURN 'student';
+    IF user_has_role(p_user_id, 'student'::user_role) THEN
+        RETURN 'student'::user_role;
     END IF;
 
     -- No role found
@@ -318,9 +318,9 @@ BEGIN
     AND ur.is_active = TRUE
     ORDER BY
         CASE ur.role
-            WHEN 'admin' THEN 1
-            WHEN 'instructor' THEN 2
-            WHEN 'student' THEN 3
+            WHEN 'admin'::user_role THEN 1
+            WHEN 'instructor'::user_role THEN 2
+            WHEN 'student'::user_role THEN 3
         END;
 END;
 $$ LANGUAGE plpgsql;
