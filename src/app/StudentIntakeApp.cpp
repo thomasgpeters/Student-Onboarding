@@ -508,12 +508,21 @@ void StudentIntakeApp::handleRegistrationSuccess() {
 }
 
 void StudentIntakeApp::handleLogout() {
+    // Logout from unified auth service
+    if (authService_ && !unifiedLoginWidget_->getSessionToken().empty()) {
+        authService_->logout(unifiedLoginWidget_->getSessionToken());
+    }
+
+    // Also logout from legacy auth manager
     if (authManager_) {
         authManager_->logout(*session_);
     }
+
     session_->reset();
-    navigationWidget_->refresh();
-    setState(AppState::Login);
+    currentUser_ = Models::User();
+
+    // Redirect to unified login at root
+    redirect("/");
 }
 
 void StudentIntakeApp::handleCurriculumSelected(const Models::Curriculum& curriculum) {

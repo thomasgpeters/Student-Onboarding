@@ -534,7 +534,9 @@ void AdminApp::handleLogout() {
     }
     currentUser_ = StudentIntake::Models::User();
     session_->setAuthenticated(false);
-    setState(AppState::Login);
+
+    // Redirect to unified login at root
+    redirect("/");
 }
 
 void AdminApp::handleSectionChange(AdminSection section) {
