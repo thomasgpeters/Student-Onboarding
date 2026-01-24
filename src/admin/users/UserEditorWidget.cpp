@@ -46,11 +46,11 @@ void UserEditorWidget::setAuthService(std::shared_ptr<Auth::AuthService> authSer
     authService_ = authService;
 }
 
-void UserEditorWidget::setCurrentUserRoles(const std::vector<StudentIntake::StudentIntake::Models::UserRole>& roles) {
+void UserEditorWidget::setCurrentUserRoles(const std::vector<StudentIntake::Models::UserRole>& roles) {
     currentUserRoles_ = roles;
     isCurrentUserAdmin_ = false;
     for (const auto& role : roles) {
-        if (role == StudentIntake::StudentIntake::Models::UserRole::Admin) {
+        if (role == StudentIntake::Models::UserRole::Admin) {
             isCurrentUserAdmin_ = true;
             break;
         }
@@ -266,9 +266,9 @@ void UserEditorWidget::populateForm(const StudentIntake::Models::User& user) {
     lastNameInput_->setText(user.getLastName());
     phoneInput_->setText(user.getPhoneNumber());
 
-    adminRoleCheck_->setChecked(user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Admin));
-    instructorRoleCheck_->setChecked(user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Instructor));
-    studentRoleCheck_->setChecked(user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Student));
+    adminRoleCheck_->setChecked(user.hasRole(StudentIntake::Models::UserRole::Admin));
+    instructorRoleCheck_->setChecked(user.hasRole(StudentIntake::Models::UserRole::Instructor));
+    studentRoleCheck_->setChecked(user.hasRole(StudentIntake::Models::UserRole::Student));
 
     activeCheck_->setChecked(user.isActive());
     loginEnabledCheck_->setChecked(user.isLoginEnabled());
@@ -434,10 +434,10 @@ void UserEditorWidget::handleSave() {
         if (studentRoleCheck_->isChecked()) addRole("student");
 
         // Build the list of new roles
-        std::vector<StudentIntake::StudentIntake::Models::UserRole> newRoles;
-        if (adminRoleCheck_->isChecked()) newRoles.push_back(StudentIntake::StudentIntake::Models::UserRole::Admin);
-        if (instructorRoleCheck_->isChecked()) newRoles.push_back(StudentIntake::StudentIntake::Models::UserRole::Instructor);
-        if (studentRoleCheck_->isChecked()) newRoles.push_back(StudentIntake::StudentIntake::Models::UserRole::Student);
+        std::vector<StudentIntake::Models::UserRole> newRoles;
+        if (adminRoleCheck_->isChecked()) newRoles.push_back(StudentIntake::Models::UserRole::Admin);
+        if (instructorRoleCheck_->isChecked()) newRoles.push_back(StudentIntake::Models::UserRole::Instructor);
+        if (studentRoleCheck_->isChecked()) newRoles.push_back(StudentIntake::Models::UserRole::Student);
 
         // Create/delete role-specific records based on role changes
         if (!createRoleSpecificRecords(userId, newRoles, existingUserRoles_)) {
@@ -475,22 +475,22 @@ void UserEditorWidget::clearMessages() {
 }
 
 bool UserEditorWidget::createRoleSpecificRecords(int userId,
-                                                  const std::vector<StudentIntake::StudentIntake::Models::UserRole>& newRoles,
-                                                  const std::vector<StudentIntake::StudentIntake::Models::UserRole>& existingRoles) {
+                                                  const std::vector<StudentIntake::Models::UserRole>& newRoles,
+                                                  const std::vector<StudentIntake::Models::UserRole>& existingRoles) {
     bool success = true;
 
     // Helper to check if a role exists in a vector
-    auto hasRole = [](const std::vector<StudentIntake::StudentIntake::Models::UserRole>& roles, StudentIntake::StudentIntake::Models::UserRole role) {
+    auto hasRole = [](const std::vector<StudentIntake::Models::UserRole>& roles, StudentIntake::Models::UserRole role) {
         return std::find(roles.begin(), roles.end(), role) != roles.end();
     };
 
     // Check each role type
-    bool hadAdmin = hasRole(existingRoles, StudentIntake::StudentIntake::Models::UserRole::Admin);
-    bool hasAdmin = hasRole(newRoles, StudentIntake::StudentIntake::Models::UserRole::Admin);
-    bool hadInstructor = hasRole(existingRoles, StudentIntake::StudentIntake::Models::UserRole::Instructor);
-    bool hasInstructor = hasRole(newRoles, StudentIntake::StudentIntake::Models::UserRole::Instructor);
-    bool hadStudent = hasRole(existingRoles, StudentIntake::StudentIntake::Models::UserRole::Student);
-    bool hasStudent = hasRole(newRoles, StudentIntake::StudentIntake::Models::UserRole::Student);
+    bool hadAdmin = hasRole(existingRoles, StudentIntake::Models::UserRole::Admin);
+    bool hasAdmin = hasRole(newRoles, StudentIntake::Models::UserRole::Admin);
+    bool hadInstructor = hasRole(existingRoles, StudentIntake::Models::UserRole::Instructor);
+    bool hasInstructor = hasRole(newRoles, StudentIntake::Models::UserRole::Instructor);
+    bool hadStudent = hasRole(existingRoles, StudentIntake::Models::UserRole::Student);
+    bool hasStudent = hasRole(newRoles, StudentIntake::Models::UserRole::Student);
 
     // Handle Admin role changes
     if (hasAdmin && !hadAdmin) {
