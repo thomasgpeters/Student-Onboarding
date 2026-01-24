@@ -6,6 +6,9 @@
 -- Create user_role enum type
 -- =============================================================================
 
+-- Drop existing table named user_role if it exists (conflicts with enum type name)
+DROP TABLE IF EXISTS user_role CASCADE;
+
 -- Drop existing type if it's not an enum (from failed previous runs)
 DO $$
 BEGIN
