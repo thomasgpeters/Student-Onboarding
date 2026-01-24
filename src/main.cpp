@@ -25,8 +25,8 @@ std::unique_ptr<Wt::WApplication> createAdminApplication(const Wt::WEnvironment&
  * URL Routing:
  *   /                  - Unified Login (redirects based on role)
  *   /student           - Student Portal (onboarding forms)
+ *   /classroom         - Instructor/Classroom Portal
  *   /administration    - Admin Portal (staff dashboard)
- *   /instructor        - Instructor Portal (future)
  */
 int main(int argc, char** argv) {
     try {
@@ -45,18 +45,24 @@ int main(int argc, char** argv) {
         // Create and configure the server
         Wt::WServer server(argc, argv);
 
-        // Add the unified login/Student Portal at root and /student paths
+        // Add the unified login at root path
         server.addEntryPoint(Wt::EntryPointType::Application, createStudentApplication, "/");
+
+        // Add the Student Portal at /student path
         server.addEntryPoint(Wt::EntryPointType::Application, createStudentApplication, "/student");
+
+        // Add the Classroom/Instructor Portal at /classroom path
+        server.addEntryPoint(Wt::EntryPointType::Application, createStudentApplication, "/classroom");
 
         // Add the Admin Portal entry point at /administration path
         server.addEntryPoint(Wt::EntryPointType::Application, createAdminApplication, "/administration");
 
         LOG_INFO("Main", "Starting Student Onboarding Application...");
         LOG_INFO("Main", "  Log level: " << StudentIntake::Logger::getLevelString());
-        LOG_INFO("Main", "  Unified Login:  http://localhost:8080/");
-        LOG_INFO("Main", "  Student Portal: http://localhost:8080/student");
-        LOG_INFO("Main", "  Admin Portal:   http://localhost:8080/administration");
+        LOG_INFO("Main", "  Unified Login:     http://localhost:8080/");
+        LOG_INFO("Main", "  Student Portal:    http://localhost:8080/student");
+        LOG_INFO("Main", "  Classroom Portal:  http://localhost:8080/classroom");
+        LOG_INFO("Main", "  Admin Portal:      http://localhost:8080/administration");
 
         // Run the server
         if (server.start()) {

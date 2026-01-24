@@ -643,46 +643,49 @@ void StudentIntakeApp::handleUnifiedLoginSuccess(const Models::User& user) {
 void StudentIntakeApp::handleRoleSwitch(Models::UserRole role) {
     LOG_DEBUG("StudentIntakeApp", "handleRoleSwitch called to role: " << static_cast<int>(role));
 
-    // Route to appropriate view/portal based on new role
+    // Route to appropriate portal based on new role
     switch (role) {
         case Models::UserRole::Admin:
-            // Redirect to Admin Portal
             LOG_INFO("StudentIntakeApp", "Redirecting to /administration");
             redirect("/administration");
             return;
         case Models::UserRole::Instructor:
-            roleNavigationWidget_->setActiveRole(role);
-            setState(AppState::InstructorDashboard);
-            break;
+            LOG_INFO("StudentIntakeApp", "Redirecting to /classroom");
+            redirect("/classroom");
+            return;
         case Models::UserRole::Student:
-            roleNavigationWidget_->setActiveRole(role);
-            // For student role, check if they need curriculum selection
-            if (session_->hasCurriculumSelected()) {
-                setState(AppState::Dashboard);
-            } else {
-                setState(AppState::CurriculumSelection);
-            }
-            break;
+            LOG_INFO("StudentIntakeApp", "Redirecting to /student");
+            redirect("/student");
+            return;
     }
 }
 
 void StudentIntakeApp::routeUserByRole(const Models::User& user) {
     LOG_DEBUG("StudentIntakeApp", "routeUserByRole - Primary role: " << static_cast<int>(user.getPrimaryRole()));
 
+    // Get current path to determine if we're already at the correct endpoint
+    std::string currentPath = environment().deploymentPath();
+    LOG_DEBUG("StudentIntakeApp", "Current deployment path: " << currentPath);
+
     // Route based on primary role
     Models::UserRole primaryRole = user.getPrimaryRole();
 
     switch (primaryRole) {
         case Models::UserRole::Admin:
-            // Redirect to Admin Portal - this is a different Wt application
+            // Redirect to Admin Portal
             LOG_INFO("StudentIntakeApp", "Redirecting admin to /administration");
             redirect("/administration");
             return;
 
         case Models::UserRole::Instructor:
-            // For now, instructors use the internal dashboard
-            // TODO: Create separate /instructor portal when ready
-            LOG_INFO("StudentIntakeApp", "Routing instructor to internal dashboard");
+            // Redirect to Classroom Portal if not already there
+            if (currentPath != "/classroom") {
+                LOG_INFO("StudentIntakeApp", "Redirecting instructor to /classroom");
+                redirect("/classroom");
+                return;
+            }
+            // Already at /classroom - show instructor dashboard
+            LOG_INFO("StudentIntakeApp", "Showing instructor dashboard");
             if (user.hasMultipleRoles()) {
                 roleNavigationWidget_->setUser(user);
                 roleNavigationWidget_->show();
@@ -692,8 +695,14 @@ void StudentIntakeApp::routeUserByRole(const Models::User& user) {
 
         case Models::UserRole::Student:
         default:
-            LOG_INFO("StudentIntakeApp", "Routing student to dashboard");
-            // Hide role navigation for student-only users
+            // Redirect to Student Portal if not already there
+            if (currentPath != "/student") {
+                LOG_INFO("StudentIntakeApp", "Redirecting student to /student");
+                redirect("/student");
+                return;
+            }
+            // Already at /student - show student dashboard
+            LOG_INFO("StudentIntakeApp", "Showing student dashboard");
             if (user.hasMultipleRoles()) {
                 roleNavigationWidget_->setUser(user);
                 roleNavigationWidget_->show();
