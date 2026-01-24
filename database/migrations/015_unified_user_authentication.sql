@@ -6,6 +6,25 @@
 -- Create user_role enum type
 -- =============================================================================
 
+-- Drop existing table named user_role if it exists (conflicts with enum type name)
+DROP TABLE IF EXISTS user_role CASCADE;
+
+-- Drop existing type if it's not an enum (from failed previous runs)
+DO $$
+BEGIN
+    -- Check if user_role exists but is NOT an enum type
+    IF EXISTS (
+        SELECT 1 FROM pg_type t
+        JOIN pg_namespace n ON t.typnamespace = n.oid
+        WHERE t.typname = 'user_role'
+        AND n.nspname = 'public'
+        AND t.typtype != 'e'  -- 'e' = enum
+    ) THEN
+        DROP TYPE user_role CASCADE;
+        RAISE NOTICE 'Dropped non-enum user_role type';
+    END IF;
+END $$;
+
 DO $$ BEGIN
     CREATE TYPE user_role AS ENUM ('student', 'instructor', 'admin');
 EXCEPTION
