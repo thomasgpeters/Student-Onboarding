@@ -643,19 +643,23 @@ void StudentIntakeApp::handleUnifiedLoginSuccess(const Models::User& user) {
 void StudentIntakeApp::handleRoleSwitch(Models::UserRole role) {
     LOG_DEBUG("StudentIntakeApp", "handleRoleSwitch called to role: " << static_cast<int>(role));
 
+    // Get session token and user ID for passing to other portals
+    std::string sessionToken = unifiedLoginWidget_->getSessionToken();
+    int userId = currentUser_.getId();
+
     // Route to appropriate portal based on new role
     switch (role) {
         case Models::UserRole::Admin:
             LOG_INFO("StudentIntakeApp", "Redirecting to /administration");
-            redirect("/administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
             return;
         case Models::UserRole::Instructor:
             LOG_INFO("StudentIntakeApp", "Redirecting to /classroom");
-            redirect("/classroom");
+            redirect("/classroom?token=" + sessionToken + "&user_id=" + std::to_string(userId));
             return;
         case Models::UserRole::Student:
             LOG_INFO("StudentIntakeApp", "Redirecting to /student");
-            redirect("/student");
+            redirect("/student?token=" + sessionToken + "&user_id=" + std::to_string(userId));
             return;
     }
 }
@@ -667,21 +671,24 @@ void StudentIntakeApp::routeUserByRole(const Models::User& user) {
     std::string currentPath = environment().deploymentPath();
     LOG_DEBUG("StudentIntakeApp", "Current deployment path: " << currentPath);
 
+    // Get session token for passing to other portals
+    std::string sessionToken = unifiedLoginWidget_->getSessionToken();
+
     // Route based on primary role
     Models::UserRole primaryRole = user.getPrimaryRole();
 
     switch (primaryRole) {
         case Models::UserRole::Admin:
-            // Redirect to Admin Portal
+            // Redirect to Admin Portal with session token
             LOG_INFO("StudentIntakeApp", "Redirecting admin to /administration");
-            redirect("/administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
             return;
 
         case Models::UserRole::Instructor:
             // Redirect to Classroom Portal if not already there
             if (currentPath != "/classroom") {
                 LOG_INFO("StudentIntakeApp", "Redirecting instructor to /classroom");
-                redirect("/classroom");
+                redirect("/classroom?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
                 return;
             }
             // Already at /classroom - show instructor dashboard
@@ -698,7 +705,7 @@ void StudentIntakeApp::routeUserByRole(const Models::User& user) {
             // Redirect to Student Portal if not already there
             if (currentPath != "/student") {
                 LOG_INFO("StudentIntakeApp", "Redirecting student to /student");
-                redirect("/student");
+                redirect("/student?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
                 return;
             }
             // Already at /student - show student dashboard

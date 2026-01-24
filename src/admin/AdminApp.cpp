@@ -52,6 +52,65 @@ AdminApp::~AdminApp() {
 void AdminApp::initialize() {
     setupServices();
     setupUI();
+
+    // Check for session token in URL (from unified login redirect)
+    const std::string* tokenParam = environment().getParameter("token");
+    const std::string* userIdParam = environment().getParameter("user_id");
+
+    if (tokenParam && !tokenParam->empty() && userIdParam && !userIdParam->empty()) {
+        LOG_INFO("AdminApp", "Found session token in URL, attempting auto-login...");
+
+        try {
+            int userId = std::stoi(*userIdParam);
+
+            // Get user info using the user_id
+            auto user = authService_->getUserFromSession(*tokenParam);
+
+            // If user ID is 0, the session lookup failed - try fetching user directly
+            if (user.getId() == 0) {
+                // Fetch user by ID from AppUser table
+                std::string endpoint = "/AppUser/" + *userIdParam;
+                auto response = apiClient_->get(endpoint);
+                if (response.success) {
+                    auto json = response.getJson();
+                    if (json.contains("data")) {
+                        user = StudentIntake::Models::User::fromJson(json["data"]);
+                        // Get roles for this user
+                        user.setRoles(authService_->getUserRoles(userId));
+                    }
+                }
+            }
+
+            if (user.getId() > 0 && user.hasRole(StudentIntake::Models::UserRole::Admin)) {
+                LOG_INFO("AdminApp", "Auto-login successful for user: " << user.getEmail());
+
+                // Store the authenticated user
+                currentUser_ = user;
+
+                // Update admin session with user data
+                if (session_) {
+                    Admin::Models::AdminUser adminUser;
+                    adminUser.setId(user.getId());
+                    adminUser.setEmail(user.getEmail());
+                    adminUser.setFirstName(user.getFirstName());
+                    adminUser.setLastName(user.getLastName());
+                    session_->setAdminUser(adminUser);
+                    session_->setAuthenticated(true);
+                    session_->setToken(*tokenParam);
+                }
+
+                // Go directly to dashboard
+                setState(AppState::Dashboard);
+                return;
+            } else {
+                LOG_WARN("AdminApp", "User not found or not an admin");
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR("AdminApp", "Error during auto-login: " << e.what());
+        }
+    }
+
+    // No valid session token, show login
     setState(AppState::Login);
 }
 
