@@ -39,11 +39,11 @@ void UserListWidget::setAuthService(std::shared_ptr<Auth::AuthService> authServi
     authService_ = authService;
 }
 
-void UserListWidget::setCurrentUserRoles(const std::vector<Models::UserRole>& roles) {
+void UserListWidget::setCurrentUserRoles(const std::vector<StudentIntake::StudentIntake::Models::UserRole>& roles) {
     currentUserRoles_ = roles;
     isCurrentUserAdmin_ = false;
     for (const auto& role : roles) {
-        if (role == Models::UserRole::Admin) {
+        if (role == StudentIntake::StudentIntake::Models::UserRole::Admin) {
             isCurrentUserAdmin_ = true;
             break;
         }
@@ -197,7 +197,7 @@ void UserListWidget::loadUsers() {
 
     if (response.success && json.contains("data") && json["data"].is_array()) {
         for (const auto& item : json["data"]) {
-            auto user = Models::User::fromJson(item);
+            auto user = StudentIntake::Models::User::fromJson(item);
 
             // Get roles for this user
             if (authService_) {
@@ -211,7 +211,7 @@ void UserListWidget::loadUsers() {
             // Instructors can only see students
             if (!isCurrentUserAdmin_) {
                 // Only include users who have the Student role
-                if (!user.hasRole(Models::UserRole::Student)) {
+                if (!user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Student)) {
                     continue;
                 }
             }
@@ -231,9 +231,9 @@ void UserListWidget::updateStats() {
     int students = 0;
 
     for (const auto& user : allUsers_) {
-        if (user.hasRole(Models::UserRole::Admin)) admins++;
-        if (user.hasRole(Models::UserRole::Instructor)) instructors++;
-        if (user.hasRole(Models::UserRole::Student)) students++;
+        if (user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Admin)) admins++;
+        if (user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Instructor)) instructors++;
+        if (user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Student)) students++;
     }
 
     totalUsersText_->setText(std::to_string(total));
@@ -243,7 +243,7 @@ void UserListWidget::updateStats() {
 }
 
 void UserListWidget::applyFilters() {
-    std::vector<Models::User> filtered;
+    std::vector<StudentIntake::Models::User> filtered;
 
     std::string searchTerm = searchInput_->text().toUTF8();
     std::transform(searchTerm.begin(), searchTerm.end(), searchTerm.begin(), ::tolower);
@@ -271,14 +271,14 @@ void UserListWidget::applyFilters() {
             if (isCurrentUserAdmin_) {
                 // Admin sees all roles
                 switch (roleIndex) {
-                    case 1: hasRole = user.hasRole(Models::UserRole::Admin); break;
-                    case 2: hasRole = user.hasRole(Models::UserRole::Instructor); break;
-                    case 3: hasRole = user.hasRole(Models::UserRole::Student); break;
+                    case 1: hasRole = user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Admin); break;
+                    case 2: hasRole = user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Instructor); break;
+                    case 3: hasRole = user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Student); break;
                 }
             } else {
                 // Instructor only sees students
                 if (roleIndex == 1) {
-                    hasRole = user.hasRole(Models::UserRole::Student);
+                    hasRole = user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Student);
                 }
             }
             if (!hasRole) continue;
@@ -306,7 +306,7 @@ void UserListWidget::clearFilters() {
     applyFilters();
 }
 
-void UserListWidget::updateTable(const std::vector<Models::User>& users) {
+void UserListWidget::updateTable(const std::vector<StudentIntake::Models::User>& users) {
     // Clear existing rows (except header)
     while (userTable_->rowCount() > 1) {
         userTable_->deleteRow(1);
@@ -347,16 +347,16 @@ void UserListWidget::updateTable(const std::vector<Models::User>& users) {
     }
 }
 
-std::string UserListWidget::getRoleBadges(const Models::User& user) const {
+std::string UserListWidget::getRoleBadges(const StudentIntake::Models::User& user) const {
     std::string badges;
 
-    if (user.hasRole(Models::UserRole::Admin)) {
+    if (user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Admin)) {
         badges += "<span class='badge bg-danger me-1'>Admin</span>";
     }
-    if (user.hasRole(Models::UserRole::Instructor)) {
+    if (user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Instructor)) {
         badges += "<span class='badge bg-primary me-1'>Instructor</span>";
     }
-    if (user.hasRole(Models::UserRole::Student)) {
+    if (user.hasRole(StudentIntake::StudentIntake::Models::UserRole::Student)) {
         badges += "<span class='badge bg-success me-1'>Student</span>";
     }
 

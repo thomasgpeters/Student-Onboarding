@@ -22,7 +22,7 @@ public:
 
     void setApiClient(std::shared_ptr<Api::ApiClient> apiClient);
     void setAuthService(std::shared_ptr<Auth::AuthService> authService);
-    void setCurrentUserRoles(const std::vector<Models::UserRole>& roles);
+    void setCurrentUserRoles(const std::vector<StudentIntake::Models::UserRole>& roles);
 
     // Load existing user for editing
     void loadUser(int userId);
@@ -42,11 +42,11 @@ private:
     void showSuccess(const std::string& message);
     void clearMessages();
     bool validateForm();
-    void populateForm(const Models::User& user);
+    void populateForm(const StudentIntake::Models::User& user);
     void clearForm();
     void updateRoleVisibility();
-    bool createRoleSpecificRecords(int userId, const std::vector<Models::UserRole>& newRoles,
-                                   const std::vector<Models::UserRole>& existingRoles);
+    bool createRoleSpecificRecords(int userId, const std::vector<StudentIntake::Models::UserRole>& newRoles,
+                                   const std::vector<StudentIntake::Models::UserRole>& existingRoles);
     bool createAdminUser(int userId);
     bool createInstructor(int userId);
     bool createStudent(int userId);
@@ -56,9 +56,9 @@ private:
 
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Auth::AuthService> authService_;
-    std::vector<Models::UserRole> currentUserRoles_;
+    std::vector<StudentIntake::Models::UserRole> currentUserRoles_;
     bool isCurrentUserAdmin_;
-    std::vector<Models::UserRole> existingUserRoles_;
+    std::vector<StudentIntake::Models::UserRole> existingUserRoles_;
 
     bool isEditMode_;
     int editingUserId_;

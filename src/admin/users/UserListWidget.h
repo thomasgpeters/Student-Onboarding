@@ -24,7 +24,7 @@ public:
 
     void setApiClient(std::shared_ptr<Api::ApiClient> apiClient);
     void setAuthService(std::shared_ptr<Auth::AuthService> authService);
-    void setCurrentUserRoles(const std::vector<Models::UserRole>& roles);
+    void setCurrentUserRoles(const std::vector<StudentIntake::Models::UserRole>& roles);
     void refresh();
 
     // Signal emitted when a user is selected for viewing/editing
@@ -42,15 +42,15 @@ private:
     void applyFilters();
     void updateStats();
     void clearFilters();
-    void updateTable(const std::vector<Models::User>& users);
+    void updateTable(const std::vector<StudentIntake::Models::User>& users);
     void onUserRowClicked(int userId);
-    std::string getRoleBadges(const Models::User& user) const;
+    std::string getRoleBadges(const StudentIntake::Models::User& user) const;
     std::string getStatusBadgeClass(bool isActive) const;
 
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Auth::AuthService> authService_;
-    std::vector<Models::User> allUsers_;
-    std::vector<Models::UserRole> currentUserRoles_;
+    std::vector<StudentIntake::Models::User> allUsers_;
+    std::vector<StudentIntake::Models::UserRole> currentUserRoles_;
     bool isCurrentUserAdmin_;
 
     // UI Elements - Stats
