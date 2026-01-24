@@ -2370,6 +2370,17 @@ textarea.form-control {
     background: white !important;
     border-radius: 12px !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Ensure all dialog elements inherit sans-serif font */
+.admin-dialog,
+.admin-dialog *,
+.admin-dialog input,
+.admin-dialog select,
+.admin-dialog textarea,
+.admin-dialog button {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 .admin-dialog .Wt-dialog-titlebar {
@@ -2414,6 +2425,7 @@ textarea.form-control {
     border-radius: 6px;
     font-size: 0.9375rem;
     box-sizing: border-box;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 .admin-dialog-content .form-control:focus {
