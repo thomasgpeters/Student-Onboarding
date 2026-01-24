@@ -229,7 +229,7 @@ Student-Onboarding/
 │   └── admin/
 │       ├── AdminApp.cpp/h          # Admin portal main application
 │       ├── AdminDashboard.cpp/h    # Admin dashboard widget
-│       ├── AdminSidebar.cpp/h      # Admin navigation sidebar
+│       ├── AdminSidebar.cpp/h      # Admin navigation sidebar (role-based)
 │       ├── forms/
 │       │   ├── FormSubmissionsWidget.cpp/h  # Form submissions list
 │       │   ├── FormDetailViewer.cpp/h       # Form detail view
@@ -237,9 +237,14 @@ Student-Onboarding/
 │       ├── students/
 │       │   ├── StudentListWidget.cpp/h      # Student list
 │       │   └── StudentDetailWidget.cpp/h    # Student detail view
-│       └── curriculum/
-│           ├── CurriculumListWidget.cpp/h   # Curriculum list
-│           └── CurriculumEditorWidget.cpp/h # Curriculum editor
+│       ├── users/
+│       │   ├── UserListWidget.cpp/h         # User management list
+│       │   └── UserEditorWidget.cpp/h       # User create/edit form
+│       ├── curriculum/
+│       │   ├── CurriculumListWidget.cpp/h   # Curriculum list
+│       │   └── CurriculumEditorWidget.cpp/h # Curriculum editor
+│       └── settings/
+│           └── InstitutionSettingsWidget.cpp/h  # Institution settings
 ├── config/
 │   ├── forms_config.json           # Form type configuration
 │   ├── curriculum_config.json      # Combined curriculum config
@@ -606,9 +611,68 @@ Custom CSS with design tokens:
 
 ## Admin Dashboard Portal
 
-A separate web portal for university staff accessible at `/administration`:
+A shared web portal for administrators and instructors accessible at `/administration`:
+
+### User Roles & Permissions
+
+The portal implements a tiered permission system with three user roles:
+
+| Role | Access Level | Can Manage |
+|------|--------------|------------|
+| **Admin** | Full access | All users (Admin, Instructor, Student), Forms, Curriculum, Settings |
+| **Instructor** | Limited access | Students only, Curriculum (view) |
+| **Student** | No portal access | N/A (uses Student Portal at `/student`) |
+
+### Role-Based Sidebar
+
+The sidebar dynamically shows/hides sections based on the logged-in user's role:
+
+| Section | Admin | Instructor |
+|---------|-------|------------|
+| Dashboard | ✓ | ✓ |
+| Users | ✓ | - |
+| Students | - | ✓ |
+| Forms | ✓ | - |
+| Curriculum | ✓ | ✓ |
+| Settings | ✓ | - |
+
+- **Admins** see "Users" to manage all user types (Admin, Instructor, Student)
+- **Instructors** see "Students" to manage only student users they can create
+
+### User Management
+
+The User Management feature allows creating and managing users with role assignments:
+
+#### Creating Users
+1. Navigate to **Users** (Admin) or **Students** (Instructor)
+2. Click **Add User**
+3. Fill in user details (email, name, password)
+4. Select roles (Admin can assign any role; Instructors can only create Students)
+5. Save to create the user
+
+#### Role-Specific Records
+
+When a user is assigned a role, the system automatically creates corresponding records:
+
+| Role Assigned | Record Created | Table |
+|---------------|----------------|-------|
+| Admin | AdminUser | `admin_user` |
+| Instructor | Instructor | `instructor` |
+| Student | Student | `student` |
+
+This ensures that:
+- Admins have an `AdminUser` record for portal permissions
+- Instructors have an `Instructor` record with teaching details
+- Students have a `Student` record for enrollment tracking
+
+When roles are removed, the corresponding records are deleted.
 
 ### Current Features
+- **User Management**: Create, edit, and manage all users with role assignment
+  - Tiered permissions (Admin manages all, Instructor manages Students)
+  - Automatic role-specific record creation
+  - Role badges and status indicators
+  - Search and filter by role, status
 - **Student Management**: View, search, filter, and manage all enrolled students
 - **Form Submissions**: Review all submitted forms with status tracking
   - Today's submissions quick filter
@@ -626,7 +690,6 @@ A separate web portal for university staff accessible at `/administration`:
 - **Dashboard**: Overview with key metrics and quick actions
 
 ### Planned Features
-- **Role-Based Access**: Super Admin, Administrator, and Instructor roles
 - **Email Notifications**: Send form status updates to students
 - **Bulk Operations**: Mass approve/reject forms
 - **Audit Logging**: Track all administrative actions
@@ -657,6 +720,59 @@ See `docs/ADMIN_DASHBOARD_DESIGN.md` for full specification and `docs/Administra
 - `docs/DATA_MODEL_CHANGES.md` - Database schema change documentation
 
 ## Recent Changes
+
+### Version 2.5.0 - User Management & Shared Admin Portal
+
+Added comprehensive user management with tiered permissions and a shared portal for administrators and instructors.
+
+#### Shared Admin Portal
+
+- **Single Portal**: Both Admins and Instructors now use `/administration` portal
+- **Role-Based Sidebar**: Menu items dynamically shown/hidden based on user role
+  - Admins see: Dashboard, Users, Forms, Curriculum, Settings
+  - Instructors see: Dashboard, Students, Curriculum
+- **Unified Login**: Instructors redirected to `/administration` instead of separate `/classroom`
+
+#### User Management Feature
+
+- **New UserListWidget**: Displays all users with search, filter by role/status
+- **New UserEditorWidget**: Form for creating/editing users with role assignment
+- **Tiered Permissions**:
+  - Admins can create and manage all user types (Admin, Instructor, Student)
+  - Instructors can only create and manage Students
+- **Role Visibility**: Instructors only see the Student role checkbox; Admin/Instructor options hidden
+
+#### Automatic Role-Specific Records
+
+When assigning roles to users, the system automatically manages related records:
+
+| Action | Result |
+|--------|--------|
+| Add Admin role | Creates `AdminUser` record |
+| Add Instructor role | Creates `Instructor` record with user details |
+| Add Student role | Creates `Student` record with enrollment status |
+| Remove Admin role | Deletes `AdminUser` record |
+| Remove Instructor role | Deletes `Instructor` record |
+| Remove Student role | Deletes `Student` record |
+
+#### Files Added/Modified
+
+**New Files:**
+- `src/admin/users/UserListWidget.h/.cpp` - User list with filtering
+- `src/admin/users/UserEditorWidget.h/.cpp` - User create/edit form
+
+**Modified Files:**
+- `src/admin/AdminApp.cpp/.h` - Added user management states and handlers
+- `src/admin/AdminSidebar.cpp/.h` - Role-based menu filtering
+- `src/app/StudentIntakeApp.cpp` - Redirect instructors to admin portal
+- `CMakeLists.txt` - Added new source files
+
+#### Database Requirements
+
+Ensure the following tables exist with `user_id` foreign key:
+- `admin_user` - For Admin role users
+- `instructor` - For Instructor role users
+- `student` - For Student role users
 
 ### Version 2.4.0 - Multi-Program Enrollment for Vocational/CDL Training
 

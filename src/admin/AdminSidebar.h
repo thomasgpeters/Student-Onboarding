@@ -17,6 +17,7 @@ namespace Admin {
  */
 enum class AdminSection {
     Dashboard,
+    Users,
     Students,
     Forms,
     Curriculum,

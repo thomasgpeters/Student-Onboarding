@@ -141,6 +141,8 @@ set(ADMIN_SOURCES
     src/admin/forms/FormTypesListWidget.cpp
     src/admin/forms/FormTypeDetailWidget.cpp
     src/admin/settings/InstitutionSettingsWidget.cpp
+    src/admin/users/UserListWidget.cpp
+    src/admin/users/UserEditorWidget.cpp
 )
 
 set(CLASSROOM_SOURCES
@@ -198,6 +200,7 @@ target_include_directories(student_intake PRIVATE
     ${CMAKE_SOURCE_DIR}/src/admin/curriculum
     ${CMAKE_SOURCE_DIR}/src/admin/forms
     ${CMAKE_SOURCE_DIR}/src/admin/settings
+    ${CMAKE_SOURCE_DIR}/src/admin/users
     ${CMAKE_SOURCE_DIR}/src/classroom
     ${CMAKE_SOURCE_DIR}/src/instructor
 )
