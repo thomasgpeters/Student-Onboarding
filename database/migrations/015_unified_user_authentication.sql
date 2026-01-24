@@ -394,7 +394,7 @@ BEGIN
         RETURNING id INTO v_user_id;
 
         -- Assign admin role
-        INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'admin');
+        INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'admin'::user_role);
 
         -- Create admin profile
         INSERT INTO admin_profile (user_id, admin_level, can_manage_students, can_manage_curriculum,
@@ -429,7 +429,7 @@ BEGIN
             RETURNING id INTO v_user_id;
 
             -- Assign student role
-            INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student');
+            INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student'::user_role);
 
             -- Create student profile
             INSERT INTO student_profile (user_id, preferred_pronouns, date_of_birth, gender,
