@@ -28,6 +28,8 @@
 #include "admin/forms/FormTypesListWidget.h"
 #include "admin/forms/FormTypeDetailWidget.h"
 #include "admin/settings/InstitutionSettingsWidget.h"
+#include "admin/users/UserListWidget.h"
+#include "admin/users/UserEditorWidget.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -44,6 +46,8 @@ public:
     enum class AppState {
         Login,
         Dashboard,
+        Users,
+        UserEdit,
         Students,
         StudentDetail,
         StudentForms,
@@ -68,6 +72,9 @@ private:
     void hideAllViews();
     void showLogin();
     void showDashboard();
+    void showUsers();
+    void showUserEdit(int userId);
+    void showNewUser();
     void showStudents();
     void showStudentDetail(int studentId);
     void showStudentForms(int studentId);
@@ -96,6 +103,10 @@ private:
     void handleFormRejected(int submissionId);
     void handleFormPdfPreview(int submissionId);
     void handlePrintAllStudentForms(int studentId);
+    void handleUserSelected(int userId);
+    void handleAddUser();
+    void handleUserSaved();
+    void handleUserCancelled();
 
     // Configuration
     App::AppConfig& config_;
@@ -106,6 +117,7 @@ private:
     std::string selectedStudentName_;
     std::string selectedCurriculumId_;
     int selectedFormTypeId_;
+    int selectedUserId_;
 
     // Services
     std::shared_ptr<Api::ApiClient> apiClient_;
@@ -137,6 +149,8 @@ private:
     CurriculumListWidget* curriculumListWidget_;
     CurriculumEditorWidget* curriculumEditorWidget_;
     InstitutionSettingsWidget* settingsWidget_;
+    UserListWidget* userListWidget_;
+    UserEditorWidget* userEditorWidget_;
 };
 
 } // namespace Admin

@@ -27,6 +27,7 @@ void AdminSidebar::setupUI() {
 
     std::vector<ItemDef> itemDefs = {
         {AdminSection::Dashboard, "Dashboard", "📊", false},
+        {AdminSection::Users, "Users", "👤", true},  // Admin only
         {AdminSection::Students, "Students", "👥", false},
         {AdminSection::Forms, "Forms", "📋", false},
         {AdminSection::Curriculum, "Curriculum", "📚", true},
@@ -81,6 +82,10 @@ void AdminSidebar::refresh() {
 
         // Settings only visible to super admin
         if (item.section == AdminSection::Settings) {
+            visible = user.canManageAdmins();
+        }
+        // Users requires admin role
+        else if (item.section == AdminSection::Users) {
             visible = user.canManageAdmins();
         }
         // Curriculum requires admin role

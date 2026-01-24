@@ -13,6 +13,7 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , selectedStudentId_(0)
     , selectedCurriculumId_("")
     , selectedFormTypeId_(0)
+    , selectedUserId_(0)
     , apiClient_(nullptr)
     , apiService_(nullptr)
     , authService_(nullptr)
@@ -36,7 +37,9 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , formTypeDetailWidget_(nullptr)
     , curriculumListWidget_(nullptr)
     , curriculumEditorWidget_(nullptr)
-    , settingsWidget_(nullptr) {
+    , settingsWidget_(nullptr)
+    , userListWidget_(nullptr)
+    , userEditorWidget_(nullptr) {
 
     setTitle("Admin Portal - Student Onboarding");
 
@@ -277,6 +280,22 @@ void AdminApp::setupUI() {
     settingsWidget_->setApiService(apiService_);
     settingsWidget_->hide();
 
+    // User List widget (hidden initially)
+    userListWidget_ = contentContainer_->addWidget(std::make_unique<UserListWidget>());
+    userListWidget_->setApiClient(apiClient_);
+    userListWidget_->setAuthService(authService_);
+    userListWidget_->userSelected().connect(this, &AdminApp::handleUserSelected);
+    userListWidget_->addUserClicked().connect(this, &AdminApp::handleAddUser);
+    userListWidget_->hide();
+
+    // User Editor widget (hidden initially)
+    userEditorWidget_ = contentContainer_->addWidget(std::make_unique<UserEditorWidget>());
+    userEditorWidget_->setApiClient(apiClient_);
+    userEditorWidget_->setAuthService(authService_);
+    userEditorWidget_->saved().connect(this, &AdminApp::handleUserSaved);
+    userEditorWidget_->cancelled().connect(this, &AdminApp::handleUserCancelled);
+    userEditorWidget_->hide();
+
     // Footer
     auto footer = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     footer->addStyleClass("admin-footer");
@@ -299,6 +318,12 @@ void AdminApp::setState(AppState state) {
             break;
         case AppState::Dashboard:
             showDashboard();
+            break;
+        case AppState::Users:
+            showUsers();
+            break;
+        case AppState::UserEdit:
+            showUserEdit(selectedUserId_);
             break;
         case AppState::Students:
             showStudents();
@@ -346,6 +371,8 @@ void AdminApp::hideAllViews() {
     curriculumListWidget_->hide();
     curriculumEditorWidget_->hide();
     settingsWidget_->hide();
+    userListWidget_->hide();
+    userEditorWidget_->hide();
 }
 
 void AdminApp::showLogin() {
@@ -494,6 +521,49 @@ void AdminApp::showSettings() {
     settingsWidget_->show();
 }
 
+void AdminApp::showUsers() {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Users);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    userListWidget_->show();
+    userListWidget_->refresh();
+}
+
+void AdminApp::showUserEdit(int userId) {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Users);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    currentState_ = AppState::UserEdit;
+    selectedUserId_ = userId;
+    userEditorWidget_->loadUser(userId);
+    userEditorWidget_->show();
+}
+
+void AdminApp::showNewUser() {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Users);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    currentState_ = AppState::UserEdit;
+    selectedUserId_ = 0;
+    userEditorWidget_->newUser();
+    userEditorWidget_->show();
+}
+
 void AdminApp::handleLoginSuccess() {
     LOG_INFO("AdminApp", "Login successful, showing dashboard");
     setState(AppState::Dashboard);
@@ -543,6 +613,9 @@ void AdminApp::handleSectionChange(AdminSection section) {
     switch (section) {
         case AdminSection::Dashboard:
             setState(AppState::Dashboard);
+            break;
+        case AdminSection::Users:
+            setState(AppState::Users);
             break;
         case AdminSection::Students:
             setState(AppState::Students);
@@ -692,6 +765,29 @@ void AdminApp::handlePrintAllStudentForms(int studentId) {
     LOG_DEBUG("AdminApp", "Print all student forms requested: " << studentId);
     // Show the PDF preview as a modal dialog - no state change needed
     formPdfPreviewWidget_->showStudentForms(studentId);
+}
+
+void AdminApp::handleUserSelected(int userId) {
+    LOG_DEBUG("AdminApp", "User selected: " << userId);
+    selectedUserId_ = userId;
+    hideAllViews();
+    showUserEdit(userId);
+}
+
+void AdminApp::handleAddUser() {
+    LOG_DEBUG("AdminApp", "Adding new user");
+    hideAllViews();
+    showNewUser();
+}
+
+void AdminApp::handleUserSaved() {
+    LOG_INFO("AdminApp", "User saved, returning to list");
+    setState(AppState::Users);
+}
+
+void AdminApp::handleUserCancelled() {
+    LOG_DEBUG("AdminApp", "User edit cancelled, returning to list");
+    setState(AppState::Users);
 }
 
 } // namespace Admin
