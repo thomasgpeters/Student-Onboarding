@@ -24,6 +24,7 @@ public:
 
     void setApiClient(std::shared_ptr<Api::ApiClient> apiClient);
     void setAuthService(std::shared_ptr<Auth::AuthService> authService);
+    void setCurrentUserRoles(const std::vector<Models::UserRole>& roles);
     void refresh();
 
     // Signal emitted when a user is selected for viewing/editing
@@ -49,6 +50,8 @@ private:
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Auth::AuthService> authService_;
     std::vector<Models::User> allUsers_;
+    std::vector<Models::UserRole> currentUserRoles_;
+    bool isCurrentUserAdmin_;
 
     // UI Elements - Stats
     Wt::WContainerWidget* statsContainer_;

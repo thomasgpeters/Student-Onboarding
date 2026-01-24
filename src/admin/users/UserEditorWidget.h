@@ -22,6 +22,7 @@ public:
 
     void setApiClient(std::shared_ptr<Api::ApiClient> apiClient);
     void setAuthService(std::shared_ptr<Auth::AuthService> authService);
+    void setCurrentUserRoles(const std::vector<Models::UserRole>& roles);
 
     // Load existing user for editing
     void loadUser(int userId);
@@ -43,9 +44,21 @@ private:
     bool validateForm();
     void populateForm(const Models::User& user);
     void clearForm();
+    void updateRoleVisibility();
+    bool createRoleSpecificRecords(int userId, const std::vector<Models::UserRole>& newRoles,
+                                   const std::vector<Models::UserRole>& existingRoles);
+    bool createAdminUser(int userId);
+    bool createInstructor(int userId);
+    bool createStudent(int userId);
+    bool deleteAdminUser(int userId);
+    bool deleteInstructor(int userId);
+    bool deleteStudent(int userId);
 
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Auth::AuthService> authService_;
+    std::vector<Models::UserRole> currentUserRoles_;
+    bool isCurrentUserAdmin_;
+    std::vector<Models::UserRole> existingUserRoles_;
 
     bool isEditMode_;
     int editingUserId_;
@@ -74,6 +87,7 @@ private:
     Wt::WPushButton* saveBtn_;
     Wt::WPushButton* cancelBtn_;
     Wt::WContainerWidget* passwordSection_;
+    Wt::WContainerWidget* rolesSection_;
 
     // Signals
     Wt::Signal<> saved_;

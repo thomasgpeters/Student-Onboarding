@@ -530,6 +530,8 @@ void AdminApp::showUsers() {
     contentWrapper_->removeStyleClass("login-state");
     contentWrapper_->addStyleClass("with-sidebar");
 
+    // Pass current user's roles to control permissions
+    userListWidget_->setCurrentUserRoles(currentUser_.getRoles());
     userListWidget_->show();
     userListWidget_->refresh();
 }
@@ -545,6 +547,8 @@ void AdminApp::showUserEdit(int userId) {
 
     currentState_ = AppState::UserEdit;
     selectedUserId_ = userId;
+    // Pass current user's roles to control permissions
+    userEditorWidget_->setCurrentUserRoles(currentUser_.getRoles());
     userEditorWidget_->loadUser(userId);
     userEditorWidget_->show();
 }
@@ -560,6 +564,8 @@ void AdminApp::showNewUser() {
 
     currentState_ = AppState::UserEdit;
     selectedUserId_ = 0;
+    // Pass current user's roles to control permissions
+    userEditorWidget_->setCurrentUserRoles(currentUser_.getRoles());
     userEditorWidget_->newUser();
     userEditorWidget_->show();
 }

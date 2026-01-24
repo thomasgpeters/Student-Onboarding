@@ -11,6 +11,7 @@ namespace Admin {
 UserListWidget::UserListWidget()
     : apiClient_(nullptr)
     , authService_(nullptr)
+    , isCurrentUserAdmin_(false)
     , statsContainer_(nullptr)
     , totalUsersText_(nullptr)
     , adminCountText_(nullptr)
@@ -36,6 +37,36 @@ void UserListWidget::setApiClient(std::shared_ptr<Api::ApiClient> apiClient) {
 
 void UserListWidget::setAuthService(std::shared_ptr<Auth::AuthService> authService) {
     authService_ = authService;
+}
+
+void UserListWidget::setCurrentUserRoles(const std::vector<Models::UserRole>& roles) {
+    currentUserRoles_ = roles;
+    isCurrentUserAdmin_ = false;
+    for (const auto& role : roles) {
+        if (role == Models::UserRole::Admin) {
+            isCurrentUserAdmin_ = true;
+            break;
+        }
+    }
+
+    // Update UI based on permissions
+    // Instructors can only manage students, so hide admin/instructor options
+    if (!isCurrentUserAdmin_) {
+        // Hide admin and instructor stats
+        if (adminCountText_ && adminCountText_->parent()) {
+            static_cast<Wt::WWidget*>(adminCountText_->parent())->hide();
+        }
+        if (instructorCountText_ && instructorCountText_->parent()) {
+            static_cast<Wt::WWidget*>(instructorCountText_->parent())->hide();
+        }
+
+        // Update role filter to only show Student option
+        if (roleFilter_) {
+            roleFilter_->clear();
+            roleFilter_->addItem("All Roles");
+            roleFilter_->addItem("Student");
+        }
+    }
 }
 
 void UserListWidget::refresh() {
@@ -176,6 +207,15 @@ void UserListWidget::loadUsers() {
                 }
             }
 
+            // Filter based on current user permissions
+            // Instructors can only see students
+            if (!isCurrentUserAdmin_) {
+                // Only include users who have the Student role
+                if (!user.hasRole(Models::UserRole::Student)) {
+                    continue;
+                }
+            }
+
             allUsers_.push_back(user);
         }
     }
@@ -228,10 +268,18 @@ void UserListWidget::applyFilters() {
         // Role filter
         if (roleIndex > 0) {
             bool hasRole = false;
-            switch (roleIndex) {
-                case 1: hasRole = user.hasRole(Models::UserRole::Admin); break;
-                case 2: hasRole = user.hasRole(Models::UserRole::Instructor); break;
-                case 3: hasRole = user.hasRole(Models::UserRole::Student); break;
+            if (isCurrentUserAdmin_) {
+                // Admin sees all roles
+                switch (roleIndex) {
+                    case 1: hasRole = user.hasRole(Models::UserRole::Admin); break;
+                    case 2: hasRole = user.hasRole(Models::UserRole::Instructor); break;
+                    case 3: hasRole = user.hasRole(Models::UserRole::Student); break;
+                }
+            } else {
+                // Instructor only sees students
+                if (roleIndex == 1) {
+                    hasRole = user.hasRole(Models::UserRole::Student);
+                }
             }
             if (!hasRole) continue;
         }

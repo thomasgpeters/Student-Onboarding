@@ -11,6 +11,7 @@ namespace Admin {
 UserEditorWidget::UserEditorWidget()
     : apiClient_(nullptr)
     , authService_(nullptr)
+    , isCurrentUserAdmin_(false)
     , isEditMode_(false)
     , editingUserId_(0)
     , emailInput_(nullptr)
@@ -30,6 +31,7 @@ UserEditorWidget::UserEditorWidget()
     , saveBtn_(nullptr)
     , cancelBtn_(nullptr)
     , passwordSection_(nullptr)
+    , rolesSection_(nullptr)
 {
     setupUI();
 }
@@ -42,6 +44,48 @@ void UserEditorWidget::setApiClient(std::shared_ptr<Api::ApiClient> apiClient) {
 
 void UserEditorWidget::setAuthService(std::shared_ptr<Auth::AuthService> authService) {
     authService_ = authService;
+}
+
+void UserEditorWidget::setCurrentUserRoles(const std::vector<Models::UserRole>& roles) {
+    currentUserRoles_ = roles;
+    isCurrentUserAdmin_ = false;
+    for (const auto& role : roles) {
+        if (role == Models::UserRole::Admin) {
+            isCurrentUserAdmin_ = true;
+            break;
+        }
+    }
+    updateRoleVisibility();
+}
+
+void UserEditorWidget::updateRoleVisibility() {
+    // Instructors can only create students, so hide Admin and Instructor options
+    if (!isCurrentUserAdmin_) {
+        if (adminRoleCheck_) {
+            adminRoleCheck_->hide();
+            adminRoleCheck_->setChecked(false);
+        }
+        if (instructorRoleCheck_) {
+            instructorRoleCheck_->hide();
+            instructorRoleCheck_->setChecked(false);
+        }
+        // Force student role for instructor-created users
+        if (studentRoleCheck_) {
+            studentRoleCheck_->setChecked(true);
+            studentRoleCheck_->setEnabled(false);  // Can't uncheck
+        }
+    } else {
+        // Admin can manage all roles
+        if (adminRoleCheck_) {
+            adminRoleCheck_->show();
+        }
+        if (instructorRoleCheck_) {
+            instructorRoleCheck_->show();
+        }
+        if (studentRoleCheck_) {
+            studentRoleCheck_->setEnabled(true);
+        }
+    }
 }
 
 void UserEditorWidget::setupUI() {
@@ -120,11 +164,11 @@ void UserEditorWidget::setupUI() {
     confirmPasswordLabel->setBuddy(confirmPasswordInput_);
 
     // Roles section
-    auto rolesSection = formContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
-    rolesSection->addStyleClass("roles-section");
-    rolesSection->addWidget(std::make_unique<Wt::WText>("Roles"))->addStyleClass("section-title");
+    rolesSection_ = formContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    rolesSection_->addStyleClass("roles-section");
+    rolesSection_->addWidget(std::make_unique<Wt::WText>("Roles"))->addStyleClass("section-title");
 
-    auto rolesContainer = rolesSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    auto rolesContainer = rolesSection_->addWidget(std::make_unique<Wt::WContainerWidget>());
     rolesContainer->addStyleClass("roles-container");
 
     adminRoleCheck_ = rolesContainer->addWidget(std::make_unique<Wt::WCheckBox>("Administrator"));
@@ -174,6 +218,7 @@ void UserEditorWidget::loadUser(int userId) {
     isEditMode_ = true;
     editingUserId_ = userId;
     titleText_->setText("Edit User");
+    existingUserRoles_.clear();
 
     // In edit mode, password is optional (only set if changing)
     passwordSection_->hide();
@@ -191,9 +236,11 @@ void UserEditorWidget::loadUser(int userId) {
             if (authService_) {
                 auto roles = authService_->getUserRoles(userId);
                 user.setRoles(roles);
+                existingUserRoles_ = roles;  // Store for comparison when saving
             }
 
             populateForm(user);
+            updateRoleVisibility();
         } else {
             showError("Failed to load user data");
         }
@@ -205,10 +252,12 @@ void UserEditorWidget::loadUser(int userId) {
 void UserEditorWidget::newUser() {
     isEditMode_ = false;
     editingUserId_ = 0;
+    existingUserRoles_.clear();
     titleText_->setText("Create New User");
     passwordSection_->show();
     clearForm();
     clearMessages();
+    updateRoleVisibility();
 }
 
 void UserEditorWidget::populateForm(const Models::User& user) {
@@ -383,6 +432,18 @@ void UserEditorWidget::handleSave() {
         if (adminRoleCheck_->isChecked()) addRole("admin");
         if (instructorRoleCheck_->isChecked()) addRole("instructor");
         if (studentRoleCheck_->isChecked()) addRole("student");
+
+        // Build the list of new roles
+        std::vector<Models::UserRole> newRoles;
+        if (adminRoleCheck_->isChecked()) newRoles.push_back(Models::UserRole::Admin);
+        if (instructorRoleCheck_->isChecked()) newRoles.push_back(Models::UserRole::Instructor);
+        if (studentRoleCheck_->isChecked()) newRoles.push_back(Models::UserRole::Student);
+
+        // Create/delete role-specific records based on role changes
+        if (!createRoleSpecificRecords(userId, newRoles, existingUserRoles_)) {
+            showError("User saved but failed to create some role-specific records");
+            return;
+        }
     }
 
     showSuccess(isEditMode_ ? "User updated successfully" : "User created successfully");
@@ -411,6 +472,272 @@ void UserEditorWidget::showSuccess(const std::string& message) {
 void UserEditorWidget::clearMessages() {
     messageContainer_->hide();
     messageText_->setText("");
+}
+
+bool UserEditorWidget::createRoleSpecificRecords(int userId,
+                                                  const std::vector<Models::UserRole>& newRoles,
+                                                  const std::vector<Models::UserRole>& existingRoles) {
+    bool success = true;
+
+    // Helper to check if a role exists in a vector
+    auto hasRole = [](const std::vector<Models::UserRole>& roles, Models::UserRole role) {
+        return std::find(roles.begin(), roles.end(), role) != roles.end();
+    };
+
+    // Check each role type
+    bool hadAdmin = hasRole(existingRoles, Models::UserRole::Admin);
+    bool hasAdmin = hasRole(newRoles, Models::UserRole::Admin);
+    bool hadInstructor = hasRole(existingRoles, Models::UserRole::Instructor);
+    bool hasInstructor = hasRole(newRoles, Models::UserRole::Instructor);
+    bool hadStudent = hasRole(existingRoles, Models::UserRole::Student);
+    bool hasStudent = hasRole(newRoles, Models::UserRole::Student);
+
+    // Handle Admin role changes
+    if (hasAdmin && !hadAdmin) {
+        // Added Admin role - create AdminUser record
+        if (!createAdminUser(userId)) {
+            LOG_ERROR("UserEditorWidget", "Failed to create AdminUser for user " << userId);
+            success = false;
+        }
+    } else if (!hasAdmin && hadAdmin) {
+        // Removed Admin role - delete AdminUser record
+        if (!deleteAdminUser(userId)) {
+            LOG_WARN("UserEditorWidget", "Failed to delete AdminUser for user " << userId);
+        }
+    }
+
+    // Handle Instructor role changes
+    if (hasInstructor && !hadInstructor) {
+        // Added Instructor role - create Instructor record
+        if (!createInstructor(userId)) {
+            LOG_ERROR("UserEditorWidget", "Failed to create Instructor for user " << userId);
+            success = false;
+        }
+    } else if (!hasInstructor && hadInstructor) {
+        // Removed Instructor role - delete Instructor record
+        if (!deleteInstructor(userId)) {
+            LOG_WARN("UserEditorWidget", "Failed to delete Instructor for user " << userId);
+        }
+    }
+
+    // Handle Student role changes
+    if (hasStudent && !hadStudent) {
+        // Added Student role - create Student record
+        if (!createStudent(userId)) {
+            LOG_ERROR("UserEditorWidget", "Failed to create Student for user " << userId);
+            success = false;
+        }
+    } else if (!hasStudent && hadStudent) {
+        // Removed Student role - delete Student record
+        if (!deleteStudent(userId)) {
+            LOG_WARN("UserEditorWidget", "Failed to delete Student for user " << userId);
+        }
+    }
+
+    return success;
+}
+
+bool UserEditorWidget::createAdminUser(int userId) {
+    if (!apiClient_) return false;
+
+    // First check if AdminUser already exists
+    std::string checkEndpoint = "/AdminUser?filter[user_id]=" + std::to_string(userId);
+    auto checkResponse = apiClient_->get(checkEndpoint);
+    if (checkResponse.success) {
+        auto json = checkResponse.getJson();
+        if (json.contains("data") && json["data"].is_array() && !json["data"].empty()) {
+            LOG_DEBUG("UserEditorWidget", "AdminUser already exists for user " << userId);
+            return true;  // Already exists
+        }
+    }
+
+    // Create AdminUser record
+    nlohmann::json payload;
+    payload["data"]["type"] = "AdminUser";
+    payload["data"]["attributes"]["user_id"] = userId;
+    payload["data"]["attributes"]["is_active"] = true;
+
+    auto response = apiClient_->post("/AdminUser", payload);
+    if (response.success) {
+        LOG_INFO("UserEditorWidget", "Created AdminUser for user " << userId);
+        return true;
+    } else {
+        LOG_ERROR("UserEditorWidget", "Failed to create AdminUser: " << response.errorMessage);
+        return false;
+    }
+}
+
+bool UserEditorWidget::createInstructor(int userId) {
+    if (!apiClient_) return false;
+
+    // First check if Instructor already exists
+    std::string checkEndpoint = "/Instructor?filter[user_id]=" + std::to_string(userId);
+    auto checkResponse = apiClient_->get(checkEndpoint);
+    if (checkResponse.success) {
+        auto json = checkResponse.getJson();
+        if (json.contains("data") && json["data"].is_array() && !json["data"].empty()) {
+            LOG_DEBUG("UserEditorWidget", "Instructor already exists for user " << userId);
+            return true;  // Already exists
+        }
+    }
+
+    // Get user details for instructor record
+    std::string userEndpoint = "/AppUser/" + std::to_string(userId);
+    auto userResponse = apiClient_->get(userEndpoint);
+    std::string firstName, lastName, email;
+    if (userResponse.success) {
+        auto json = userResponse.getJson();
+        if (json.contains("data") && json["data"].contains("attributes")) {
+            auto& attrs = json["data"]["attributes"];
+            firstName = attrs.value("first_name", "");
+            lastName = attrs.value("last_name", "");
+            email = attrs.value("email", "");
+        }
+    }
+
+    // Create Instructor record
+    nlohmann::json payload;
+    payload["data"]["type"] = "Instructor";
+    payload["data"]["attributes"]["user_id"] = userId;
+    payload["data"]["attributes"]["first_name"] = firstName;
+    payload["data"]["attributes"]["last_name"] = lastName;
+    payload["data"]["attributes"]["email"] = email;
+    payload["data"]["attributes"]["is_active"] = true;
+
+    auto response = apiClient_->post("/Instructor", payload);
+    if (response.success) {
+        LOG_INFO("UserEditorWidget", "Created Instructor for user " << userId);
+        return true;
+    } else {
+        LOG_ERROR("UserEditorWidget", "Failed to create Instructor: " << response.errorMessage);
+        return false;
+    }
+}
+
+bool UserEditorWidget::createStudent(int userId) {
+    if (!apiClient_) return false;
+
+    // First check if Student already exists
+    std::string checkEndpoint = "/Student?filter[user_id]=" + std::to_string(userId);
+    auto checkResponse = apiClient_->get(checkEndpoint);
+    if (checkResponse.success) {
+        auto json = checkResponse.getJson();
+        if (json.contains("data") && json["data"].is_array() && !json["data"].empty()) {
+            LOG_DEBUG("UserEditorWidget", "Student already exists for user " << userId);
+            return true;  // Already exists
+        }
+    }
+
+    // Get user details for student record
+    std::string userEndpoint = "/AppUser/" + std::to_string(userId);
+    auto userResponse = apiClient_->get(userEndpoint);
+    std::string firstName, lastName, email;
+    if (userResponse.success) {
+        auto json = userResponse.getJson();
+        if (json.contains("data") && json["data"].contains("attributes")) {
+            auto& attrs = json["data"]["attributes"];
+            firstName = attrs.value("first_name", "");
+            lastName = attrs.value("last_name", "");
+            email = attrs.value("email", "");
+        }
+    }
+
+    // Create Student record
+    nlohmann::json payload;
+    payload["data"]["type"] = "Student";
+    payload["data"]["attributes"]["user_id"] = userId;
+    payload["data"]["attributes"]["first_name"] = firstName;
+    payload["data"]["attributes"]["last_name"] = lastName;
+    payload["data"]["attributes"]["email"] = email;
+    payload["data"]["attributes"]["is_active"] = true;
+    payload["data"]["attributes"]["enrollment_status"] = "enrolled";
+
+    auto response = apiClient_->post("/Student", payload);
+    if (response.success) {
+        LOG_INFO("UserEditorWidget", "Created Student for user " << userId);
+        return true;
+    } else {
+        LOG_ERROR("UserEditorWidget", "Failed to create Student: " << response.errorMessage);
+        return false;
+    }
+}
+
+bool UserEditorWidget::deleteAdminUser(int userId) {
+    if (!apiClient_) return false;
+
+    // Find the AdminUser record
+    std::string checkEndpoint = "/AdminUser?filter[user_id]=" + std::to_string(userId);
+    auto checkResponse = apiClient_->get(checkEndpoint);
+    if (checkResponse.success) {
+        auto json = checkResponse.getJson();
+        if (json.contains("data") && json["data"].is_array()) {
+            for (const auto& item : json["data"]) {
+                if (item.contains("id")) {
+                    std::string recordId = item["id"].is_string() ?
+                        item["id"].get<std::string>() :
+                        std::to_string(item["id"].get<int>());
+                    auto delResponse = apiClient_->del("/AdminUser/" + recordId);
+                    if (delResponse.success) {
+                        LOG_INFO("UserEditorWidget", "Deleted AdminUser " << recordId << " for user " << userId);
+                    }
+                }
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+bool UserEditorWidget::deleteInstructor(int userId) {
+    if (!apiClient_) return false;
+
+    // Find the Instructor record
+    std::string checkEndpoint = "/Instructor?filter[user_id]=" + std::to_string(userId);
+    auto checkResponse = apiClient_->get(checkEndpoint);
+    if (checkResponse.success) {
+        auto json = checkResponse.getJson();
+        if (json.contains("data") && json["data"].is_array()) {
+            for (const auto& item : json["data"]) {
+                if (item.contains("id")) {
+                    std::string recordId = item["id"].is_string() ?
+                        item["id"].get<std::string>() :
+                        std::to_string(item["id"].get<int>());
+                    auto delResponse = apiClient_->del("/Instructor/" + recordId);
+                    if (delResponse.success) {
+                        LOG_INFO("UserEditorWidget", "Deleted Instructor " << recordId << " for user " << userId);
+                    }
+                }
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+bool UserEditorWidget::deleteStudent(int userId) {
+    if (!apiClient_) return false;
+
+    // Find the Student record
+    std::string checkEndpoint = "/Student?filter[user_id]=" + std::to_string(userId);
+    auto checkResponse = apiClient_->get(checkEndpoint);
+    if (checkResponse.success) {
+        auto json = checkResponse.getJson();
+        if (json.contains("data") && json["data"].is_array()) {
+            for (const auto& item : json["data"]) {
+                if (item.contains("id")) {
+                    std::string recordId = item["id"].is_string() ?
+                        item["id"].get<std::string>() :
+                        std::to_string(item["id"].get<int>());
+                    auto delResponse = apiClient_->del("/Student/" + recordId);
+                    if (delResponse.success) {
+                        LOG_INFO("UserEditorWidget", "Deleted Student " << recordId << " for user " << userId);
+                    }
+                }
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace Admin
