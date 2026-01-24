@@ -411,56 +411,56 @@ BEGIN
     -- John Smith
     SELECT id INTO v_student_id FROM student WHERE email = 'john.smith@email.com';
     IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_address WHERE student_id = v_student_id) THEN
-        INSERT INTO student_address (student_id, address_type, street_address, city, state, zip_code, country, is_primary)
+        INSERT INTO student_address (student_id, address_type, street1, city, state, postal_code, country, is_primary)
         VALUES (v_student_id, 'home', '123 Main Street', 'Dallas', 'TX', '75201', 'USA', TRUE);
     END IF;
 
     -- Maria Garcia
     SELECT id INTO v_student_id FROM student WHERE email = 'maria.garcia@email.com';
     IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_address WHERE student_id = v_student_id) THEN
-        INSERT INTO student_address (student_id, address_type, street_address, city, state, zip_code, country, is_primary)
+        INSERT INTO student_address (student_id, address_type, street1, city, state, postal_code, country, is_primary)
         VALUES (v_student_id, 'home', '456 Oak Avenue', 'Fort Worth', 'TX', '76102', 'USA', TRUE);
     END IF;
 
     -- David Lee
     SELECT id INTO v_student_id FROM student WHERE email = 'david.lee@email.com';
     IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_address WHERE student_id = v_student_id) THEN
-        INSERT INTO student_address (student_id, address_type, street_address, city, state, zip_code, country, is_primary)
+        INSERT INTO student_address (student_id, address_type, street1, city, state, postal_code, country, is_primary)
         VALUES (v_student_id, 'home', '789 Pine Road', 'Arlington', 'TX', '76010', 'USA', TRUE);
     END IF;
 
     -- Lisa Chen
     SELECT id INTO v_student_id FROM student WHERE email = 'lisa.chen@email.com';
     IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_address WHERE student_id = v_student_id) THEN
-        INSERT INTO student_address (student_id, address_type, street_address, city, state, zip_code, country, is_primary)
+        INSERT INTO student_address (student_id, address_type, street1, city, state, postal_code, country, is_primary)
         VALUES (v_student_id, 'home', '321 Elm Street', 'Plano', 'TX', '75023', 'USA', TRUE);
     END IF;
 
     -- Kevin Brown
     SELECT id INTO v_student_id FROM student WHERE email = 'kevin.brown@email.com';
     IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_address WHERE student_id = v_student_id) THEN
-        INSERT INTO student_address (student_id, address_type, street_address, city, state, zip_code, country, is_primary)
+        INSERT INTO student_address (student_id, address_type, street1, city, state, postal_code, country, is_primary)
         VALUES (v_student_id, 'home', '555 Cedar Lane', 'Irving', 'TX', '75038', 'USA', TRUE);
     END IF;
 
     -- Amanda Wilson
     SELECT id INTO v_student_id FROM student WHERE email = 'amanda.wilson@email.com';
     IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_address WHERE student_id = v_student_id) THEN
-        INSERT INTO student_address (student_id, address_type, street_address, city, state, zip_code, country, is_primary)
+        INSERT INTO student_address (student_id, address_type, street1, city, state, postal_code, country, is_primary)
         VALUES (v_student_id, 'home', '777 Birch Drive', 'Garland', 'TX', '75040', 'USA', TRUE);
     END IF;
 
     -- Marcus Taylor
     SELECT id INTO v_student_id FROM student WHERE email = 'marcus.taylor@email.com';
     IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_address WHERE student_id = v_student_id) THEN
-        INSERT INTO student_address (student_id, address_type, street_address, city, state, zip_code, country, is_primary)
+        INSERT INTO student_address (student_id, address_type, street1, city, state, postal_code, country, is_primary)
         VALUES (v_student_id, 'home', '888 Maple Court', 'Mesquite', 'TX', '75149', 'USA', TRUE);
     END IF;
 
     -- Carlos Rodriguez
     SELECT id INTO v_student_id FROM student WHERE email = 'carlos.rodriguez@email.com';
     IF v_student_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM student_address WHERE student_id = v_student_id) THEN
-        INSERT INTO student_address (student_id, address_type, street_address, city, state, zip_code, country, is_primary)
+        INSERT INTO student_address (student_id, address_type, street1, city, state, postal_code, country, is_primary)
         VALUES (v_student_id, 'home', '999 Walnut Street', 'Richardson', 'TX', '75080', 'USA', TRUE);
     END IF;
 
