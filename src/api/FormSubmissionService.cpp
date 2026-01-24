@@ -255,6 +255,30 @@ SubmissionResult FormSubmissionService::loginStudent(const std::string& email,
                 result.message = "Invalid password";
             }
         } else {
+            // Student not found - check if this is an admin user trying to login
+            // at the wrong portal
+            std::string adminEndpoint = "/AdminUser?filter[email]=" + email;
+            ApiResponse adminResponse = apiClient_->get(adminEndpoint);
+
+            if (adminResponse.isSuccess()) {
+                auto adminJson = adminResponse.getJson();
+                nlohmann::json adminUsers;
+
+                if (adminJson.contains("data")) {
+                    adminUsers = adminJson["data"];
+                } else if (adminJson.is_array()) {
+                    adminUsers = adminJson;
+                }
+
+                if (adminUsers.is_array() && !adminUsers.empty()) {
+                    // This is an admin user - direct them to the correct portal
+                    result.success = false;
+                    result.message = "This is an administrator account. Please use /administration to log in.";
+                    LOG_INFO("FormSubmissionService", "Admin user " << email << " attempted login at student portal");
+                    return result;
+                }
+            }
+
             result.success = false;
             result.message = "Student not found";
         }

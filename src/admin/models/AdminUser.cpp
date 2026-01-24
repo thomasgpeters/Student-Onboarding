@@ -7,6 +7,7 @@ namespace Models {
 
 AdminUser::AdminUser()
     : id_(0)
+    , appUserId_(0)
     , email_("")
     , passwordHash_("")
     , firstName_("")
@@ -29,7 +30,7 @@ std::string AdminUser::getRoleString() const {
         case AdminRole::SuperAdmin:
             return "super_admin";
         case AdminRole::Administrator:
-            return "administrator";
+            return "admin";
         case AdminRole::Instructor:
         default:
             return "instructor";
@@ -39,8 +40,10 @@ std::string AdminUser::getRoleString() const {
 void AdminUser::setRoleFromString(const std::string& roleStr) {
     if (roleStr == "super_admin") {
         role_ = AdminRole::SuperAdmin;
-    } else if (roleStr == "administrator") {
+    } else if (roleStr == "admin" || roleStr == "administrator") {
         role_ = AdminRole::Administrator;
+    } else if (roleStr == "instructor" || roleStr == "staff") {
+        role_ = AdminRole::Instructor;
     } else {
         role_ = AdminRole::Instructor;
     }

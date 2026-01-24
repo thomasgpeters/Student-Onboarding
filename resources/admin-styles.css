@@ -2386,6 +2386,7 @@ textarea.form-control {
 
 .admin-dialog .Wt-dialog-body {
     padding: 0 !important;
+    background: white !important;
 }
 
 .admin-dialog-content {
@@ -2430,6 +2431,66 @@ textarea.form-control {
     background: #f8fafc;
     border-top: 1px solid #e2e8f0;
     border-radius: 0 0 12px 12px;
+}
+
+/* Admin Message Box (Delete Confirmation) Styles */
+.admin-dialog .body,
+.admin-dialog .Wt-msgbox-body {
+    padding: 1.5rem !important;
+    background: white !important;
+}
+
+.admin-dialog .Wt-msgbox-icon {
+    margin: 0 1rem 0 0;
+    width: 32px;
+    height: 32px;
+}
+
+.admin-dialog .Wt-msgbox-text {
+    color: #1e293b;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
+.admin-dialog .Wt-dialogButtonBar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-radius: 0 0 12px 12px;
+}
+
+.admin-dialog .Wt-dialogButtonBar button {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.admin-dialog .Wt-dialogButtonBar button:first-child {
+    background: #dc2626;
+    color: white;
+    border: 1px solid #dc2626;
+}
+
+.admin-dialog .Wt-dialogButtonBar button:first-child:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+}
+
+.admin-dialog .Wt-dialogButtonBar button:last-child {
+    background: white;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.admin-dialog .Wt-dialogButtonBar button:last-child:hover {
+    background: #f1f5f9;
+    color: #475569;
 }
 
 /* =====================================================

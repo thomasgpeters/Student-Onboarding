@@ -74,6 +74,50 @@ CREATE TABLE IF NOT EXISTS institution_settings (
 );
 
 -- =====================================================
+-- APP_USER TABLE - Single Source of Truth for User Credentials
+-- =====================================================
+-- All users (students, instructors, admins) have their credentials here.
+-- Profile-specific data is stored in student or admin_user tables.
+-- Added in migration 014
+
+CREATE TABLE IF NOT EXISTS app_user (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(200) NOT NULL UNIQUE,
+    password_hash VARCHAR(500) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    is_active BOOLEAN DEFAULT TRUE,
+    login_enabled BOOLEAN DEFAULT TRUE,
+    email_verified BOOLEAN DEFAULT FALSE,
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- USER_ROLE TABLE - Role Assignments
+-- =====================================================
+-- A user can have multiple roles (e.g., both student and instructor)
+-- Only administrators can assign roles
+-- Added in migration 014
+
+CREATE TABLE IF NOT EXISTS user_role (
+    id SERIAL PRIMARY KEY,
+    app_user_id INTEGER NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+    role VARCHAR(50) NOT NULL,
+    assigned_by INTEGER REFERENCES app_user(id),
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Each user can only have each role once
+    UNIQUE(app_user_id, role),
+    -- Role constraint
+    CONSTRAINT user_role_check
+        CHECK (role IN ('student', 'instructor', 'admin', 'super_admin'))
+);
+
+-- =====================================================
 -- CURRICULUM/PROGRAM TABLES
 -- =====================================================
 -- Extended to support both accredited and vocational programs
@@ -131,6 +175,9 @@ CREATE TABLE IF NOT EXISTS curriculum_form_requirement (
 
 CREATE TABLE IF NOT EXISTS student (
     id SERIAL PRIMARY KEY,
+    -- Reference to app_user for credentials (migration 014)
+    app_user_id INTEGER REFERENCES app_user(id),
+    -- Legacy columns kept for backward compatibility
     email VARCHAR(200) NOT NULL UNIQUE,
     password_hash VARCHAR(500),
     first_name VARCHAR(100),
@@ -220,6 +267,9 @@ CREATE TABLE IF NOT EXISTS student_endorsement (
 
 CREATE TABLE IF NOT EXISTS admin_user (
     id SERIAL PRIMARY KEY,
+    -- Reference to app_user for credentials (migration 014)
+    app_user_id INTEGER REFERENCES app_user(id),
+    -- Legacy columns kept for backward compatibility
     email VARCHAR(200) NOT NULL UNIQUE,
     password_hash VARCHAR(500) NOT NULL,
     first_name VARCHAR(100),
@@ -499,8 +549,15 @@ CREATE TABLE IF NOT EXISTS audit_log (
 -- INDEXES FOR PERFORMANCE
 -- =====================================================
 
+-- AppUser indexes (migration 014)
+CREATE INDEX IF NOT EXISTS idx_app_user_email ON app_user(email);
+CREATE INDEX IF NOT EXISTS idx_app_user_active ON app_user(is_active);
+CREATE INDEX IF NOT EXISTS idx_user_role_user ON user_role(app_user_id);
+CREATE INDEX IF NOT EXISTS idx_user_role_role ON user_role(role);
+
 -- Student indexes
 CREATE INDEX IF NOT EXISTS idx_student_email ON student(email);
+CREATE INDEX IF NOT EXISTS idx_student_app_user ON student(app_user_id);
 CREATE INDEX IF NOT EXISTS idx_student_curriculum ON student(curriculum_id);
 CREATE INDEX IF NOT EXISTS idx_student_status ON student(intake_status);
 CREATE INDEX IF NOT EXISTS idx_student_name ON student(last_name, first_name);
@@ -529,6 +586,9 @@ CREATE INDEX IF NOT EXISTS idx_consent_student ON consent(student_id);
 CREATE INDEX IF NOT EXISTS idx_student_endorsement_student ON student_endorsement(student_id);
 CREATE INDEX IF NOT EXISTS idx_student_endorsement_curriculum ON student_endorsement(curriculum_id);
 CREATE INDEX IF NOT EXISTS idx_curriculum_is_endorsement ON curriculum(is_endorsement);
+
+-- Admin user indexes (migration 014)
+CREATE INDEX IF NOT EXISTS idx_admin_user_app_user ON admin_user(app_user_id);
 
 -- Audit indexes
 CREATE INDEX IF NOT EXISTS idx_audit_student ON audit_log(student_id);
@@ -559,6 +619,12 @@ CREATE TRIGGER update_form_type_updated_at BEFORE UPDATE ON form_type FOR EACH R
 
 DROP TRIGGER IF EXISTS update_institution_settings_updated_at ON institution_settings;
 CREATE TRIGGER update_institution_settings_updated_at BEFORE UPDATE ON institution_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_app_user_updated_at ON app_user;
+CREATE TRIGGER update_app_user_updated_at BEFORE UPDATE ON app_user FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_user_role_updated_at ON user_role;
+CREATE TRIGGER update_user_role_updated_at BEFORE UPDATE ON user_role FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_curriculum_updated_at ON curriculum;
 CREATE TRIGGER update_curriculum_updated_at BEFORE UPDATE ON curriculum FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
