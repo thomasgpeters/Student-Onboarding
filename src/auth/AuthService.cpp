@@ -544,8 +544,8 @@ UnifiedAuthResult AuthService::changePassword(int userId, const std::string& old
 std::vector<Models::UserRole> AuthService::getUserRoles(int userId) {
     std::vector<Models::UserRole> roles;
 
-    // Try to get roles from UserRoles table
-    std::string endpoint = "/UserRoles?filter[user_id]=" + std::to_string(userId) +
+    // Try to get roles from UserRole table
+    std::string endpoint = "/UserRole?filter[user_id]=" + std::to_string(userId) +
                           "&filter[is_active]=true";
     auto response = apiClient_->get(endpoint);
     auto json = response.getJson();
