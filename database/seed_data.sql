@@ -6,15 +6,16 @@
 -- - Admin profiles
 -- - Instructor profiles and legacy instructor records
 -- - Instructor assignments
+-- - Instructor availability schedules
+-- - Instructor qualifications
 -- - Student profiles with enrollment data
--- - Student endorsements
 --
 -- Prerequisites:
 --   1. Run schema.sql first
 --   2. Run install.sql
 --   3. Run switch_to_vocational.sql (for CDL curriculum)
---   4. Run migrations/015_unified_user_authentication.sql
---   5. Run migrations/014_add_instructor_feature.sql
+--   4. Run migrations/014_add_instructor_feature.sql
+--   5. Run migrations/015_unified_user_authentication.sql
 --
 -- Usage:
 --   psql -U postgres -d student_onboarding -f database/seed_data.sql
@@ -27,17 +28,15 @@
 -- =====================================================
 -- SECTION 1: ADMIN USERS
 -- =====================================================
+-- Creates admin users in the unified authentication system
+-- Tables: app_user, user_roles, admin_profile
 
 DO $$
 DECLARE
     v_user_id INTEGER;
-    v_admin_id INTEGER;
     v_dept_cdl INTEGER;
-    v_dept_auto INTEGER;
 BEGIN
-    -- Get department IDs
     SELECT id INTO v_dept_cdl FROM department WHERE code = 'CDL';
-    SELECT id INTO v_dept_auto FROM department WHERE code = 'AUTO';
 
     RAISE NOTICE '=== Creating Admin Users ===';
 
@@ -92,6 +91,24 @@ END $$;
 -- =====================================================
 -- SECTION 2: INSTRUCTOR USERS
 -- =====================================================
+-- Creates instructor users in both:
+--   1. Unified auth system (app_user, user_roles, instructor_profile)
+--   2. Legacy system (admin_user, instructor, instructor_qualification)
+--
+-- Instructor Types:
+--   - instructor: Can teach and train students
+--   - examiner: Can conduct official CDL tests and issue certifications
+--   - both: Can perform all instructor and examiner functions
+--
+-- Capabilities:
+--   - can_schedule: Can create/manage training sessions
+--   - can_validate: Can validate student skill completion
+--   - can_issue_cdl: Can issue official CDL certifications (examiners only)
+--
+-- Qualifications tracked:
+--   - CDL license details (number, class, state, expiration)
+--   - Examiner certifications
+--   - Endorsed classes (A, B, C) and endorsements (H, N, T, P, S)
 
 DO $$
 DECLARE
@@ -104,8 +121,15 @@ BEGIN
 
     RAISE NOTICE '=== Creating Instructor Users ===';
 
-    -- Senior Instructor (Instructor + Examiner) - Class A Specialist
+    -- =========================================================
+    -- INSTRUCTOR 1: James Williams (Senior Instructor + Examiner)
+    -- =========================================================
+    -- Role: Senior instructor and certified examiner
+    -- CDL Class: A (can also teach B)
+    -- Endorsements: H (Hazmat), N (Tanker), T (Doubles/Triples), P (Passenger)
+    -- Capabilities: Full (schedule, validate, issue CDL)
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'j.williams@cdlschool.edu') THEN
+        -- Unified auth system
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('j.williams@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'James', 'Williams', '(555) 200-0001', TRUE, TRUE, TRUE)
@@ -119,7 +143,7 @@ BEGIN
                 'CDL-A-12345678', 'A', '2027-03-15',
                 TRUE, TRUE, TRUE, TRUE);
 
-        -- Also create legacy instructor record (for migration compatibility)
+        -- Legacy system (for instructor_assignment compatibility)
         INSERT INTO admin_user (email, password_hash, first_name, last_name, role, department_id, is_active)
         VALUES ('j.williams@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'James', 'Williams', 'instructor', v_dept_cdl, TRUE)
@@ -136,7 +160,7 @@ BEGIN
                 '["A", "B"]', '["H", "N", "T", "P"]', TRUE, TRUE, TRUE)
         RETURNING id INTO v_instructor_id;
 
-        -- Add qualifications
+        -- Qualifications
         INSERT INTO instructor_qualification (instructor_id, qualification_type, qualification_name,
                                              issuing_authority, certification_number, issued_date, expiration_date,
                                              is_active, is_verified)
@@ -147,7 +171,13 @@ BEGIN
         RAISE NOTICE 'Created senior instructor: j.williams@cdlschool.edu';
     END IF;
 
-    -- Instructor - Class A Focus
+    -- =========================================================
+    -- INSTRUCTOR 2: Michael Johnson (Class A Instructor)
+    -- =========================================================
+    -- Role: Standard instructor (no examiner certification)
+    -- CDL Class: A
+    -- Endorsements: N (Tanker), T (Doubles/Triples)
+    -- Capabilities: Schedule and validate only (cannot issue CDL)
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'm.johnson@cdlschool.edu') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('m.johnson@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -162,7 +192,7 @@ BEGIN
                 'CDL-A-23456789', 'A', '2026-08-20',
                 FALSE, TRUE, TRUE, FALSE);
 
-        -- Legacy instructor record
+        -- Legacy system
         INSERT INTO admin_user (email, password_hash, first_name, last_name, role, department_id, is_active)
         VALUES ('m.johnson@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'Michael', 'Johnson', 'instructor', v_dept_cdl, TRUE)
@@ -179,7 +209,13 @@ BEGIN
         RAISE NOTICE 'Created instructor: m.johnson@cdlschool.edu';
     END IF;
 
-    -- Instructor - Class B Specialist (Passenger/School Bus)
+    -- =========================================================
+    -- INSTRUCTOR 3: Sarah Davis (Class B Specialist)
+    -- =========================================================
+    -- Role: Standard instructor specializing in Class B (buses)
+    -- CDL Class: B
+    -- Endorsements: P (Passenger), S (School Bus)
+    -- Capabilities: Schedule and validate only
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 's.davis@cdlschool.edu') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('s.davis@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -194,7 +230,7 @@ BEGIN
                 'CDL-B-34567890', 'B', '2027-01-10',
                 FALSE, TRUE, TRUE, FALSE);
 
-        -- Legacy instructor record
+        -- Legacy system
         INSERT INTO admin_user (email, password_hash, first_name, last_name, role, department_id, is_active)
         VALUES ('s.davis@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'Sarah', 'Davis', 'instructor', v_dept_cdl, TRUE)
@@ -211,7 +247,13 @@ BEGIN
         RAISE NOTICE 'Created instructor: s.davis@cdlschool.edu';
     END IF;
 
-    -- Examiner Only (Testing specialist)
+    -- =========================================================
+    -- INSTRUCTOR 4: Robert Thompson (Examiner Only)
+    -- =========================================================
+    -- Role: Certified examiner only (does not teach)
+    -- CDL Class: A (can also examine B)
+    -- Endorsements: All (H, N, T, P, S)
+    -- Capabilities: Validate and issue CDL only (no scheduling)
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'r.thompson@cdlschool.edu') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('r.thompson@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -226,7 +268,7 @@ BEGIN
                 'CDL-A-45678901', 'A', '2026-05-30',
                 TRUE, FALSE, TRUE, TRUE);
 
-        -- Legacy instructor record
+        -- Legacy system
         INSERT INTO admin_user (email, password_hash, first_name, last_name, role, department_id, is_active)
         VALUES ('r.thompson@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
                 'Robert', 'Thompson', 'instructor', v_dept_cdl, TRUE)
@@ -256,31 +298,95 @@ BEGIN
 END $$;
 
 -- =====================================================
--- SECTION 3: STUDENT USERS
+-- SECTION 3: INSTRUCTOR AVAILABILITY
 -- =====================================================
+-- Defines recurring weekly availability for instructors
+-- day_of_week: 0=Sunday, 1=Monday, ..., 6=Saturday
+
+DO $$
+DECLARE
+    v_instructor_williams INTEGER;
+    v_instructor_johnson INTEGER;
+    v_instructor_davis INTEGER;
+    v_instructor_thompson INTEGER;
+BEGIN
+    RAISE NOTICE '=== Creating Instructor Availability ===';
+
+    SELECT id INTO v_instructor_williams FROM instructor WHERE employee_id = 'INS001';
+    SELECT id INTO v_instructor_johnson FROM instructor WHERE employee_id = 'INS002';
+    SELECT id INTO v_instructor_davis FROM instructor WHERE employee_id = 'INS003';
+    SELECT id INTO v_instructor_thompson FROM instructor WHERE employee_id = 'INS004';
+
+    -- Williams: Monday-Friday 7am-4pm (full-time senior instructor)
+    IF v_instructor_williams IS NOT NULL THEN
+        INSERT INTO instructor_availability (instructor_id, day_of_week, start_time, end_time, availability_type, preferred_location)
+        VALUES
+            (v_instructor_williams, 1, '07:00', '16:00', 'available', 'Main Campus'),
+            (v_instructor_williams, 2, '07:00', '16:00', 'available', 'Main Campus'),
+            (v_instructor_williams, 3, '07:00', '16:00', 'available', 'Main Campus'),
+            (v_instructor_williams, 4, '07:00', '16:00', 'available', 'Main Campus'),
+            (v_instructor_williams, 5, '07:00', '16:00', 'available', 'Main Campus')
+        ON CONFLICT DO NOTHING;
+        RAISE NOTICE 'Added availability for Williams (Mon-Fri 7am-4pm)';
+    END IF;
+
+    -- Johnson: Monday-Thursday 6am-3pm (early shift for range training)
+    IF v_instructor_johnson IS NOT NULL THEN
+        INSERT INTO instructor_availability (instructor_id, day_of_week, start_time, end_time, availability_type, preferred_location)
+        VALUES
+            (v_instructor_johnson, 1, '06:00', '15:00', 'available', 'Training Range'),
+            (v_instructor_johnson, 2, '06:00', '15:00', 'available', 'Training Range'),
+            (v_instructor_johnson, 3, '06:00', '15:00', 'available', 'Training Range'),
+            (v_instructor_johnson, 4, '06:00', '15:00', 'available', 'Training Range')
+        ON CONFLICT DO NOTHING;
+        RAISE NOTICE 'Added availability for Johnson (Mon-Thu 6am-3pm)';
+    END IF;
+
+    -- Davis: Tuesday-Saturday 8am-5pm (bus program, weekend availability)
+    IF v_instructor_davis IS NOT NULL THEN
+        INSERT INTO instructor_availability (instructor_id, day_of_week, start_time, end_time, availability_type, preferred_location)
+        VALUES
+            (v_instructor_davis, 2, '08:00', '17:00', 'available', 'Bus Depot'),
+            (v_instructor_davis, 3, '08:00', '17:00', 'available', 'Bus Depot'),
+            (v_instructor_davis, 4, '08:00', '17:00', 'available', 'Bus Depot'),
+            (v_instructor_davis, 5, '08:00', '17:00', 'available', 'Bus Depot'),
+            (v_instructor_davis, 6, '08:00', '17:00', 'available', 'Bus Depot')
+        ON CONFLICT DO NOTHING;
+        RAISE NOTICE 'Added availability for Davis (Tue-Sat 8am-5pm)';
+    END IF;
+
+    -- Thompson (Examiner): Wednesday and Friday only - designated testing days
+    IF v_instructor_thompson IS NOT NULL THEN
+        INSERT INTO instructor_availability (instructor_id, day_of_week, start_time, end_time, availability_type, preferred_location, notes)
+        VALUES
+            (v_instructor_thompson, 3, '08:00', '16:00', 'available', 'Testing Center', 'CDL Testing Day'),
+            (v_instructor_thompson, 5, '08:00', '16:00', 'available', 'Testing Center', 'CDL Testing Day')
+        ON CONFLICT DO NOTHING;
+        RAISE NOTICE 'Added availability for Thompson (Wed/Fri 8am-4pm - Testing)';
+    END IF;
+
+    RAISE NOTICE '=== Instructor Availability Created ===';
+END $$;
+
+-- =====================================================
+-- SECTION 4: STUDENT USERS
+-- =====================================================
+-- Creates student users in the unified authentication system
+-- Tables: app_user, user_roles, student_profile
+-- Note: Uses new unified system only (not legacy student table)
 
 DO $$
 DECLARE
     v_user_id INTEGER;
-    v_student_id INTEGER;
     v_curriculum_class_a INTEGER;
     v_curriculum_class_b INTEGER;
-    v_curriculum_tanker INTEGER;
-    v_curriculum_hazmat INTEGER;
-    v_curriculum_passenger INTEGER;
-    v_curriculum_school_bus INTEGER;
 BEGIN
-    -- Get curriculum IDs
     SELECT id INTO v_curriculum_class_a FROM curriculum WHERE code = 'cdl_class_a';
     SELECT id INTO v_curriculum_class_b FROM curriculum WHERE code = 'cdl_class_b';
-    SELECT id INTO v_curriculum_tanker FROM curriculum WHERE code = 'cdl_class_a_tanker';
-    SELECT id INTO v_curriculum_hazmat FROM curriculum WHERE code = 'cdl_class_a_hazmat';
-    SELECT id INTO v_curriculum_passenger FROM curriculum WHERE code = 'cdl_class_b_passenger';
-    SELECT id INTO v_curriculum_school_bus FROM curriculum WHERE code = 'cdl_class_b_school_bus';
 
     RAISE NOTICE '=== Creating Student Users ===';
 
-    -- Student 1: Class A - Active, in progress
+    -- Student 1: John Smith - Class A, veteran, completed intake
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'john.smith@email.com') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, middle_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('john.smith@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -298,22 +404,10 @@ BEGIN
                 'US Citizen', v_curriculum_class_a, 'full_time',
                 '2026-01-06', '2026-02-03',
                 TRUE, 'completed');
-
-        -- Also create legacy student record
-        INSERT INTO student (email, password_hash, first_name, last_name, middle_name, phone_number,
-                            date_of_birth, gender, address_line1, city, state, zip_code,
-                            citizenship_status, curriculum_id, student_type,
-                            enrollment_date, expected_graduation, is_veteran, intake_status, login_enabled)
-        VALUES ('john.smith@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'John', 'Smith', 'Robert', '(555) 301-0001',
-                '1992-05-15', 'male', '123 Main Street', 'Dallas', 'TX', '75201',
-                'US Citizen', v_curriculum_class_a, 'full_time',
-                '2026-01-06', '2026-02-03', TRUE, 'completed', TRUE);
-
-        RAISE NOTICE 'Created student: john.smith@email.com (Class A)';
+        RAISE NOTICE 'Created student: john.smith@email.com (Class A, Veteran)';
     END IF;
 
-    -- Student 2: Class A - Active, pursuing Tanker endorsement
+    -- Student 2: Maria Garcia - Class A, pursuing Tanker endorsement
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'maria.garcia@email.com') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('maria.garcia@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -329,26 +423,10 @@ BEGIN
                 '456 Oak Avenue', 'Fort Worth', 'TX', '76102',
                 'US Citizen', v_curriculum_class_a, 'full_time',
                 '2025-12-02', '2025-12-30', 'completed');
-
-        INSERT INTO student (email, password_hash, first_name, last_name, phone_number,
-                            date_of_birth, gender, address_line1, city, state, zip_code,
-                            citizenship_status, curriculum_id, student_type,
-                            enrollment_date, expected_graduation, intake_status, login_enabled)
-        VALUES ('maria.garcia@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Maria', 'Garcia', '(555) 302-0001',
-                '1988-11-22', 'female', '456 Oak Avenue', 'Fort Worth', 'TX', '76102',
-                'US Citizen', v_curriculum_class_a, 'full_time',
-                '2025-12-02', '2025-12-30', 'completed', TRUE)
-        RETURNING id INTO v_student_id;
-
-        -- Student endorsement: Tanker (in progress)
-        INSERT INTO student_endorsement (student_id, curriculum_id, enrollment_status, enrolled_at)
-        VALUES (v_student_id, v_curriculum_tanker, 'in_progress', '2026-01-13');
-
-        RAISE NOTICE 'Created student: maria.garcia@email.com (Class A + Tanker endorsement)';
+        RAISE NOTICE 'Created student: maria.garcia@email.com (Class A)';
     END IF;
 
-    -- Student 3: Class A - Active, pursuing HazMat endorsement
+    -- Student 3: David Lee - Class A, pursuing HazMat endorsement
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'david.lee@email.com') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('david.lee@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -364,26 +442,10 @@ BEGIN
                 '789 Pine Road', 'Arlington', 'TX', '76010',
                 'US Citizen', v_curriculum_class_a, 'full_time',
                 '2025-11-04', '2025-12-02', 'completed');
-
-        INSERT INTO student (email, password_hash, first_name, last_name, phone_number,
-                            date_of_birth, gender, address_line1, city, state, zip_code,
-                            citizenship_status, curriculum_id, student_type,
-                            enrollment_date, expected_graduation, intake_status, login_enabled)
-        VALUES ('david.lee@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'David', 'Lee', '(555) 303-0001',
-                '1995-03-08', 'male', '789 Pine Road', 'Arlington', 'TX', '76010',
-                'US Citizen', v_curriculum_class_a, 'full_time',
-                '2025-11-04', '2025-12-02', 'completed', TRUE)
-        RETURNING id INTO v_student_id;
-
-        -- Student endorsement: HazMat (enrolled)
-        INSERT INTO student_endorsement (student_id, curriculum_id, enrollment_status, enrolled_at)
-        VALUES (v_student_id, v_curriculum_hazmat, 'enrolled', '2026-01-20');
-
-        RAISE NOTICE 'Created student: david.lee@email.com (Class A + HazMat endorsement)';
+        RAISE NOTICE 'Created student: david.lee@email.com (Class A)';
     END IF;
 
-    -- Student 4: Class B - Active, Passenger focus
+    -- Student 4: Lisa Chen - Class B, Passenger endorsement track
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'lisa.chen@email.com') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('lisa.chen@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -399,26 +461,10 @@ BEGIN
                 '321 Elm Street', 'Plano', 'TX', '75023',
                 'US Citizen', v_curriculum_class_b, 'full_time',
                 '2026-01-06', '2026-01-27', 'completed');
-
-        INSERT INTO student (email, password_hash, first_name, last_name, phone_number,
-                            date_of_birth, gender, address_line1, city, state, zip_code,
-                            citizenship_status, curriculum_id, student_type,
-                            enrollment_date, expected_graduation, intake_status, login_enabled)
-        VALUES ('lisa.chen@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Lisa', 'Chen', '(555) 304-0001',
-                '1990-07-19', 'female', '321 Elm Street', 'Plano', 'TX', '75023',
-                'US Citizen', v_curriculum_class_b, 'full_time',
-                '2026-01-06', '2026-01-27', 'completed', TRUE)
-        RETURNING id INTO v_student_id;
-
-        -- Student endorsement: Passenger (in progress)
-        INSERT INTO student_endorsement (student_id, curriculum_id, enrollment_status, enrolled_at)
-        VALUES (v_student_id, v_curriculum_passenger, 'in_progress', '2026-01-20');
-
-        RAISE NOTICE 'Created student: lisa.chen@email.com (Class B + Passenger endorsement)';
+        RAISE NOTICE 'Created student: lisa.chen@email.com (Class B)';
     END IF;
 
-    -- Student 5: Class B - School Bus Track (completed passenger, now school bus)
+    -- Student 5: Kevin Brown - Class B, School Bus track
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'kevin.brown@email.com') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('kevin.brown@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -434,29 +480,10 @@ BEGIN
                 '555 Cedar Lane', 'Irving', 'TX', '75038',
                 'US Citizen', v_curriculum_class_b, 'full_time',
                 '2025-10-07', '2025-10-28', 'completed');
-
-        INSERT INTO student (email, password_hash, first_name, last_name, phone_number,
-                            date_of_birth, gender, address_line1, city, state, zip_code,
-                            citizenship_status, curriculum_id, student_type,
-                            enrollment_date, expected_graduation, intake_status, login_enabled)
-        VALUES ('kevin.brown@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Kevin', 'Brown', '(555) 305-0001',
-                '1985-12-03', 'male', '555 Cedar Lane', 'Irving', 'TX', '75038',
-                'US Citizen', v_curriculum_class_b, 'full_time',
-                '2025-10-07', '2025-10-28', 'completed', TRUE)
-        RETURNING id INTO v_student_id;
-
-        -- Student endorsements: Passenger (completed), School Bus (in progress)
-        INSERT INTO student_endorsement (student_id, curriculum_id, enrollment_status, enrolled_at, completed_at)
-        VALUES (v_student_id, v_curriculum_passenger, 'completed', '2025-11-04', '2025-11-08');
-
-        INSERT INTO student_endorsement (student_id, curriculum_id, enrollment_status, enrolled_at)
-        VALUES (v_student_id, v_curriculum_school_bus, 'in_progress', '2025-11-11');
-
-        RAISE NOTICE 'Created student: kevin.brown@email.com (Class B + Passenger + School Bus)';
+        RAISE NOTICE 'Created student: kevin.brown@email.com (Class B)';
     END IF;
 
-    -- Student 6: New student - just started intake
+    -- Student 6: Amanda Wilson - Class A, new student (intake in progress)
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'amanda.wilson@email.com') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('amanda.wilson@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -472,21 +499,10 @@ BEGIN
                 '777 Birch Drive', 'Garland', 'TX', '75040',
                 v_curriculum_class_a, 'full_time',
                 '2026-01-20', 'in_progress');
-
-        INSERT INTO student (email, password_hash, first_name, last_name, phone_number,
-                            date_of_birth, gender, address_line1, city, state, zip_code,
-                            curriculum_id, student_type,
-                            enrollment_date, intake_status, login_enabled)
-        VALUES ('amanda.wilson@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Amanda', 'Wilson', '(555) 306-0001',
-                '1998-09-25', 'female', '777 Birch Drive', 'Garland', 'TX', '75040',
-                v_curriculum_class_a, 'full_time',
-                '2026-01-20', 'in_progress', TRUE);
-
         RAISE NOTICE 'Created student: amanda.wilson@email.com (Class A - New)';
     END IF;
 
-    -- Student 7: Class A - with financial aid
+    -- Student 7: Marcus Taylor - Class A, requires financial aid
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'marcus.taylor@email.com') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('marcus.taylor@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -504,28 +520,10 @@ BEGIN
                 'US Citizen', v_curriculum_class_a, 'full_time',
                 '2026-01-06', '2026-02-03',
                 TRUE, 'completed');
-
-        INSERT INTO student (email, password_hash, first_name, last_name, phone_number,
-                            date_of_birth, gender, address_line1, city, state, zip_code,
-                            citizenship_status, curriculum_id, student_type,
-                            enrollment_date, expected_graduation, requires_financial_aid,
-                            intake_status, login_enabled)
-        VALUES ('marcus.taylor@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Marcus', 'Taylor', '(555) 307-0001',
-                '1993-02-14', 'male', '888 Maple Court', 'Mesquite', 'TX', '75149',
-                'US Citizen', v_curriculum_class_a, 'full_time',
-                '2026-01-06', '2026-02-03', TRUE, 'completed', TRUE)
-        RETURNING id INTO v_student_id;
-
-        -- Add financial aid record
-        INSERT INTO financial_aid (student_id, applying_for_aid, aid_types, employment_status,
-                                   household_size, loan_interest)
-        VALUES (v_student_id, TRUE, 'grants,loans', 'employed_part_time', 3, TRUE);
-
         RAISE NOTICE 'Created student: marcus.taylor@email.com (Class A - Financial Aid)';
     END IF;
 
-    -- Student 8: International student
+    -- Student 8: Carlos Rodriguez - Class A, permanent resident
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'carlos.rodriguez@email.com') THEN
         INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
         VALUES ('carlos.rodriguez@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
@@ -545,216 +543,10 @@ BEGIN
                 v_curriculum_class_a, 'full_time',
                 '2026-01-13', '2026-02-10',
                 FALSE, 'completed');
-
-        INSERT INTO student (email, password_hash, first_name, last_name, phone_number,
-                            date_of_birth, gender, address_line1, city, state, zip_code,
-                            citizenship_status, citizenship_country, visa_type,
-                            curriculum_id, student_type,
-                            enrollment_date, expected_graduation, is_international,
-                            intake_status, login_enabled)
-        VALUES ('carlos.rodriguez@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Carlos', 'Rodriguez', '(555) 308-0001',
-                '1991-08-30', 'male', '999 Walnut Street', 'Richardson', 'TX', '75080',
-                'Permanent Resident', 'Mexico', 'Green Card',
-                v_curriculum_class_a, 'full_time',
-                '2026-01-13', '2026-02-10', FALSE, 'completed', TRUE);
-
         RAISE NOTICE 'Created student: carlos.rodriguez@email.com (Class A - Permanent Resident)';
     END IF;
 
     RAISE NOTICE '=== Student Users Created ===';
-END $$;
-
--- =====================================================
--- SECTION 4: INSTRUCTOR ASSIGNMENTS
--- =====================================================
-
-DO $$
-DECLARE
-    v_instructor_williams INTEGER;
-    v_instructor_johnson INTEGER;
-    v_instructor_davis INTEGER;
-    v_student_john INTEGER;
-    v_student_maria INTEGER;
-    v_student_david INTEGER;
-    v_student_lisa INTEGER;
-    v_student_kevin INTEGER;
-BEGIN
-    RAISE NOTICE '=== Creating Instructor Assignments ===';
-
-    -- Get instructor IDs (from legacy instructor table)
-    SELECT id INTO v_instructor_williams FROM instructor WHERE employee_id = 'INS001';
-    SELECT id INTO v_instructor_johnson FROM instructor WHERE employee_id = 'INS002';
-    SELECT id INTO v_instructor_davis FROM instructor WHERE employee_id = 'INS003';
-
-    -- Get student IDs (from legacy student table)
-    SELECT id INTO v_student_john FROM student WHERE email = 'john.smith@email.com';
-    SELECT id INTO v_student_maria FROM student WHERE email = 'maria.garcia@email.com';
-    SELECT id INTO v_student_david FROM student WHERE email = 'david.lee@email.com';
-    SELECT id INTO v_student_lisa FROM student WHERE email = 'lisa.chen@email.com';
-    SELECT id INTO v_student_kevin FROM student WHERE email = 'kevin.brown@email.com';
-
-    -- Assign instructors to students (if all IDs found)
-    IF v_instructor_williams IS NOT NULL AND v_student_john IS NOT NULL THEN
-        INSERT INTO instructor_assignment (instructor_id, student_id, assignment_type, assignment_scope,
-                                           effective_from, is_active)
-        VALUES (v_instructor_williams, v_student_john, 'primary', 'full', '2026-01-06', TRUE)
-        ON CONFLICT DO NOTHING;
-        RAISE NOTICE 'Assigned Williams to John Smith (primary)';
-    END IF;
-
-    IF v_instructor_johnson IS NOT NULL AND v_student_maria IS NOT NULL THEN
-        INSERT INTO instructor_assignment (instructor_id, student_id, assignment_type, assignment_scope,
-                                           effective_from, is_active)
-        VALUES (v_instructor_johnson, v_student_maria, 'primary', 'full', '2025-12-02', TRUE)
-        ON CONFLICT DO NOTHING;
-        RAISE NOTICE 'Assigned Johnson to Maria Garcia (primary)';
-    END IF;
-
-    IF v_instructor_williams IS NOT NULL AND v_student_maria IS NOT NULL THEN
-        INSERT INTO instructor_assignment (instructor_id, student_id, assignment_type, assignment_scope,
-                                           effective_from, is_active, notes)
-        VALUES (v_instructor_williams, v_student_maria, 'secondary', 'road', '2026-01-13', TRUE,
-                'HazMat road training specialist')
-        ON CONFLICT DO NOTHING;
-        RAISE NOTICE 'Assigned Williams to Maria Garcia (secondary - HazMat)';
-    END IF;
-
-    IF v_instructor_johnson IS NOT NULL AND v_student_david IS NOT NULL THEN
-        INSERT INTO instructor_assignment (instructor_id, student_id, assignment_type, assignment_scope,
-                                           effective_from, is_active)
-        VALUES (v_instructor_johnson, v_student_david, 'primary', 'full', '2025-11-04', TRUE)
-        ON CONFLICT DO NOTHING;
-        RAISE NOTICE 'Assigned Johnson to David Lee (primary)';
-    END IF;
-
-    IF v_instructor_davis IS NOT NULL AND v_student_lisa IS NOT NULL THEN
-        INSERT INTO instructor_assignment (instructor_id, student_id, assignment_type, assignment_scope,
-                                           effective_from, is_active)
-        VALUES (v_instructor_davis, v_student_lisa, 'primary', 'full', '2026-01-06', TRUE)
-        ON CONFLICT DO NOTHING;
-        RAISE NOTICE 'Assigned Davis to Lisa Chen (primary)';
-    END IF;
-
-    IF v_instructor_davis IS NOT NULL AND v_student_kevin IS NOT NULL THEN
-        INSERT INTO instructor_assignment (instructor_id, student_id, assignment_type, assignment_scope,
-                                           effective_from, is_active)
-        VALUES (v_instructor_davis, v_student_kevin, 'primary', 'full', '2025-10-07', TRUE)
-        ON CONFLICT DO NOTHING;
-        RAISE NOTICE 'Assigned Davis to Kevin Brown (primary)';
-    END IF;
-
-    RAISE NOTICE '=== Instructor Assignments Created ===';
-END $$;
-
--- =====================================================
--- SECTION 5: INSTRUCTOR AVAILABILITY
--- =====================================================
-
-DO $$
-DECLARE
-    v_instructor_williams INTEGER;
-    v_instructor_johnson INTEGER;
-    v_instructor_davis INTEGER;
-    v_instructor_thompson INTEGER;
-BEGIN
-    RAISE NOTICE '=== Creating Instructor Availability ===';
-
-    SELECT id INTO v_instructor_williams FROM instructor WHERE employee_id = 'INS001';
-    SELECT id INTO v_instructor_johnson FROM instructor WHERE employee_id = 'INS002';
-    SELECT id INTO v_instructor_davis FROM instructor WHERE employee_id = 'INS003';
-    SELECT id INTO v_instructor_thompson FROM instructor WHERE employee_id = 'INS004';
-
-    -- Williams: Monday-Friday 7am-4pm
-    IF v_instructor_williams IS NOT NULL THEN
-        INSERT INTO instructor_availability (instructor_id, day_of_week, start_time, end_time, availability_type, preferred_location)
-        VALUES
-            (v_instructor_williams, 1, '07:00', '16:00', 'available', 'Main Campus'),
-            (v_instructor_williams, 2, '07:00', '16:00', 'available', 'Main Campus'),
-            (v_instructor_williams, 3, '07:00', '16:00', 'available', 'Main Campus'),
-            (v_instructor_williams, 4, '07:00', '16:00', 'available', 'Main Campus'),
-            (v_instructor_williams, 5, '07:00', '16:00', 'available', 'Main Campus')
-        ON CONFLICT DO NOTHING;
-    END IF;
-
-    -- Johnson: Monday-Thursday 6am-3pm
-    IF v_instructor_johnson IS NOT NULL THEN
-        INSERT INTO instructor_availability (instructor_id, day_of_week, start_time, end_time, availability_type, preferred_location)
-        VALUES
-            (v_instructor_johnson, 1, '06:00', '15:00', 'available', 'Training Range'),
-            (v_instructor_johnson, 2, '06:00', '15:00', 'available', 'Training Range'),
-            (v_instructor_johnson, 3, '06:00', '15:00', 'available', 'Training Range'),
-            (v_instructor_johnson, 4, '06:00', '15:00', 'available', 'Training Range')
-        ON CONFLICT DO NOTHING;
-    END IF;
-
-    -- Davis: Tuesday-Saturday 8am-5pm
-    IF v_instructor_davis IS NOT NULL THEN
-        INSERT INTO instructor_availability (instructor_id, day_of_week, start_time, end_time, availability_type, preferred_location)
-        VALUES
-            (v_instructor_davis, 2, '08:00', '17:00', 'available', 'Bus Depot'),
-            (v_instructor_davis, 3, '08:00', '17:00', 'available', 'Bus Depot'),
-            (v_instructor_davis, 4, '08:00', '17:00', 'available', 'Bus Depot'),
-            (v_instructor_davis, 5, '08:00', '17:00', 'available', 'Bus Depot'),
-            (v_instructor_davis, 6, '08:00', '17:00', 'available', 'Bus Depot')
-        ON CONFLICT DO NOTHING;
-    END IF;
-
-    -- Thompson (Examiner): Wednesday and Friday only - testing days
-    IF v_instructor_thompson IS NOT NULL THEN
-        INSERT INTO instructor_availability (instructor_id, day_of_week, start_time, end_time, availability_type, preferred_location, notes)
-        VALUES
-            (v_instructor_thompson, 3, '08:00', '16:00', 'available', 'Testing Center', 'CDL Testing Day'),
-            (v_instructor_thompson, 5, '08:00', '16:00', 'available', 'Testing Center', 'CDL Testing Day')
-        ON CONFLICT DO NOTHING;
-    END IF;
-
-    RAISE NOTICE '=== Instructor Availability Created ===';
-END $$;
-
--- =====================================================
--- SECTION 6: EMERGENCY CONTACTS FOR STUDENTS
--- =====================================================
-
-DO $$
-DECLARE
-    v_student_john INTEGER;
-    v_student_maria INTEGER;
-    v_student_lisa INTEGER;
-BEGIN
-    RAISE NOTICE '=== Creating Emergency Contacts ===';
-
-    SELECT id INTO v_student_john FROM student WHERE email = 'john.smith@email.com';
-    SELECT id INTO v_student_maria FROM student WHERE email = 'maria.garcia@email.com';
-    SELECT id INTO v_student_lisa FROM student WHERE email = 'lisa.chen@email.com';
-
-    IF v_student_john IS NOT NULL THEN
-        INSERT INTO emergency_contact (student_id, contact_relationship, phone, first_name, last_name,
-                                       email, is_primary, priority)
-        VALUES
-            (v_student_john, 'spouse', '(555) 301-1001', 'Sarah', 'Smith', 'sarah.smith@email.com', TRUE, 1),
-            (v_student_john, 'parent', '(555) 301-1002', 'Robert', 'Smith', 'robert.smith@email.com', FALSE, 2)
-        ON CONFLICT DO NOTHING;
-    END IF;
-
-    IF v_student_maria IS NOT NULL THEN
-        INSERT INTO emergency_contact (student_id, contact_relationship, phone, first_name, last_name,
-                                       email, is_primary, priority)
-        VALUES
-            (v_student_maria, 'sibling', '(555) 302-1001', 'Jose', 'Garcia', 'jose.garcia@email.com', TRUE, 1)
-        ON CONFLICT DO NOTHING;
-    END IF;
-
-    IF v_student_lisa IS NOT NULL THEN
-        INSERT INTO emergency_contact (student_id, contact_relationship, phone, first_name, last_name,
-                                       email, is_primary, priority)
-        VALUES
-            (v_student_lisa, 'parent', '(555) 304-1001', 'Wei', 'Chen', 'wei.chen@email.com', TRUE, 1),
-            (v_student_lisa, 'parent', '(555) 304-1002', 'Ming', 'Chen', 'ming.chen@email.com', FALSE, 2)
-        ON CONFLICT DO NOTHING;
-    END IF;
-
-    RAISE NOTICE '=== Emergency Contacts Created ===';
 END $$;
 
 -- =====================================================
@@ -767,37 +559,56 @@ DECLARE
     admin_count INTEGER;
     instructor_count INTEGER;
     student_count INTEGER;
-    assignment_count INTEGER;
-    endorsement_count INTEGER;
+    legacy_instructor_count INTEGER;
+    availability_count INTEGER;
+    qualification_count INTEGER;
 BEGIN
     SELECT COUNT(*) INTO user_count FROM app_user;
     SELECT COUNT(*) INTO admin_count FROM user_roles WHERE role = 'admin';
     SELECT COUNT(*) INTO instructor_count FROM user_roles WHERE role = 'instructor';
     SELECT COUNT(*) INTO student_count FROM user_roles WHERE role = 'student';
-    SELECT COUNT(*) INTO assignment_count FROM instructor_assignment;
-    SELECT COUNT(*) INTO endorsement_count FROM student_endorsement;
+    SELECT COUNT(*) INTO legacy_instructor_count FROM instructor;
+    SELECT COUNT(*) INTO availability_count FROM instructor_availability;
+    SELECT COUNT(*) INTO qualification_count FROM instructor_qualification;
 
     RAISE NOTICE '';
     RAISE NOTICE '==============================================';
     RAISE NOTICE 'Seed Data Installation Complete!';
     RAISE NOTICE '==============================================';
-    RAISE NOTICE 'Total Users: %', user_count;
+    RAISE NOTICE '';
+    RAISE NOTICE 'UNIFIED AUTH SYSTEM (app_user):';
+    RAISE NOTICE '  Total Users: %', user_count;
     RAISE NOTICE '  - Admins: %', admin_count;
     RAISE NOTICE '  - Instructors: %', instructor_count;
     RAISE NOTICE '  - Students: %', student_count;
     RAISE NOTICE '';
-    RAISE NOTICE 'Instructor Assignments: %', assignment_count;
-    RAISE NOTICE 'Student Endorsements: %', endorsement_count;
+    RAISE NOTICE 'INSTRUCTOR DATA:';
+    RAISE NOTICE '  Legacy Instructor Records: %', legacy_instructor_count;
+    RAISE NOTICE '  Availability Slots: %', availability_count;
+    RAISE NOTICE '  Qualifications: %', qualification_count;
     RAISE NOTICE '';
-    RAISE NOTICE 'Test Credentials (password: Password123!):';
-    RAISE NOTICE '  Admin:      director@cdlschool.edu';
-    RAISE NOTICE '  Manager:    manager@cdlschool.edu';
-    RAISE NOTICE '  Staff:      admissions@cdlschool.edu';
-    RAISE NOTICE '  Instructor: j.williams@cdlschool.edu';
-    RAISE NOTICE '  Instructor: m.johnson@cdlschool.edu';
-    RAISE NOTICE '  Instructor: s.davis@cdlschool.edu';
-    RAISE NOTICE '  Examiner:   r.thompson@cdlschool.edu';
-    RAISE NOTICE '  Student:    john.smith@email.com';
-    RAISE NOTICE '  Student:    maria.garcia@email.com';
+    RAISE NOTICE 'TEST CREDENTIALS (password: Password123!):';
+    RAISE NOTICE '';
+    RAISE NOTICE '  ADMINS:';
+    RAISE NOTICE '    director@cdlschool.edu   (Super Admin)';
+    RAISE NOTICE '    manager@cdlschool.edu    (Manager)';
+    RAISE NOTICE '    admissions@cdlschool.edu (Staff)';
+    RAISE NOTICE '';
+    RAISE NOTICE '  INSTRUCTORS:';
+    RAISE NOTICE '    j.williams@cdlschool.edu (Class A, Senior + Examiner)';
+    RAISE NOTICE '    m.johnson@cdlschool.edu  (Class A, Instructor)';
+    RAISE NOTICE '    s.davis@cdlschool.edu    (Class B, Instructor)';
+    RAISE NOTICE '    r.thompson@cdlschool.edu (Examiner Only)';
+    RAISE NOTICE '';
+    RAISE NOTICE '  STUDENTS:';
+    RAISE NOTICE '    john.smith@email.com     (Class A, Veteran)';
+    RAISE NOTICE '    maria.garcia@email.com   (Class A)';
+    RAISE NOTICE '    david.lee@email.com      (Class A)';
+    RAISE NOTICE '    lisa.chen@email.com      (Class B)';
+    RAISE NOTICE '    kevin.brown@email.com    (Class B)';
+    RAISE NOTICE '    amanda.wilson@email.com  (Class A, New)';
+    RAISE NOTICE '    marcus.taylor@email.com  (Class A, Financial Aid)';
+    RAISE NOTICE '    carlos.rodriguez@email.com (Class A, Perm Resident)';
+    RAISE NOTICE '';
     RAISE NOTICE '==============================================';
 END $$;

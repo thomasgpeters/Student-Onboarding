@@ -705,6 +705,92 @@ See `docs/ADMIN_DASHBOARD_DESIGN.md` for full specification and `docs/Administra
 - Batch form processing
 - Custom form builder for administrators
 
+## Seed Data
+
+The system includes comprehensive seed data for development and testing in `database/seed_data.sql`.
+
+### Running Seed Data
+
+```bash
+# Prerequisites: Run schema and migrations first
+psql -U postgres -d student_onboarding -f database/seed_data.sql
+```
+
+### Test Credentials
+
+All seed users have the password: `Password123!`
+
+| Role | Email | Description |
+|------|-------|-------------|
+| **Super Admin** | director@cdlschool.edu | Full access to all features |
+| **Manager** | manager@cdlschool.edu | Can manage students, curriculum, instructors |
+| **Staff** | admissions@cdlschool.edu | Can manage students, view reports |
+| **Instructor** | j.williams@cdlschool.edu | Senior instructor + certified examiner |
+| **Instructor** | m.johnson@cdlschool.edu | Class A instructor |
+| **Instructor** | s.davis@cdlschool.edu | Class B specialist (buses) |
+| **Examiner** | r.thompson@cdlschool.edu | CDL examiner only (testing) |
+| **Student** | john.smith@email.com | Class A, veteran |
+| **Student** | maria.garcia@email.com | Class A |
+| **Student** | lisa.chen@email.com | Class B |
+
+### Instructor Seed Data
+
+The seed data creates instructors in both the unified authentication system and the legacy instructor tables for compatibility.
+
+#### Instructor Types
+
+| Type | Description | Capabilities |
+|------|-------------|--------------|
+| `instructor` | Teaching CDL students | Schedule sessions, validate skills |
+| `examiner` | Certified testing specialist | Validate skills, issue CDL certifications |
+| `both` | Full instructor + examiner | All capabilities |
+
+#### Sample Instructors
+
+| Name | Type | CDL Class | Endorsements | Availability |
+|------|------|-----------|--------------|--------------|
+| **James Williams** | both | A (can teach B) | H, N, T, P | Mon-Fri 7am-4pm |
+| **Michael Johnson** | instructor | A | N, T | Mon-Thu 6am-3pm |
+| **Sarah Davis** | instructor | B | P, S | Tue-Sat 8am-5pm |
+| **Robert Thompson** | examiner | A (can examine B) | H, N, T, P, S | Wed/Fri 8am-4pm |
+
+#### Instructor Tables Populated
+
+| Table | Data |
+|-------|------|
+| `app_user` | Basic user account (unified auth) |
+| `user_roles` | Role assignment (instructor) |
+| `instructor_profile` | New unified instructor profile |
+| `admin_user` | Legacy admin portal user |
+| `instructor` | Legacy instructor record with CDL details |
+| `instructor_qualification` | Certifications (examiner certs, HazMat instructor) |
+| `instructor_availability` | Weekly recurring schedules |
+
+#### Endorsement Codes
+
+| Code | Endorsement | Description |
+|------|-------------|-------------|
+| H | Hazardous Materials | Transport hazmat (requires TSA background check) |
+| N | Tanker | Liquid/gas bulk transport (1000+ gallons) |
+| T | Doubles/Triples | Pull double or triple trailers |
+| P | Passenger | Vehicles with 16+ passengers |
+| S | School Bus | School bus operation (requires P endorsement) |
+
+### Student Seed Data
+
+8 sample students with various enrollment states:
+
+| Student | Program | Status | Special |
+|---------|---------|--------|---------|
+| John Smith | Class A | Completed intake | Veteran |
+| Maria Garcia | Class A | Completed | - |
+| David Lee | Class A | Completed | - |
+| Lisa Chen | Class B | Completed | - |
+| Kevin Brown | Class B | Completed | - |
+| Amanda Wilson | Class A | In progress | New student |
+| Marcus Taylor | Class A | Completed | Financial aid |
+| Carlos Rodriguez | Class A | Completed | Permanent resident |
+
 ## Documentation
 
 - `README.md` - This overview document
