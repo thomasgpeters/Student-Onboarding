@@ -42,9 +42,9 @@ BEGIN
 
     -- Super Admin: Director of Operations
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'director@cdlschool.edu') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('director@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Margaret', 'Reynolds', '(555) 100-0001', TRUE, TRUE, TRUE)
+                'Margaret', 'Reynolds', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'admin');
@@ -57,9 +57,9 @@ BEGIN
 
     -- Manager Admin: Program Manager
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'manager@cdlschool.edu') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('manager@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Thomas', 'Garcia', '(555) 100-0002', TRUE, TRUE, TRUE)
+                'Thomas', 'Garcia', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'admin');
@@ -72,9 +72,9 @@ BEGIN
 
     -- Staff Admin: Admissions Coordinator
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'admissions@cdlschool.edu') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('admissions@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Jennifer', 'Martinez', '(555) 100-0003', TRUE, TRUE, TRUE)
+                'Jennifer', 'Martinez', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'admin');
@@ -130,9 +130,9 @@ BEGIN
     -- Capabilities: Full (schedule, validate, issue CDL)
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'j.williams@cdlschool.edu') THEN
         -- Unified auth system
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('j.williams@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'James', 'Williams', '(555) 200-0001', TRUE, TRUE, TRUE)
+                'James', 'Williams', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'instructor');
@@ -179,9 +179,9 @@ BEGIN
     -- Endorsements: N (Tanker), T (Doubles/Triples)
     -- Capabilities: Schedule and validate only (cannot issue CDL)
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'm.johnson@cdlschool.edu') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('m.johnson@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Michael', 'Johnson', '(555) 200-0002', TRUE, TRUE, TRUE)
+                'Michael', 'Johnson', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'instructor');
@@ -217,9 +217,9 @@ BEGIN
     -- Endorsements: P (Passenger), S (School Bus)
     -- Capabilities: Schedule and validate only
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 's.davis@cdlschool.edu') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('s.davis@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Sarah', 'Davis', '(555) 200-0003', TRUE, TRUE, TRUE)
+                'Sarah', 'Davis', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'instructor');
@@ -255,9 +255,9 @@ BEGIN
     -- Endorsements: All (H, N, T, P, S)
     -- Capabilities: Validate and issue CDL only (no scheduling)
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'r.thompson@cdlschool.edu') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('r.thompson@cdlschool.edu', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Robert', 'Thompson', '(555) 200-0004', TRUE, TRUE, TRUE)
+                'Robert', 'Thompson', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'instructor');
@@ -388,9 +388,9 @@ BEGIN
 
     -- Student 1: John Smith - Class A, veteran, completed intake
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'john.smith@email.com') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, middle_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, middle_name, is_active, login_enabled, email_verified)
         VALUES ('john.smith@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'John', 'Smith', 'Robert', '(555) 301-0001', TRUE, TRUE, TRUE)
+                'John', 'Smith', 'Robert', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student');
@@ -409,9 +409,9 @@ BEGIN
 
     -- Student 2: Maria Garcia - Class A, pursuing Tanker endorsement
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'maria.garcia@email.com') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('maria.garcia@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Maria', 'Garcia', '(555) 302-0001', TRUE, TRUE, TRUE)
+                'Maria', 'Garcia', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student');
@@ -428,9 +428,9 @@ BEGIN
 
     -- Student 3: David Lee - Class A, pursuing HazMat endorsement
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'david.lee@email.com') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('david.lee@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'David', 'Lee', '(555) 303-0001', TRUE, TRUE, TRUE)
+                'David', 'Lee', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student');
@@ -447,9 +447,9 @@ BEGIN
 
     -- Student 4: Lisa Chen - Class B, Passenger endorsement track
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'lisa.chen@email.com') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('lisa.chen@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Lisa', 'Chen', '(555) 304-0001', TRUE, TRUE, TRUE)
+                'Lisa', 'Chen', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student');
@@ -466,9 +466,9 @@ BEGIN
 
     -- Student 5: Kevin Brown - Class B, School Bus track
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'kevin.brown@email.com') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('kevin.brown@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Kevin', 'Brown', '(555) 305-0001', TRUE, TRUE, TRUE)
+                'Kevin', 'Brown', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student');
@@ -485,9 +485,9 @@ BEGIN
 
     -- Student 6: Amanda Wilson - Class A, new student (intake in progress)
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'amanda.wilson@email.com') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('amanda.wilson@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Amanda', 'Wilson', '(555) 306-0001', TRUE, TRUE, TRUE)
+                'Amanda', 'Wilson', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student');
@@ -504,9 +504,9 @@ BEGIN
 
     -- Student 7: Marcus Taylor - Class A, requires financial aid
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'marcus.taylor@email.com') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('marcus.taylor@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Marcus', 'Taylor', '(555) 307-0001', TRUE, TRUE, TRUE)
+                'Marcus', 'Taylor', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student');
@@ -525,9 +525,9 @@ BEGIN
 
     -- Student 8: Carlos Rodriguez - Class A, permanent resident
     IF NOT EXISTS (SELECT 1 FROM app_user WHERE email = 'carlos.rodriguez@email.com') THEN
-        INSERT INTO app_user (email, password_hash, first_name, last_name, phone_number, is_active, login_enabled, email_verified)
+        INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
         VALUES ('carlos.rodriguez@email.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4bHCE5C1YXF.Wxbi',
-                'Carlos', 'Rodriguez', '(555) 308-0001', TRUE, TRUE, TRUE)
+                'Carlos', 'Rodriguez', TRUE, TRUE, TRUE)
         RETURNING id INTO v_user_id;
 
         INSERT INTO user_roles (user_id, role) VALUES (v_user_id, 'student');
