@@ -222,8 +222,21 @@ UnifiedAuthResult AuthService::login(const std::string& email, const std::string
     result.success = true;
     result.message = "Login successful";
 
-    // Get user roles
-    result.user.setRoles(getUserRoles(result.user.getId()));
+    // Get user roles - merge with any roles already detected from user data
+    auto existingRoles = result.user.getRoles();
+    auto fetchedRoles = getUserRoles(result.user.getId());
+
+    // Merge roles (add fetched roles that aren't already present)
+    for (const auto& role : fetchedRoles) {
+        if (!result.user.hasRole(role)) {
+            result.user.addRole(role);
+        }
+    }
+
+    // If still no roles, default to student
+    if (result.user.getRoles().empty()) {
+        result.user.addRole(Models::UserRole::Student);
+    }
 
     recordLoginAttempt(email, true, "", ipAddress, userAgent);
 
@@ -531,12 +544,13 @@ UnifiedAuthResult AuthService::changePassword(int userId, const std::string& old
 std::vector<Models::UserRole> AuthService::getUserRoles(int userId) {
     std::vector<Models::UserRole> roles;
 
+    // Try to get roles from UserRoles table
     std::string endpoint = "/UserRoles?filter[user_id]=" + std::to_string(userId) +
                           "&filter[is_active]=true";
     auto response = apiClient_->get(endpoint);
     auto json = response.getJson();
 
-    if (response.success && json.contains("data")) {
+    if (response.success && json.contains("data") && json["data"].is_array() && !json["data"].empty()) {
         for (const auto& item : json["data"]) {
             if (item.contains("role") && item["role"].is_string()) {
                 roles.push_back(Models::User::stringToRole(item["role"].get<std::string>()));
@@ -546,6 +560,35 @@ std::vector<Models::UserRole> AuthService::getUserRoles(int userId) {
             }
         }
     }
+
+    // If no roles found from UserRoles table, check if user is in admin_user table
+    if (roles.empty()) {
+        std::string adminEndpoint = "/AdminUser?filter[app_user_id]=" + std::to_string(userId);
+        auto adminResponse = apiClient_->get(adminEndpoint);
+        auto adminJson = adminResponse.getJson();
+
+        if (adminResponse.success && adminJson.contains("data") &&
+            adminJson["data"].is_array() && !adminJson["data"].empty()) {
+            // User is an admin
+            roles.push_back(Models::UserRole::Admin);
+        }
+    }
+
+    // If still no roles, check if user is in instructor table
+    if (roles.empty()) {
+        std::string instructorEndpoint = "/Instructor?filter[app_user_id]=" + std::to_string(userId);
+        auto instructorResponse = apiClient_->get(instructorEndpoint);
+        auto instructorJson = instructorResponse.getJson();
+
+        if (instructorResponse.success && instructorJson.contains("data") &&
+            instructorJson["data"].is_array() && !instructorJson["data"].empty()) {
+            // User is an instructor
+            roles.push_back(Models::UserRole::Instructor);
+        }
+    }
+
+    // Note: If roles is still empty, the User::fromJson already assigned Student role
+    // based on student_type/curriculum_id fields from Student table fallback
 
     return roles;
 }
