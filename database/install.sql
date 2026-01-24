@@ -107,21 +107,44 @@ ON CONFLICT (setting_key) DO UPDATE SET
     updated_at = CURRENT_TIMESTAMP;
 
 -- =====================================================
--- Step 4: Create Default Admin User
+-- Step 4: Create Default Admin User (Unified AppUser Model)
 -- =====================================================
 
+-- First, create the AppUser entry (single source of truth for credentials)
 -- Default admin user (password: admin123 - should be changed immediately)
 -- Password hash is bcrypt of 'admin123'
-INSERT INTO admin_user (email, password_hash, first_name, last_name, role, is_active)
+INSERT INTO app_user (email, password_hash, first_name, last_name, is_active, login_enabled, email_verified)
 VALUES (
     'admin@institution.edu',
     '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.VttYlE/b1Qm1Vu',
     'System',
     'Administrator',
-    'super_admin',
+    TRUE,
+    TRUE,
     TRUE
 )
 ON CONFLICT (email) DO NOTHING;
+
+-- Create the super_admin role for the default admin
+INSERT INTO user_role (app_user_id, role, is_active)
+SELECT id, 'super_admin', TRUE
+FROM app_user WHERE email = 'admin@institution.edu'
+ON CONFLICT (app_user_id, role) DO NOTHING;
+
+-- Create the admin_user profile entry (legacy compatibility)
+-- Link it to the app_user via app_user_id
+INSERT INTO admin_user (app_user_id, email, password_hash, first_name, last_name, role, is_active)
+SELECT
+    au.id,
+    au.email,
+    au.password_hash,
+    au.first_name,
+    au.last_name,
+    'super_admin',
+    TRUE
+FROM app_user au WHERE au.email = 'admin@institution.edu'
+ON CONFLICT (email) DO UPDATE SET
+    app_user_id = EXCLUDED.app_user_id;
 
 -- =====================================================
 -- Verification & Summary
@@ -132,6 +155,8 @@ DECLARE
     table_count INTEGER;
     form_type_count INTEGER;
     settings_count INTEGER;
+    app_user_count INTEGER;
+    user_role_count INTEGER;
     admin_count INTEGER;
 BEGIN
     SELECT COUNT(*) INTO table_count FROM information_schema.tables
@@ -139,6 +164,8 @@ BEGIN
 
     SELECT COUNT(*) INTO form_type_count FROM form_type;
     SELECT COUNT(*) INTO settings_count FROM institution_settings;
+    SELECT COUNT(*) INTO app_user_count FROM app_user;
+    SELECT COUNT(*) INTO user_role_count FROM user_role;
     SELECT COUNT(*) INTO admin_count FROM admin_user;
 
     RAISE NOTICE '';
@@ -148,7 +175,14 @@ BEGIN
     RAISE NOTICE 'Tables created: %', table_count;
     RAISE NOTICE 'Form types: %', form_type_count;
     RAISE NOTICE 'Institution settings: %', settings_count;
-    RAISE NOTICE 'Admin users: %', admin_count;
+    RAISE NOTICE 'App users (credentials): %', app_user_count;
+    RAISE NOTICE 'User roles: %', user_role_count;
+    RAISE NOTICE 'Admin profiles: %', admin_count;
+    RAISE NOTICE '';
+    RAISE NOTICE 'User Management Architecture:';
+    RAISE NOTICE '  - All user credentials stored in app_user table';
+    RAISE NOTICE '  - Roles assigned via user_role table';
+    RAISE NOTICE '  - Administrators create users and assign roles';
     RAISE NOTICE '';
     RAISE NOTICE 'Next steps:';
     RAISE NOTICE '  1. Run a curriculum mode script:';

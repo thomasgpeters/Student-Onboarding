@@ -20,6 +20,11 @@ enum class AdminRole {
 
 /**
  * @brief Admin user model
+ *
+ * The AdminUser class stores admin-specific profile data. Authentication
+ * credentials are stored in the AppUser table, referenced via appUserId_.
+ * Only SuperAdmins can create admin accounts by first creating an
+ * AppUser with the appropriate role, then creating the AdminUser profile.
  */
 class AdminUser {
 public:
@@ -28,6 +33,7 @@ public:
 
     // Getters
     int getId() const { return id_; }
+    int getAppUserId() const { return appUserId_; }
     const std::string& getEmail() const { return email_; }
     const std::string& getPasswordHash() const { return passwordHash_; }
     const std::string& getFirstName() const { return firstName_; }
@@ -42,6 +48,7 @@ public:
 
     // Setters
     void setId(int id) { id_ = id; }
+    void setAppUserId(int appUserId) { appUserId_ = appUserId; }
     void setEmail(const std::string& email) { email_ = email; }
     void setPasswordHash(const std::string& hash) { passwordHash_ = hash; }
     void setFirstName(const std::string& name) { firstName_ = name; }
@@ -64,6 +71,7 @@ public:
 
 private:
     int id_;
+    int appUserId_;  // Reference to app_user for credentials
     std::string email_;
     std::string passwordHash_;
     std::string firstName_;

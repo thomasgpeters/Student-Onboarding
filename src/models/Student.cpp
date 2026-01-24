@@ -9,6 +9,7 @@ namespace Models {
 
 Student::Student()
     : id_("")
+    , appUserId_(0)
     , email_("")
     , firstName_("")
     , middleName_("")
@@ -38,6 +39,7 @@ Student::Student()
 
 Student::Student(const std::string& id, const std::string& email)
     : id_(id)
+    , appUserId_(0)
     , email_(email)
     , firstName_("")
     , middleName_("")
@@ -125,6 +127,11 @@ nlohmann::json Student::toJson() const {
         }
     }
 
+    // Reference to app_user for credentials
+    if (appUserId_ > 0) {
+        j["app_user_id"] = appUserId_;
+    }
+
     j["email"] = email_;
     j["first_name"] = firstName_;
     j["middle_name"] = middleName_;
@@ -192,6 +199,13 @@ Student Student::fromJson(const nlohmann::json& json) {
     // For JSON:API format, attributes are nested under "attributes"
     // Otherwise, attributes are at the top level
     const nlohmann::json& attrs = json.contains("attributes") ? json["attributes"] : json;
+
+    // Handle app_user_id - reference to app_user table
+    if (attrs.contains("app_user_id") && !attrs["app_user_id"].is_null()) {
+        student.appUserId_ = attrs["app_user_id"].get<int>();
+    } else if (attrs.contains("appUserId") && !attrs["appUserId"].is_null()) {
+        student.appUserId_ = attrs["appUserId"].get<int>();
+    }
 
     // Handle email - ApiLogicServer uses snake_case
     if (attrs.contains("email")) {

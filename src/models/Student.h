@@ -11,6 +11,11 @@ namespace Models {
 
 /**
  * @brief Represents a student in the intake system
+ *
+ * The Student class stores student-specific profile data. Authentication
+ * credentials are stored in the AppUser table, referenced via appUserId_.
+ * Only Administrators can create student accounts by first creating an
+ * AppUser with the 'student' role, then creating the Student profile.
  */
 class Student {
 public:
@@ -19,6 +24,7 @@ public:
 
     // Getters
     std::string getId() const { return id_; }
+    int getAppUserId() const { return appUserId_; }
     std::string getEmail() const { return email_; }
     std::string getFirstName() const { return firstName_; }
     std::string getMiddleName() const { return middleName_; }
@@ -51,6 +57,7 @@ public:
 
     // Setters
     void setId(const std::string& id) { id_ = id; }
+    void setAppUserId(int appUserId) { appUserId_ = appUserId; }
     void setEmail(const std::string& email) { email_ = email; }
     void setFirstName(const std::string& firstName) { firstName_ = firstName; }
     void setMiddleName(const std::string& middleName) { middleName_ = middleName; }
@@ -97,6 +104,7 @@ public:
 
 private:
     std::string id_;
+    int appUserId_;  // Reference to app_user for credentials
     std::string email_;
     std::string firstName_;
     std::string middleName_;
