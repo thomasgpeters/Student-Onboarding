@@ -581,11 +581,13 @@ void AdminApp::handleUnifiedLoginSuccess(const StudentIntake::Models::User& user
     // Store the authenticated user
     currentUser_ = user;
 
-    // Check if user has admin role
-    if (!user.hasRole(StudentIntake::Models::UserRole::Admin)) {
-        LOG_WARN("AdminApp", "User does not have admin role, redirecting to appropriate portal");
-        // For non-admin users at /administration, show error
-        unifiedLoginWidget_->showError("You do not have administrator access. Please use the main portal.");
+    // Check if user has admin or instructor role (both can access admin portal)
+    bool isAdmin = user.hasRole(StudentIntake::Models::UserRole::Admin);
+    bool isInstructor = user.hasRole(StudentIntake::Models::UserRole::Instructor);
+
+    if (!isAdmin && !isInstructor) {
+        LOG_WARN("AdminApp", "User does not have admin or instructor role");
+        unifiedLoginWidget_->showError("You do not have access to this portal. Please use the student portal.");
         return;
     }
 
@@ -596,6 +598,14 @@ void AdminApp::handleUnifiedLoginSuccess(const StudentIntake::Models::User& user
         adminUser.setEmail(user.getEmail());
         adminUser.setFirstName(user.getFirstName());
         adminUser.setLastName(user.getLastName());
+
+        // Set role based on user's roles (Admin takes precedence over Instructor)
+        if (isAdmin) {
+            adminUser.setRole(Admin::Models::AdminRole::SuperAdmin);  // Full admin access
+        } else if (isInstructor) {
+            adminUser.setRole(Admin::Models::AdminRole::Instructor);  // Limited instructor access
+        }
+
         session_->setAdminUser(adminUser);
         session_->setAuthenticated(true);
         session_->setToken(unifiedLoginWidget_->getSessionToken());

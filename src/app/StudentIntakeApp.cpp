@@ -663,8 +663,9 @@ void StudentIntakeApp::handleRoleSwitch(Models::UserRole role) {
             redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
             return;
         case Models::UserRole::Instructor:
-            LOG_INFO("StudentIntakeApp", "Redirecting to /classroom");
-            redirect("/classroom?token=" + sessionToken + "&user_id=" + std::to_string(userId));
+            // Instructors use the shared admin portal
+            LOG_INFO("StudentIntakeApp", "Redirecting instructor to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
             return;
         case Models::UserRole::Student:
             LOG_INFO("StudentIntakeApp", "Redirecting to /student");
@@ -694,20 +695,10 @@ void StudentIntakeApp::routeUserByRole(const Models::User& user) {
             return;
 
         case Models::UserRole::Instructor:
-            // Redirect to Classroom Portal if not already there
-            if (currentPath != "/classroom") {
-                LOG_INFO("StudentIntakeApp", "Redirecting instructor to /classroom");
-                redirect("/classroom?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
-                return;
-            }
-            // Already at /classroom - show instructor dashboard
-            LOG_INFO("StudentIntakeApp", "Showing instructor dashboard");
-            if (user.hasMultipleRoles()) {
-                roleNavigationWidget_->setUser(user);
-                roleNavigationWidget_->show();
-            }
-            setState(AppState::InstructorDashboard);
-            break;
+            // Redirect instructors to Admin Portal (shared with admins)
+            LOG_INFO("StudentIntakeApp", "Redirecting instructor to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
+            return;
 
         case Models::UserRole::Student:
         default:
