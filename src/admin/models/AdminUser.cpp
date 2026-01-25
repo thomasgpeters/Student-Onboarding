@@ -38,7 +38,7 @@ std::string AdminUser::getRoleString() const {
 }
 
 void AdminUser::setRoleFromString(const std::string& roleStr) {
-    if (roleStr == "super_admin") {
+    if (roleStr == "super_admin" || roleStr == "super_user") {
         role_ = AdminRole::SuperAdmin;
     } else if (roleStr == "admin" || roleStr == "administrator") {
         role_ = AdminRole::Administrator;
