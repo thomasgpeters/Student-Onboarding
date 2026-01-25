@@ -11,8 +11,11 @@ LoginWidget::LoginWidget()
     , emailInput_(nullptr)
     , passwordInput_(nullptr)
     , loginButton_(nullptr)
+    , errorIcon_(nullptr)
     , errorText_(nullptr)
-    , errorContainer_(nullptr) {
+    , errorContainer_(nullptr)
+    , errorHelpContainer_(nullptr)
+    , errorHelpText_(nullptr) {
     setupUI();
 }
 
@@ -33,11 +36,30 @@ void LoginWidget::setupUI() {
     desc->addStyleClass("login-description");
     desc->setTextFormat(Wt::TextFormat::XHTML);
 
-    // Error container (hidden by default)
+    // Error container (hidden by default) - Enhanced with icon and help text
     errorContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    errorContainer_->addStyleClass("alert alert-danger");
+    errorContainer_->addStyleClass("alert alert-danger login-error-container");
     errorContainer_->hide();
-    errorText_ = errorContainer_->addWidget(std::make_unique<Wt::WText>());
+
+    // Error content wrapper for icon and message
+    auto errorContent = errorContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    errorContent->addStyleClass("login-error-content");
+
+    // Error icon
+    errorIcon_ = errorContent->addWidget(std::make_unique<Wt::WText>());
+    errorIcon_->addStyleClass("login-error-icon");
+    errorIcon_->setTextFormat(Wt::TextFormat::XHTML);
+
+    // Error message text
+    errorText_ = errorContent->addWidget(std::make_unique<Wt::WText>());
+    errorText_->addStyleClass("login-error-message");
+
+    // Help container for additional guidance (e.g., register link)
+    errorHelpContainer_ = errorContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    errorHelpContainer_->addStyleClass("login-error-help");
+    errorHelpContainer_->hide();
+    errorHelpText_ = errorHelpContainer_->addWidget(std::make_unique<Wt::WText>());
+    errorHelpText_->setTextFormat(Wt::TextFormat::XHTML);
 
     // Form container
     auto formContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -144,7 +166,13 @@ void LoginWidget::handleLogin() {
             if (!result.errors.empty()) {
                 errorMsg = result.errors[0];
             }
-            showError(errorMsg);
+
+            // Check if this is a "user not found" type error
+            bool isUserNotFound = (errorMsg.find("not found") != std::string::npos ||
+                                   errorMsg.find("Invalid email or password") != std::string::npos ||
+                                   errorMsg.find("No account") != std::string::npos);
+
+            showError(errorMsg, isUserNotFound);
         }
     } else {
         showError("Authentication service unavailable");
@@ -155,14 +183,54 @@ void LoginWidget::handleLogin() {
     loginButton_->setText("Log In");
 }
 
-void LoginWidget::showError(const std::string& message) {
-    errorText_->setText(message);
+void LoginWidget::showError(const std::string& message, bool isUserNotFound) {
+    // Set appropriate icon based on error type
+    if (isUserNotFound) {
+        errorIcon_->setText("<i class=\"fa fa-user-times\"></i>");
+        errorText_->setText("Account not found");
+
+        // Show helpful message with register link
+        errorHelpText_->setText(
+            "<span class=\"help-message\">No account exists with this email address. "
+            "Please check your email or <a href=\"#\" class=\"register-link\">create a new account</a>.</span>");
+        errorHelpContainer_->show();
+
+        // Highlight the email field
+        highlightEmailField(true);
+    } else {
+        errorIcon_->setText("<i class=\"fa fa-exclamation-circle\"></i>");
+        errorText_->setText(message);
+        errorHelpContainer_->hide();
+        highlightEmailField(false);
+    }
+
     errorContainer_->show();
+
+    // Connect register link click if user not found
+    if (isUserNotFound && errorHelpText_) {
+        errorHelpText_->clicked().connect([this]() {
+            clearError();
+            registerRequested_.emit();
+        });
+    }
 }
 
 void LoginWidget::clearError() {
     errorText_->setText("");
+    errorIcon_->setText("");
+    errorHelpContainer_->hide();
     errorContainer_->hide();
+    highlightEmailField(false);
+}
+
+void LoginWidget::highlightEmailField(bool highlight) {
+    if (emailInput_) {
+        if (highlight) {
+            emailInput_->addStyleClass("input-error");
+        } else {
+            emailInput_->removeStyleClass("input-error");
+        }
+    }
 }
 
 void LoginWidget::reset() {

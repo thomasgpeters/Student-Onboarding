@@ -38,8 +38,9 @@ public:
 private:
     void setupUI();
     void handleLogin();
-    void showError(const std::string& message);
+    void showError(const std::string& message, bool isUserNotFound = false);
     void clearError();
+    void highlightEmailField(bool highlight);
 
     std::shared_ptr<AuthManager> authManager_;
     std::shared_ptr<Session::StudentSession> session_;
@@ -47,8 +48,11 @@ private:
     Wt::WLineEdit* emailInput_;
     Wt::WLineEdit* passwordInput_;
     Wt::WPushButton* loginButton_;
+    Wt::WText* errorIcon_;
     Wt::WText* errorText_;
     Wt::WContainerWidget* errorContainer_;
+    Wt::WContainerWidget* errorHelpContainer_;
+    Wt::WText* errorHelpText_;
 
     Wt::Signal<> loginSuccess_;
     Wt::Signal<> registerRequested_;
