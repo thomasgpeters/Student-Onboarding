@@ -127,8 +127,10 @@ public:
 
     /**
      * @brief Get all roles for a user
+     * @param userId The user ID
+     * @param email Optional email for fallback queries to admin_user table
      */
-    std::vector<Models::UserRole> getUserRoles(int userId);
+    std::vector<Models::UserRole> getUserRoles(int userId, const std::string& email = "");
 
     /**
      * @brief Switch active role for session (for multi-role users)
