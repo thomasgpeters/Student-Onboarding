@@ -224,7 +224,7 @@ UnifiedAuthResult AuthService::login(const std::string& email, const std::string
 
     // Get user roles - merge with any roles already detected from user data
     auto existingRoles = result.user.getRoles();
-    auto fetchedRoles = getUserRoles(result.user.getId());
+    auto fetchedRoles = getUserRoles(result.user.getId(), result.user.getEmail());
 
     // Merge roles (add fetched roles that aren't already present)
     for (const auto& role : fetchedRoles) {
@@ -292,7 +292,7 @@ void AuthService::loginAsync(const std::string& email, const std::string& passwo
             result.sessionToken = generateSessionToken();
             result.success = true;
             result.message = "Login successful";
-            result.user.setRoles(getUserRoles(result.user.getId()));
+            result.user.setRoles(getUserRoles(result.user.getId(), result.user.getEmail()));
 
             recordLoginAttempt(email, true, "", ipAddress, userAgent);
             callback(result);
@@ -383,7 +383,7 @@ Models::User AuthService::getUserFromSession(const std::string& sessionToken) {
     Models::User user = Models::User::fromJson(userJson["data"]);
 
     // Get roles
-    user.setRoles(getUserRoles(user.getId()));
+    user.setRoles(getUserRoles(user.getId(), user.getEmail()));
 
     return user;
 }
@@ -541,10 +541,10 @@ UnifiedAuthResult AuthService::changePassword(int userId, const std::string& old
 // Role Management
 // =============================================================================
 
-std::vector<Models::UserRole> AuthService::getUserRoles(int userId) {
+std::vector<Models::UserRole> AuthService::getUserRoles(int userId, const std::string& email) {
     std::vector<Models::UserRole> roles;
 
-    // Try to get roles from UserRole table
+    // Try to get roles from UserRole table (unified auth system)
     std::string endpoint = "/UserRole?filter[user_id]=" + std::to_string(userId) +
                           "&filter[is_active]=true";
     auto response = apiClient_->get(endpoint);
@@ -561,29 +561,33 @@ std::vector<Models::UserRole> AuthService::getUserRoles(int userId) {
         }
     }
 
-    // If no roles found from UserRoles table, check if user is in admin_user table
-    if (roles.empty()) {
-        std::string adminEndpoint = "/AdminUser?filter[app_user_id]=" + std::to_string(userId);
+    // If no roles found from UserRoles table, check admin_user table by email
+    if (roles.empty() && !email.empty()) {
+        std::string adminEndpoint = "/AdminUser?filter[email]=" + email;
         auto adminResponse = apiClient_->get(adminEndpoint);
         auto adminJson = adminResponse.getJson();
 
         if (adminResponse.success && adminJson.contains("data") &&
             adminJson["data"].is_array() && !adminJson["data"].empty()) {
-            // User is an admin
-            roles.push_back(Models::UserRole::Admin);
-        }
-    }
+            // Found user in admin_user table - check their role
+            auto adminData = adminJson["data"][0];
+            std::string adminRole;
 
-    // If still no roles, check if user is in instructor table
-    if (roles.empty()) {
-        std::string instructorEndpoint = "/Instructor?filter[app_user_id]=" + std::to_string(userId);
-        auto instructorResponse = apiClient_->get(instructorEndpoint);
-        auto instructorJson = instructorResponse.getJson();
+            if (adminData.contains("role") && adminData["role"].is_string()) {
+                adminRole = adminData["role"].get<std::string>();
+            } else if (adminData.contains("attributes") && adminData["attributes"].contains("role")) {
+                adminRole = adminData["attributes"]["role"].get<std::string>();
+            }
 
-        if (instructorResponse.success && instructorJson.contains("data") &&
-            instructorJson["data"].is_array() && !instructorJson["data"].empty()) {
-            // User is an instructor
-            roles.push_back(Models::UserRole::Instructor);
+            // Map admin_user role to UserRole
+            if (adminRole == "admin" || adminRole == "super_admin") {
+                roles.push_back(Models::UserRole::Admin);
+            } else if (adminRole == "instructor") {
+                roles.push_back(Models::UserRole::Instructor);
+            } else if (adminRole == "staff") {
+                // Staff role - treat as limited admin access
+                roles.push_back(Models::UserRole::Admin);
+            }
         }
     }
 
