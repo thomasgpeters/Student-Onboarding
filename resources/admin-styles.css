@@ -2370,6 +2370,17 @@ textarea.form-control {
     background: white !important;
     border-radius: 12px !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Ensure all dialog elements inherit sans-serif font */
+.admin-dialog,
+.admin-dialog *,
+.admin-dialog input,
+.admin-dialog select,
+.admin-dialog textarea,
+.admin-dialog button {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 .admin-dialog .Wt-dialog-titlebar {
@@ -2415,6 +2426,7 @@ textarea.form-control {
     border-radius: 6px;
     font-size: 0.9375rem;
     box-sizing: border-box;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 .admin-dialog-content .form-control:focus {
@@ -3073,3 +3085,173 @@ textarea.form-control {
         max-width: 95%;
     }
 }
+
+/* =====================================================
+   USER EDITOR WIDGET (Add/Edit User Modal)
+   ===================================================== */
+
+.user-editor-widget {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    padding: 1.5rem;
+    max-width: 500px;
+}
+
+.user-editor-widget * {
+    font-family: inherit;
+}
+
+.user-editor-widget .widget-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.user-editor-widget .widget-title {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e3a5f;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.user-editor-widget .message-container {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.user-editor-widget .message-container.alert-success {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+}
+
+.user-editor-widget .message-container.alert-danger {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+}
+
+.user-editor-widget .form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.user-editor-widget .form-group {
+    margin-bottom: 1rem;
+}
+
+.user-editor-widget .form-group label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #374151;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.user-editor-widget .form-control {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+}
+
+.user-editor-widget .form-control:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.user-editor-widget .form-control::placeholder {
+    color: #9ca3af;
+    font-family: inherit;
+}
+
+.user-editor-widget .password-section,
+.user-editor-widget .roles-section {
+    margin-top: 0.5rem;
+}
+
+.user-editor-widget .section-title {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.user-editor-widget .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.user-editor-widget .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-editor-widget .form-check input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.user-editor-widget .form-check label {
+    font-size: 0.9375rem;
+    font-weight: 400;
+    color: #374151;
+    cursor: pointer;
+    margin-bottom: 0;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.user-editor-widget .button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.user-editor-widget .btn {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+}
+
+.user-editor-widget .btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.user-editor-widget .btn-primary:hover {
+    background: #2563eb;
+}
+
+.user-editor-widget .btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.user-editor-widget .btn-secondary:hover {
+    background: #4b5563;
+}
+

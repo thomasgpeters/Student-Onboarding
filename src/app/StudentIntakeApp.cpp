@@ -11,18 +11,22 @@ StudentIntakeApp::StudentIntakeApp(const Wt::WEnvironment& env)
     : WApplication(env)
     , config_(AppConfig::getInstance())
     , currentState_(AppState::Login)
+    , isInstructorMode_(false)
     , mainContainer_(nullptr)
     , navigationWidget_(nullptr)
     , contentContainer_(nullptr)
+    , unifiedLoginWidget_(nullptr)
     , loginWidget_(nullptr)
     , registerWidget_(nullptr)
+    , roleNavigationWidget_(nullptr)
     , curriculumSelector_(nullptr)
     , dashboardWidget_(nullptr)
     , formsView_(nullptr)
     , programHeaderText_(nullptr)
     , progressWidget_(nullptr)
     , formContainer_(nullptr)
-    , completionView_(nullptr) {
+    , completionView_(nullptr)
+    , administrationView_(nullptr) {
 
     setTitle(config_.applicationTitle);
 
@@ -51,8 +55,11 @@ void StudentIntakeApp::setupServices() {
     // Create API service
     apiService_ = std::make_shared<Api::FormSubmissionService>(apiClient_);
 
-    // Create auth manager
+    // Create auth manager (legacy - for backwards compatibility)
     authManager_ = std::make_shared<Auth::AuthManager>(apiService_);
+
+    // Create unified auth service
+    authService_ = std::make_shared<Auth::AuthService>(apiClient_);
 
     // Create curriculum manager
     curriculumManager_ = std::make_shared<Curriculum::CurriculumManager>(apiService_);
@@ -116,11 +123,21 @@ void StudentIntakeApp::setupUI() {
         }
     });
 
+    // Role navigation widget (for multi-role admins) - above content
+    roleNavigationWidget_ = mainContainer_->addWidget(std::make_unique<Widgets::RoleNavigationWidget>());
+    roleNavigationWidget_->roleSelected().connect(this, &StudentIntakeApp::handleRoleSwitch);
+    roleNavigationWidget_->hide();  // Hidden until user with multiple roles logs in
+
     // Content area - using simple container with manual show/hide
     contentContainer_ = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contentContainer_->addStyleClass("content-container");
 
-    // Login view - add directly to content container
+    // Unified login view - new authentication flow at "/"
+    unifiedLoginWidget_ = contentContainer_->addWidget(std::make_unique<Auth::UnifiedLoginWidget>());
+    unifiedLoginWidget_->setAuthService(authService_);
+    unifiedLoginWidget_->loginSuccess().connect(this, &StudentIntakeApp::handleUnifiedLoginSuccess);
+
+    // Login view (legacy) - add directly to content container
     loginWidget_ = contentContainer_->addWidget(std::make_unique<Auth::LoginWidget>());
     loginWidget_->setAuthManager(authManager_);
     loginWidget_->setSession(session_);
@@ -230,6 +247,51 @@ void StudentIntakeApp::setupUI() {
         setState(AppState::Dashboard);
     });
 
+    // Administration view
+    administrationView_ = contentContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    administrationView_->addStyleClass("administration-view");
+
+    auto adminContent = administrationView_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    adminContent->addStyleClass("admin-content");
+
+    adminContent->addWidget(std::make_unique<Wt::WText>(
+        "<div class='admin-header'>"
+        "<h1>Administration Dashboard</h1>"
+        "<p class='lead'>Welcome to the administration portal.</p>"
+        "</div>"));
+
+    auto adminGrid = adminContent->addWidget(std::make_unique<Wt::WContainerWidget>());
+    adminGrid->addStyleClass("admin-grid");
+
+    // Admin feature cards
+    auto usersCard = adminGrid->addWidget(std::make_unique<Wt::WContainerWidget>());
+    usersCard->addStyleClass("admin-card");
+    usersCard->addWidget(std::make_unique<Wt::WText>(
+        "<div class='card-icon'>&#128101;</div>"
+        "<h3>User Management</h3>"
+        "<p>Manage students, instructors, and administrators</p>"));
+
+    auto programsCard = adminGrid->addWidget(std::make_unique<Wt::WContainerWidget>());
+    programsCard->addStyleClass("admin-card");
+    programsCard->addWidget(std::make_unique<Wt::WText>(
+        "<div class='card-icon'>&#128218;</div>"
+        "<h3>Program Management</h3>"
+        "<p>Configure curriculums and training programs</p>"));
+
+    auto reportsCard = adminGrid->addWidget(std::make_unique<Wt::WContainerWidget>());
+    reportsCard->addStyleClass("admin-card");
+    reportsCard->addWidget(std::make_unique<Wt::WText>(
+        "<div class='card-icon'>&#128202;</div>"
+        "<h3>Reports</h3>"
+        "<p>View enrollment and completion reports</p>"));
+
+    auto settingsCard = adminGrid->addWidget(std::make_unique<Wt::WContainerWidget>());
+    settingsCard->addStyleClass("admin-card");
+    settingsCard->addWidget(std::make_unique<Wt::WText>(
+        "<div class='card-icon'>&#9881;</div>"
+        "<h3>System Settings</h3>"
+        "<p>Configure application settings</p>"));
+
     // Footer
     auto footer = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     footer->addStyleClass("app-footer");
@@ -238,18 +300,20 @@ void StudentIntakeApp::setupUI() {
     footerContent->addWidget(std::make_unique<Wt::WText>(
         "<span class='copyright-text'>&copy; 2026 Imagery Business Systems LLC. All rights reserved.</span>"));
 
-    // Hide all views initially except login
+    // Hide all views initially except unified login
     hideAllViews();
-    loginWidget_->show();
+    unifiedLoginWidget_->show();
 }
 
 void StudentIntakeApp::hideAllViews() {
-    loginWidget_->hide();
-    registerWidget_->hide();
-    curriculumSelector_->hide();
-    dashboardWidget_->hide();
-    formsView_->hide();
-    completionView_->hide();
+    if (unifiedLoginWidget_) unifiedLoginWidget_->hide();
+    if (loginWidget_) loginWidget_->hide();
+    if (registerWidget_) registerWidget_->hide();
+    if (curriculumSelector_) curriculumSelector_->hide();
+    if (dashboardWidget_) dashboardWidget_->hide();
+    if (formsView_) formsView_->hide();
+    if (completionView_) completionView_->hide();
+    if (administrationView_) administrationView_->hide();
 }
 
 void StudentIntakeApp::setState(AppState state) {
@@ -274,15 +338,42 @@ void StudentIntakeApp::setState(AppState state) {
         case AppState::Completion:
             showCompletion();
             break;
+        case AppState::Administration:
+            showAdministration();
+            break;
+        case AppState::Classroom:
+            showClassroom();
+            break;
+        case AppState::InstructorDashboard:
+            showInstructorDashboard();
+            break;
+        case AppState::InstructorStudents:
+            showInstructorStudents();
+            break;
+        case AppState::InstructorSchedule:
+            showInstructorSchedule();
+            break;
+        case AppState::InstructorFeedback:
+            showInstructorFeedback();
+            break;
+        case AppState::InstructorValidation:
+            showInstructorValidation();
+            break;
     }
 }
 
 void StudentIntakeApp::showLogin() {
     LOG_DEBUG("StudentIntakeApp", "showLogin called");
     hideAllViews();
-    loginWidget_->show();
-    loginWidget_->reset();
-    loginWidget_->focus();
+
+    // Use unified login widget for all authentication
+    unifiedLoginWidget_->show();
+    unifiedLoginWidget_->reset();
+    unifiedLoginWidget_->focus();
+
+    // Hide role navigation when at login
+    roleNavigationWidget_->hide();
+
     navigationWidget_->refresh();
 }
 
@@ -417,12 +508,21 @@ void StudentIntakeApp::handleRegistrationSuccess() {
 }
 
 void StudentIntakeApp::handleLogout() {
+    // Logout from unified auth service
+    if (authService_ && !unifiedLoginWidget_->getSessionToken().empty()) {
+        authService_->logout(unifiedLoginWidget_->getSessionToken());
+    }
+
+    // Also logout from legacy auth manager
     if (authManager_) {
         authManager_->logout(*session_);
     }
+
     session_->reset();
-    navigationWidget_->refresh();
-    setState(AppState::Login);
+    currentUser_ = Models::User();
+
+    // Redirect to unified login at root
+    redirect("/");
 }
 
 void StudentIntakeApp::handleCurriculumSelected(const Models::Curriculum& curriculum) {
@@ -468,6 +568,216 @@ void StudentIntakeApp::handleFormCompleted(const std::string& formId) {
 }
 
 void StudentIntakeApp::handleAllFormsCompleted() {
+    setState(AppState::Completion);
+}
+
+void StudentIntakeApp::showAdministration() {
+    LOG_DEBUG("StudentIntakeApp", "showAdministration called");
+    hideAllViews();
+    administrationView_->show();
+
+    // Update role navigation for multi-role users
+    if (currentUser_.hasMultipleRoles()) {
+        roleNavigationWidget_->setUser(currentUser_);
+        roleNavigationWidget_->setActiveRole(Models::UserRole::Admin);
+        roleNavigationWidget_->show();
+    }
+
+    navigationWidget_->refresh();
+}
+
+void StudentIntakeApp::showClassroom() {
+    LOG_DEBUG("StudentIntakeApp", "showClassroom called");
+    hideAllViews();
+    // TODO: Implement classroom view
+    navigationWidget_->refresh();
+}
+
+void StudentIntakeApp::showInstructorDashboard() {
+    LOG_DEBUG("StudentIntakeApp", "showInstructorDashboard called");
+    hideAllViews();
+
+    // Update role navigation for multi-role users
+    if (currentUser_.hasMultipleRoles()) {
+        roleNavigationWidget_->setUser(currentUser_);
+        roleNavigationWidget_->setActiveRole(Models::UserRole::Instructor);
+        roleNavigationWidget_->show();
+    }
+
+    // TODO: Implement instructor dashboard view
+    navigationWidget_->refresh();
+}
+
+void StudentIntakeApp::showInstructorStudents() {
+    LOG_DEBUG("StudentIntakeApp", "showInstructorStudents called");
+    hideAllViews();
+    // TODO: Implement instructor students view
+    navigationWidget_->refresh();
+}
+
+void StudentIntakeApp::showInstructorSchedule() {
+    LOG_DEBUG("StudentIntakeApp", "showInstructorSchedule called");
+    hideAllViews();
+    // TODO: Implement instructor schedule view
+    navigationWidget_->refresh();
+}
+
+void StudentIntakeApp::showInstructorFeedback() {
+    LOG_DEBUG("StudentIntakeApp", "showInstructorFeedback called");
+    hideAllViews();
+    // TODO: Implement instructor feedback view
+    navigationWidget_->refresh();
+}
+
+void StudentIntakeApp::showInstructorValidation() {
+    LOG_DEBUG("StudentIntakeApp", "showInstructorValidation called");
+    hideAllViews();
+    // TODO: Implement instructor validation view
+    navigationWidget_->refresh();
+}
+
+void StudentIntakeApp::handleUnifiedLoginSuccess(const Models::User& user) {
+    LOG_DEBUG("StudentIntakeApp", "handleUnifiedLoginSuccess called for user: " << user.getEmail());
+
+    // Store the authenticated user
+    currentUser_ = user;
+
+    // Update navigation
+    navigationWidget_->refresh();
+
+    // Route user based on their primary role
+    routeUserByRole(user);
+}
+
+void StudentIntakeApp::handleRoleSwitch(Models::UserRole role) {
+    LOG_DEBUG("StudentIntakeApp", "handleRoleSwitch called to role: " << static_cast<int>(role));
+
+    // Get session token and user ID for passing to other portals
+    std::string sessionToken = unifiedLoginWidget_->getSessionToken();
+    int userId = currentUser_.getId();
+
+    // Route to appropriate portal based on new role
+    switch (role) {
+        case Models::UserRole::Admin:
+            LOG_INFO("StudentIntakeApp", "Redirecting to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
+            return;
+        case Models::UserRole::Instructor:
+            // Instructors use the shared admin portal
+            LOG_INFO("StudentIntakeApp", "Redirecting instructor to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
+            return;
+        case Models::UserRole::Student:
+            LOG_INFO("StudentIntakeApp", "Redirecting to /student");
+            redirect("/student?token=" + sessionToken + "&user_id=" + std::to_string(userId));
+            return;
+    }
+}
+
+void StudentIntakeApp::routeUserByRole(const Models::User& user) {
+    LOG_DEBUG("StudentIntakeApp", "routeUserByRole - Primary role: " << static_cast<int>(user.getPrimaryRole()));
+
+    // Get current path to determine if we're already at the correct endpoint
+    std::string currentPath = environment().deploymentPath();
+    LOG_DEBUG("StudentIntakeApp", "Current deployment path: " << currentPath);
+
+    // Get session token for passing to other portals
+    std::string sessionToken = unifiedLoginWidget_->getSessionToken();
+
+    // Route based on primary role
+    Models::UserRole primaryRole = user.getPrimaryRole();
+
+    switch (primaryRole) {
+        case Models::UserRole::Admin:
+            // Redirect to Admin Portal with session token
+            LOG_INFO("StudentIntakeApp", "Redirecting admin to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
+            return;
+
+        case Models::UserRole::Instructor:
+            // Redirect instructors to Admin Portal (shared with admins)
+            LOG_INFO("StudentIntakeApp", "Redirecting instructor to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
+            return;
+
+        case Models::UserRole::Student:
+        default:
+            // Redirect to Student Portal if not already there
+            if (currentPath != "/student") {
+                LOG_INFO("StudentIntakeApp", "Redirecting student to /student");
+                redirect("/student?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
+                return;
+            }
+            // Already at /student - show student dashboard
+            LOG_INFO("StudentIntakeApp", "Showing student dashboard");
+            if (user.hasMultipleRoles()) {
+                roleNavigationWidget_->setUser(user);
+                roleNavigationWidget_->show();
+            } else {
+                roleNavigationWidget_->hide();
+            }
+            // For students, follow the existing flow
+            if (session_->hasCurriculumSelected()) {
+                if (session_->isIntakeComplete()) {
+                    setState(AppState::Completion);
+                } else {
+                    setState(AppState::Dashboard);
+                }
+            } else {
+                setState(AppState::CurriculumSelection);
+            }
+            break;
+    }
+}
+
+// Instructor event handler stubs
+void StudentIntakeApp::handleInstructorLogin() {
+    LOG_DEBUG("StudentIntakeApp", "handleInstructorLogin called");
+}
+
+void StudentIntakeApp::handleInstructorBack() {
+    setState(AppState::InstructorDashboard);
+}
+
+void StudentIntakeApp::handleViewStudents() {
+    setState(AppState::InstructorStudents);
+}
+
+void StudentIntakeApp::handleViewSchedule() {
+    setState(AppState::InstructorSchedule);
+}
+
+void StudentIntakeApp::handleViewFeedback() {
+    setState(AppState::InstructorFeedback);
+}
+
+void StudentIntakeApp::handleViewValidations() {
+    setState(AppState::InstructorValidation);
+}
+
+void StudentIntakeApp::handleStudentSelected(int studentId) {
+    LOG_DEBUG("StudentIntakeApp", "handleStudentSelected: " << studentId);
+}
+
+void StudentIntakeApp::handleScheduleSession() {
+    LOG_DEBUG("StudentIntakeApp", "handleScheduleSession called");
+}
+
+void StudentIntakeApp::handleAddFeedback(int studentId) {
+    LOG_DEBUG("StudentIntakeApp", "handleAddFeedback for student: " << studentId);
+}
+
+// Classroom event handlers
+void StudentIntakeApp::handleEnterClassroom() {
+    setState(AppState::Classroom);
+}
+
+void StudentIntakeApp::handleClassroomBack() {
+    setState(AppState::Dashboard);
+}
+
+void StudentIntakeApp::handleCourseCompleted() {
+    LOG_DEBUG("StudentIntakeApp", "handleCourseCompleted called");
     setState(AppState::Completion);
 }
 

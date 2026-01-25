@@ -67,6 +67,12 @@ set(MODEL_SOURCES
     src/models/FormData.cpp
     src/models/Curriculum.cpp
     src/models/InstitutionSettings.cpp
+    src/models/User.cpp
+    src/models/Instructor.cpp
+    src/models/Course.cpp
+    src/models/StudentProgress.cpp
+    src/models/Assessment.cpp
+    src/models/TrainingSession.cpp
 )
 
 set(SESSION_SOURCES
@@ -78,11 +84,15 @@ set(API_SOURCES
     src/api/ApiClient.cpp
     src/api/FormSubmissionService.cpp
     src/api/PdfGenerator.cpp
+    src/api/ClassroomService.cpp
+    src/api/InstructorService.cpp
 )
 
 set(AUTH_SOURCES
     src/auth/AuthManager.cpp
+    src/auth/AuthService.cpp
     src/auth/LoginWidget.cpp
+    src/auth/UnifiedLoginWidget.cpp
     src/auth/RegisterWidget.cpp
 )
 
@@ -108,6 +118,7 @@ set(WIDGETS_SOURCES
     src/widgets/ProgressWidget.cpp
     src/widgets/FormContainer.cpp
     src/widgets/DashboardWidget.cpp
+    src/widgets/RoleNavigationWidget.cpp
 )
 
 set(ADMIN_SOURCES
@@ -130,6 +141,22 @@ set(ADMIN_SOURCES
     src/admin/forms/FormTypesListWidget.cpp
     src/admin/forms/FormTypeDetailWidget.cpp
     src/admin/settings/InstitutionSettingsWidget.cpp
+    src/admin/users/UserListWidget.cpp
+    src/admin/users/UserEditorWidget.cpp
+)
+
+set(CLASSROOM_SOURCES
+    src/classroom/ClassroomWidget.cpp
+    src/classroom/AssessmentWidget.cpp
+    src/classroom/AssessmentReportWidget.cpp
+)
+
+set(INSTRUCTOR_SOURCES
+    src/instructor/InstructorDashboardWidget.cpp
+    src/instructor/StudentProgressViewWidget.cpp
+    src/instructor/SchedulingWidget.cpp
+    src/instructor/FeedbackWidget.cpp
+    src/instructor/ValidationWidget.cpp
 )
 
 set(APP_SOURCES
@@ -147,6 +174,8 @@ set(ALL_SOURCES
     ${FORMS_SOURCES}
     ${WIDGETS_SOURCES}
     ${ADMIN_SOURCES}
+    ${CLASSROOM_SOURCES}
+    ${INSTRUCTOR_SOURCES}
     ${APP_SOURCES}
 )
 
@@ -171,6 +200,9 @@ target_include_directories(student_intake PRIVATE
     ${CMAKE_SOURCE_DIR}/src/admin/curriculum
     ${CMAKE_SOURCE_DIR}/src/admin/forms
     ${CMAKE_SOURCE_DIR}/src/admin/settings
+    ${CMAKE_SOURCE_DIR}/src/admin/users
+    ${CMAKE_SOURCE_DIR}/src/classroom
+    ${CMAKE_SOURCE_DIR}/src/instructor
 )
 
 # Link libraries

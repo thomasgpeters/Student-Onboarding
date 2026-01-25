@@ -13,8 +13,10 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , selectedStudentId_(0)
     , selectedCurriculumId_("")
     , selectedFormTypeId_(0)
+    , selectedUserId_(0)
     , apiClient_(nullptr)
     , apiService_(nullptr)
+    , authService_(nullptr)
     , authManager_(nullptr)
     , session_(nullptr)
     , mainContainer_(nullptr)
@@ -22,6 +24,7 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , contentWrapper_(nullptr)
     , sidebarWidget_(nullptr)
     , contentContainer_(nullptr)
+    , unifiedLoginWidget_(nullptr)
     , loginWidget_(nullptr)
     , dashboardWidget_(nullptr)
     , studentListWidget_(nullptr)
@@ -34,7 +37,9 @@ AdminApp::AdminApp(const Wt::WEnvironment& env)
     , formTypeDetailWidget_(nullptr)
     , curriculumListWidget_(nullptr)
     , curriculumEditorWidget_(nullptr)
-    , settingsWidget_(nullptr) {
+    , settingsWidget_(nullptr)
+    , userListWidget_(nullptr)
+    , userEditorWidget_(nullptr) {
 
     setTitle("Admin Portal - Student Onboarding");
 
@@ -50,6 +55,65 @@ AdminApp::~AdminApp() {
 void AdminApp::initialize() {
     setupServices();
     setupUI();
+
+    // Check for session token in URL (from unified login redirect)
+    const std::string* tokenParam = environment().getParameter("token");
+    const std::string* userIdParam = environment().getParameter("user_id");
+
+    if (tokenParam && !tokenParam->empty() && userIdParam && !userIdParam->empty()) {
+        LOG_INFO("AdminApp", "Found session token in URL, attempting auto-login...");
+
+        try {
+            int userId = std::stoi(*userIdParam);
+
+            // Get user info using the user_id
+            auto user = authService_->getUserFromSession(*tokenParam);
+
+            // If user ID is 0, the session lookup failed - try fetching user directly
+            if (user.getId() == 0) {
+                // Fetch user by ID from AppUser table
+                std::string endpoint = "/AppUser/" + *userIdParam;
+                auto response = apiClient_->get(endpoint);
+                if (response.success) {
+                    auto json = response.getJson();
+                    if (json.contains("data")) {
+                        user = StudentIntake::Models::User::fromJson(json["data"]);
+                        // Get roles for this user
+                        user.setRoles(authService_->getUserRoles(userId));
+                    }
+                }
+            }
+
+            if (user.getId() > 0 && user.hasRole(StudentIntake::Models::UserRole::Admin)) {
+                LOG_INFO("AdminApp", "Auto-login successful for user: " << user.getEmail());
+
+                // Store the authenticated user
+                currentUser_ = user;
+
+                // Update admin session with user data
+                if (session_) {
+                    Admin::Models::AdminUser adminUser;
+                    adminUser.setId(user.getId());
+                    adminUser.setEmail(user.getEmail());
+                    adminUser.setFirstName(user.getFirstName());
+                    adminUser.setLastName(user.getLastName());
+                    session_->setAdminUser(adminUser);
+                    session_->setAuthenticated(true);
+                    session_->setToken(*tokenParam);
+                }
+
+                // Go directly to dashboard
+                setState(AppState::Dashboard);
+                return;
+            } else {
+                LOG_WARN("AdminApp", "User not found or not an admin");
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR("AdminApp", "Error during auto-login: " << e.what());
+        }
+    }
+
+    // No valid session token, show login
     setState(AppState::Login);
 }
 
@@ -60,7 +124,10 @@ void AdminApp::setupServices() {
     // Create form submission service
     apiService_ = std::make_shared<Api::FormSubmissionService>(apiClient_);
 
-    // Create auth manager
+    // Create unified auth service (single source of truth)
+    authService_ = std::make_shared<Auth::AuthService>(apiClient_);
+
+    // Create legacy auth manager (kept for backward compatibility)
     authManager_ = std::make_shared<AdminAuthManager>(apiService_);
 
     // Create admin session
@@ -99,11 +166,17 @@ void AdminApp::setupUI() {
     contentContainer_ = contentWrapper_->addWidget(std::make_unique<Wt::WContainerWidget>());
     contentContainer_->addStyleClass("admin-content-container");
 
-    // Login widget - use simple show/hide pattern like StudentIntakeApp
+    // Unified login widget - uses AuthService for unified authentication
+    unifiedLoginWidget_ = contentContainer_->addWidget(std::make_unique<Auth::UnifiedLoginWidget>());
+    unifiedLoginWidget_->setAuthService(authService_);
+    unifiedLoginWidget_->loginSuccess().connect(this, &AdminApp::handleUnifiedLoginSuccess);
+
+    // Legacy login widget (kept for fallback) - use simple show/hide pattern like StudentIntakeApp
     loginWidget_ = contentContainer_->addWidget(std::make_unique<AdminLoginWidget>());
     loginWidget_->setAuthManager(authManager_);
     loginWidget_->setSession(session_);
     loginWidget_->loginSuccess().connect(this, &AdminApp::handleLoginSuccess);
+    loginWidget_->hide();  // Hide legacy widget by default
 
     // Dashboard widget (hidden initially)
     dashboardWidget_ = contentContainer_->addWidget(std::make_unique<AdminDashboard>());
@@ -207,6 +280,22 @@ void AdminApp::setupUI() {
     settingsWidget_->setApiService(apiService_);
     settingsWidget_->hide();
 
+    // User List widget (hidden initially)
+    userListWidget_ = contentContainer_->addWidget(std::make_unique<UserListWidget>());
+    userListWidget_->setApiClient(apiClient_);
+    userListWidget_->setAuthService(authService_);
+    userListWidget_->userSelected().connect(this, &AdminApp::handleUserSelected);
+    userListWidget_->addUserClicked().connect(this, &AdminApp::handleAddUser);
+    userListWidget_->hide();
+
+    // User Editor widget (hidden initially)
+    userEditorWidget_ = contentContainer_->addWidget(std::make_unique<UserEditorWidget>());
+    userEditorWidget_->setApiClient(apiClient_);
+    userEditorWidget_->setAuthService(authService_);
+    userEditorWidget_->saved().connect(this, &AdminApp::handleUserSaved);
+    userEditorWidget_->cancelled().connect(this, &AdminApp::handleUserCancelled);
+    userEditorWidget_->hide();
+
     // Footer
     auto footer = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     footer->addStyleClass("admin-footer");
@@ -229,6 +318,12 @@ void AdminApp::setState(AppState state) {
             break;
         case AppState::Dashboard:
             showDashboard();
+            break;
+        case AppState::Users:
+            showUsers();
+            break;
+        case AppState::UserEdit:
+            showUserEdit(selectedUserId_);
             break;
         case AppState::Students:
             showStudents();
@@ -262,7 +357,8 @@ void AdminApp::setState(AppState state) {
 
 void AdminApp::hideAllViews() {
     // Use simple hide() pattern - same as StudentIntakeApp
-    loginWidget_->hide();
+    unifiedLoginWidget_->hide();
+    loginWidget_->hide();  // Legacy
     dashboardWidget_->hide();
     studentListWidget_->hide();
     studentDetailWidget_->hide();
@@ -275,6 +371,8 @@ void AdminApp::hideAllViews() {
     curriculumListWidget_->hide();
     curriculumEditorWidget_->hide();
     settingsWidget_->hide();
+    userListWidget_->hide();
+    userEditorWidget_->hide();
 }
 
 void AdminApp::showLogin() {
@@ -286,10 +384,10 @@ void AdminApp::showLogin() {
     contentWrapper_->addStyleClass("login-state");
     navigationWidget_->refresh();
 
-    // Show login widget using simple show() - same as StudentIntakeApp
-    loginWidget_->show();
-    loginWidget_->reset();
-    loginWidget_->focus();
+    // Show unified login widget - uses AuthService for single source of truth
+    unifiedLoginWidget_->show();
+    unifiedLoginWidget_->reset();
+    unifiedLoginWidget_->focus();
 }
 
 void AdminApp::showDashboard() {
@@ -423,20 +521,117 @@ void AdminApp::showSettings() {
     settingsWidget_->show();
 }
 
+void AdminApp::showUsers() {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Users);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    // Pass current user's roles to control permissions
+    userListWidget_->setCurrentUserRoles(currentUser_.getRoles());
+    userListWidget_->show();
+    userListWidget_->refresh();
+}
+
+void AdminApp::showUserEdit(int userId) {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Users);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    currentState_ = AppState::UserEdit;
+    selectedUserId_ = userId;
+    // Pass current user's roles to control permissions
+    userEditorWidget_->setCurrentUserRoles(currentUser_.getRoles());
+    userEditorWidget_->loadUser(userId);
+    userEditorWidget_->show();
+}
+
+void AdminApp::showNewUser() {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Users);
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    currentState_ = AppState::UserEdit;
+    selectedUserId_ = 0;
+    // Pass current user's roles to control permissions
+    userEditorWidget_->setCurrentUserRoles(currentUser_.getRoles());
+    userEditorWidget_->newUser();
+    userEditorWidget_->show();
+}
+
 void AdminApp::handleLoginSuccess() {
     LOG_INFO("AdminApp", "Login successful, showing dashboard");
     setState(AppState::Dashboard);
 }
 
+void AdminApp::handleUnifiedLoginSuccess(const StudentIntake::Models::User& user) {
+    LOG_INFO("AdminApp", "Unified login successful for user: " << user.getEmail());
+
+    // Store the authenticated user
+    currentUser_ = user;
+
+    // Check if user has admin or instructor role (both can access admin portal)
+    bool isAdmin = user.hasRole(StudentIntake::Models::UserRole::Admin);
+    bool isInstructor = user.hasRole(StudentIntake::Models::UserRole::Instructor);
+
+    if (!isAdmin && !isInstructor) {
+        LOG_WARN("AdminApp", "User does not have admin or instructor role");
+        unifiedLoginWidget_->showError("You do not have access to this portal. Please use the student portal.");
+        return;
+    }
+
+    // Update admin session with user data
+    if (session_) {
+        Admin::Models::AdminUser adminUser;
+        adminUser.setId(user.getId());
+        adminUser.setEmail(user.getEmail());
+        adminUser.setFirstName(user.getFirstName());
+        adminUser.setLastName(user.getLastName());
+
+        // Set role based on user's roles (Admin takes precedence over Instructor)
+        if (isAdmin) {
+            adminUser.setRole(Admin::Models::AdminRole::SuperAdmin);  // Full admin access
+        } else if (isInstructor) {
+            adminUser.setRole(Admin::Models::AdminRole::Instructor);  // Limited instructor access
+        }
+
+        session_->setAdminUser(adminUser);
+        session_->setAuthenticated(true);
+        session_->setToken(unifiedLoginWidget_->getSessionToken());
+    }
+
+    setState(AppState::Dashboard);
+}
+
 void AdminApp::handleLogout() {
-    authManager_->logout(*session_);
-    setState(AppState::Login);
+    if (authService_ && !unifiedLoginWidget_->getSessionToken().empty()) {
+        authService_->logout(unifiedLoginWidget_->getSessionToken());
+    }
+    currentUser_ = StudentIntake::Models::User();
+    session_->setAuthenticated(false);
+
+    // Redirect to unified login at root
+    redirect("/");
 }
 
 void AdminApp::handleSectionChange(AdminSection section) {
     switch (section) {
         case AdminSection::Dashboard:
             setState(AppState::Dashboard);
+            break;
+        case AdminSection::Users:
+            setState(AppState::Users);
             break;
         case AdminSection::Students:
             setState(AppState::Students);
@@ -586,6 +781,29 @@ void AdminApp::handlePrintAllStudentForms(int studentId) {
     LOG_DEBUG("AdminApp", "Print all student forms requested: " << studentId);
     // Show the PDF preview as a modal dialog - no state change needed
     formPdfPreviewWidget_->showStudentForms(studentId);
+}
+
+void AdminApp::handleUserSelected(int userId) {
+    LOG_DEBUG("AdminApp", "User selected: " << userId);
+    selectedUserId_ = userId;
+    hideAllViews();
+    showUserEdit(userId);
+}
+
+void AdminApp::handleAddUser() {
+    LOG_DEBUG("AdminApp", "Adding new user");
+    hideAllViews();
+    showNewUser();
+}
+
+void AdminApp::handleUserSaved() {
+    LOG_INFO("AdminApp", "User saved, returning to list");
+    setState(AppState::Users);
+}
+
+void AdminApp::handleUserCancelled() {
+    LOG_DEBUG("AdminApp", "User edit cancelled, returning to list");
+    setState(AppState::Users);
 }
 
 } // namespace Admin

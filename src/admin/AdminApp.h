@@ -8,6 +8,9 @@
 #include "app/AppConfig.h"
 #include "api/ApiClient.h"
 #include "api/FormSubmissionService.h"
+#include "auth/AuthService.h"
+#include "auth/UnifiedLoginWidget.h"
+#include "models/User.h"
 #include "admin/AdminAuthManager.h"
 #include "admin/AdminLoginWidget.h"
 #include "admin/AdminNavigation.h"
@@ -25,6 +28,8 @@
 #include "admin/forms/FormTypesListWidget.h"
 #include "admin/forms/FormTypeDetailWidget.h"
 #include "admin/settings/InstitutionSettingsWidget.h"
+#include "admin/users/UserListWidget.h"
+#include "admin/users/UserEditorWidget.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -41,6 +46,8 @@ public:
     enum class AppState {
         Login,
         Dashboard,
+        Users,
+        UserEdit,
         Students,
         StudentDetail,
         StudentForms,
@@ -65,6 +72,9 @@ private:
     void hideAllViews();
     void showLogin();
     void showDashboard();
+    void showUsers();
+    void showUserEdit(int userId);
+    void showNewUser();
     void showStudents();
     void showStudentDetail(int studentId);
     void showStudentForms(int studentId);
@@ -78,6 +88,7 @@ private:
 
     // Event handlers
     void handleLoginSuccess();
+    void handleUnifiedLoginSuccess(const StudentIntake::Models::User& user);
     void handleLogout();
     void handleSectionChange(AdminSection section);
     void handleStudentSelected(int studentId);
@@ -92,6 +103,10 @@ private:
     void handleFormRejected(int submissionId);
     void handleFormPdfPreview(int submissionId);
     void handlePrintAllStudentForms(int studentId);
+    void handleUserSelected(int userId);
+    void handleAddUser();
+    void handleUserSaved();
+    void handleUserCancelled();
 
     // Configuration
     App::AppConfig& config_;
@@ -102,12 +117,15 @@ private:
     std::string selectedStudentName_;
     std::string selectedCurriculumId_;
     int selectedFormTypeId_;
+    int selectedUserId_;
 
     // Services
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Api::FormSubmissionService> apiService_;
-    std::shared_ptr<AdminAuthManager> authManager_;
+    std::shared_ptr<Auth::AuthService> authService_;
+    std::shared_ptr<AdminAuthManager> authManager_;  // Legacy - kept for backward compatibility
     std::shared_ptr<Models::AdminSession> session_;
+    StudentIntake::Models::User currentUser_;  // Currently authenticated user
 
     // UI Components
     Wt::WContainerWidget* mainContainer_;
@@ -117,7 +135,8 @@ private:
     Wt::WContainerWidget* contentContainer_;
 
     // Views
-    AdminLoginWidget* loginWidget_;
+    Auth::UnifiedLoginWidget* unifiedLoginWidget_;
+    AdminLoginWidget* loginWidget_;  // Legacy - kept for fallback
     AdminDashboard* dashboardWidget_;
     StudentListWidget* studentListWidget_;
     StudentDetailWidget* studentDetailWidget_;
@@ -130,6 +149,8 @@ private:
     CurriculumListWidget* curriculumListWidget_;
     CurriculumEditorWidget* curriculumEditorWidget_;
     InstitutionSettingsWidget* settingsWidget_;
+    UserListWidget* userListWidget_;
+    UserEditorWidget* userEditorWidget_;
 };
 
 } // namespace Admin

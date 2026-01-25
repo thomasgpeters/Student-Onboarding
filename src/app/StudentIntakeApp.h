@@ -11,7 +11,9 @@
 #include "api/ApiClient.h"
 #include "api/FormSubmissionService.h"
 #include "auth/AuthManager.h"
+#include "auth/AuthService.h"
 #include "auth/LoginWidget.h"
+#include "auth/UnifiedLoginWidget.h"
 #include "auth/RegisterWidget.h"
 #include "curriculum/CurriculumManager.h"
 #include "curriculum/CurriculumSelector.h"
@@ -20,6 +22,26 @@
 #include "widgets/ProgressWidget.h"
 #include "widgets/FormContainer.h"
 #include "widgets/DashboardWidget.h"
+#include "widgets/RoleNavigationWidget.h"
+#include "api/ClassroomService.h"
+#include "api/InstructorService.h"
+#include "models/Instructor.h"
+#include "models/User.h"
+
+// Forward declaration
+namespace StudentIntake {
+namespace Classroom {
+    class ClassroomWidget;
+    class AssessmentReportWidget;
+}
+namespace Instructor {
+    class InstructorDashboardWidget;
+    class StudentProgressViewWidget;
+    class SchedulingWidget;
+    class FeedbackWidget;
+    class ValidationWidget;
+}
+}
 
 namespace StudentIntake {
 namespace App {
@@ -39,7 +61,14 @@ public:
         CurriculumSelection,
         Dashboard,
         Forms,
-        Completion
+        Completion,
+        Classroom,  // Online course learning environment
+        Administration,  // Admin main view
+        InstructorDashboard,  // Instructor main view
+        InstructorStudents,   // View student progress
+        InstructorSchedule,   // Session scheduling
+        InstructorFeedback,   // Feedback management
+        InstructorValidation  // Skill validation
     };
 
     // State management
@@ -60,6 +89,13 @@ private:
     void showDashboard();
     void showForms();
     void showCompletion();
+    void showClassroom();
+    void showAdministration();
+    void showInstructorDashboard();
+    void showInstructorStudents();
+    void showInstructorSchedule();
+    void showInstructorFeedback();
+    void showInstructorValidation();
 
     // Event handlers
     void handleLoginSuccess();
@@ -69,6 +105,25 @@ private:
     void handleChangeProgram();
     void handleFormCompleted(const std::string& formId);
     void handleAllFormsCompleted();
+    void handleEnterClassroom();
+    void handleClassroomBack();
+    void handleCourseCompleted();
+
+    // Instructor event handlers
+    void handleInstructorLogin();
+    void handleInstructorBack();
+    void handleViewStudents();
+    void handleViewSchedule();
+    void handleViewFeedback();
+    void handleViewValidations();
+    void handleStudentSelected(int studentId);
+    void handleScheduleSession();
+    void handleAddFeedback(int studentId);
+
+    // Unified authentication handlers
+    void handleUnifiedLoginSuccess(const Models::User& user);
+    void handleRoleSwitch(Models::UserRole role);
+    void routeUserByRole(const Models::User& user);
 
     // Configuration
     AppConfig& config_;
@@ -79,10 +134,18 @@ private:
     // Services
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Api::FormSubmissionService> apiService_;
+    std::shared_ptr<Api::ClassroomService> classroomService_;
+    std::shared_ptr<Api::InstructorService> instructorService_;
     std::shared_ptr<Auth::AuthManager> authManager_;
+    std::shared_ptr<Auth::AuthService> authService_;
     std::shared_ptr<Curriculum::CurriculumManager> curriculumManager_;
     std::shared_ptr<Forms::FormFactory> formFactory_;
     std::shared_ptr<Session::StudentSession> session_;
+
+    // User state
+    Models::User currentUser_;
+    Models::Instructor currentInstructor_;
+    bool isInstructorMode_;
 
     // UI Components
     Wt::WContainerWidget* mainContainer_;
@@ -90,8 +153,10 @@ private:
     Wt::WContainerWidget* contentContainer_;  // Changed from WStackedWidget
 
     // Views
+    Auth::UnifiedLoginWidget* unifiedLoginWidget_;
     Auth::LoginWidget* loginWidget_;
     Auth::RegisterWidget* registerWidget_;
+    Widgets::RoleNavigationWidget* roleNavigationWidget_;
     Curriculum::CurriculumSelector* curriculumSelector_;
     Widgets::DashboardWidget* dashboardWidget_;
     Wt::WContainerWidget* formsView_;
@@ -99,6 +164,16 @@ private:
     Widgets::ProgressWidget* progressWidget_;
     Widgets::FormContainer* formContainer_;
     Wt::WContainerWidget* completionView_;
+    Classroom::ClassroomWidget* classroomWidget_;
+    Classroom::AssessmentReportWidget* assessmentReportWidget_;
+    Wt::WContainerWidget* administrationView_;
+
+    // Instructor views
+    Instructor::InstructorDashboardWidget* instructorDashboardWidget_;
+    Instructor::StudentProgressViewWidget* studentProgressWidget_;
+    Instructor::SchedulingWidget* schedulingWidget_;
+    Instructor::FeedbackWidget* feedbackWidget_;
+    Instructor::ValidationWidget* validationWidget_;
 };
 
 } // namespace App

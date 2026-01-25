@@ -27,6 +27,7 @@ void AdminSidebar::setupUI() {
 
     std::vector<ItemDef> itemDefs = {
         {AdminSection::Dashboard, "Dashboard", "📊", false},
+        {AdminSection::Users, "Users", "👤", true},  // Admin only
         {AdminSection::Students, "Students", "👥", false},
         {AdminSection::Forms, "Forms", "📋", false},
         {AdminSection::Curriculum, "Curriculum", "📚", true},
@@ -75,17 +76,42 @@ void AdminSidebar::refresh() {
     }
 
     auto& user = session_->getAdminUser();
+    bool isAdmin = user.canManageAdmins();  // Admin or SuperAdmin
+    bool isInstructor = (user.getRole() == Models::AdminRole::Instructor);
 
     for (auto& item : items_) {
         bool visible = true;
 
-        // Settings only visible to super admin
-        if (item.section == AdminSection::Settings) {
-            visible = user.canManageAdmins();
-        }
-        // Curriculum requires admin role
-        else if (item.section == AdminSection::Curriculum) {
-            visible = user.canManageCurriculum();
+        switch (item.section) {
+            case AdminSection::Dashboard:
+                // Everyone can see dashboard
+                visible = true;
+                break;
+
+            case AdminSection::Users:
+                // Only admins can manage all users
+                visible = isAdmin;
+                break;
+
+            case AdminSection::Students:
+                // Only instructors see Students (admins use Users instead)
+                visible = isInstructor && !isAdmin;
+                break;
+
+            case AdminSection::Forms:
+                // Only admins can manage forms
+                visible = isAdmin;
+                break;
+
+            case AdminSection::Curriculum:
+                // Both admins and instructors can view curriculum
+                visible = true;
+                break;
+
+            case AdminSection::Settings:
+                // Only super admin
+                visible = user.canManageAdmins();
+                break;
         }
 
         if (visible) {
