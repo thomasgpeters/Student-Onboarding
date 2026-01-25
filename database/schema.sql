@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS user_role (
     UNIQUE(app_user_id, role),
     -- Role constraint
     CONSTRAINT user_role_check
-        CHECK (role IN ('student', 'instructor', 'admin', 'super_admin'))
+        CHECK (role IN ('student', 'instructor', 'admin', 'super_admin', 'super_user'))
 );
 
 -- =====================================================
@@ -282,7 +282,7 @@ CREATE TABLE IF NOT EXISTS admin_user (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     -- Role constraint
     CONSTRAINT admin_user_role_check
-        CHECK (role IN ('staff', 'instructor', 'admin', 'super_admin'))
+        CHECK (role IN ('staff', 'instructor', 'admin', 'super_admin', 'super_user'))
 );
 
 CREATE TABLE IF NOT EXISTS admin_program_assignment (
