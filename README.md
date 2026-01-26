@@ -680,14 +680,213 @@ The sidebar dynamically shows/hides sections based on the logged-in user's role:
 
 The User Management feature allows creating and managing users with role assignments:
 
-#### Creating Users
-1. Navigate to **Users** (Admin) or **Students** (Instructor)
-2. Click **Add User**
-3. Fill in user details (email, name, password)
-4. Select roles (Admin can assign any role; Instructors can only create Students)
-5. Save to create the user
+---
 
-#### Role-Specific Records
+## User Roles & Access Guide
+
+The Student Onboarding application supports three distinct user roles, each with specific capabilities and views within the system.
+
+### Role Overview
+
+| Role | Portal Access | Primary Functions |
+|------|---------------|-------------------|
+| **Administrator** | `/administration` | Full system management, all users, settings |
+| **Instructor** | `/administration` | Student management, curriculum viewing |
+| **Student** | `/student` | Complete onboarding forms, view progress |
+
+---
+
+### Administrator Role
+
+Administrators have full access to the system and can manage all aspects of the application.
+
+#### Dashboard View
+- **Title**: "User Management"
+- **Subtitle**: "View and manage all users"
+- Access to: Dashboard, Users, Forms, Curriculum, Activity Log, Settings (Super Admin only)
+
+#### User Management Features
+
+**Stat Placards** (Clickable filters):
+| Placard | Icon | Color | Function |
+|---------|------|-------|----------|
+| Total | 👥 | Blue | Show all users |
+| Admins | 🛡️ | Red | Filter to Admin users only |
+| Instructors | 📚 | Orange | Filter to Instructor users only |
+| Students | 🎓 | Green | Filter to Student users only |
+
+**Filters Available**:
+- Search by name or email
+- Role dropdown: All Roles, Admin, Instructor, Student
+- Status dropdown: All Status, Active, Inactive
+
+**Capabilities**:
+- ✅ View all users (Admin, Instructor, Student)
+- ✅ Create users with any role
+- ✅ Edit any user's profile and roles
+- ✅ Activate/deactivate user accounts
+- ✅ Access all system settings
+
+#### User Table Columns
+| Column | Description |
+|--------|-------------|
+| Icon | User avatar (👤) |
+| Name | Full name or email if name not set |
+| Email | User's email address |
+| Roles | Color-coded badges (Admin=red, Instructor=blue, Student=green) |
+| Status | Active (green) or Inactive (gray) badge |
+| Actions | View button to edit user details |
+
+---
+
+### Instructor Role
+
+Instructors have limited access focused on student management and curriculum viewing.
+
+#### Dashboard View
+- **Title**: "Student Management"
+- **Subtitle**: "View and manage your students"
+- Access to: Dashboard, Students, Curriculum
+
+#### Student Management Features
+
+**Stat Placards** (Visible to Instructors):
+| Placard | Icon | Color | Function |
+|---------|------|-------|----------|
+| Students | 🎓 | Green | Show all students (only placard visible) |
+
+> **Note**: Total, Admins, and Instructors placards are hidden from Instructor view.
+
+**Filters Available**:
+- Search by name or email
+- Role dropdown: All Roles, Student (only options)
+- Status dropdown: All Status, Active, Inactive
+
+**Capabilities**:
+- ✅ View students only (no Admin or Instructor users visible)
+- ✅ Create new student accounts
+- ✅ Edit student profiles
+- ✅ View curriculum/programs
+- ❌ Cannot create Admin or Instructor users
+- ❌ Cannot access Settings or Activity Log
+- ❌ Cannot view Forms submissions
+
+#### User Table (Student-Only View)
+The table displays the same columns as the Admin view, but only shows users with the Student role assigned.
+
+---
+
+### Student Role
+
+Students use the separate Student Portal to complete their onboarding process.
+
+#### Portal Access
+- **URL**: `/student`
+- **Purpose**: Complete enrollment forms and track progress
+
+#### Features
+- View selected academic program
+- Complete required onboarding forms
+- Track submission progress
+- View completed forms
+- Access recommended optional forms
+
+> **Note**: Students do not have access to the Administration Portal (`/administration`).
+
+---
+
+## User List Widget vs Student List Widget
+
+The application uses two similar but distinct list widgets depending on the context:
+
+### UserListWidget (Admin Portal → Users Section)
+
+Used by **Administrators** to manage all user types.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ User Management                              [+ Add User]   │
+│ View and manage all users                                   │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐            │
+│ │ 👥 15   │ │ 🛡️ 3    │ │ 📚 4    │ │ 🎓 8    │            │
+│ │ Total   │ │ Admins  │ │Instruct.│ │Students │            │
+│ └─────────┘ └─────────┘ └─────────┘ └─────────┘            │
+│      ↑ Click any card to filter by that role               │
+├─────────────────────────────────────────────────────────────┤
+│ Search [____________] Role [All Roles ▼] Status [All ▼]    │
+├─────────────────────────────────────────────────────────────┤
+│   │ Name          │ Email              │ Roles    │ Status │
+│ 👤│ John Admin    │ john@school.edu    │ Admin    │ Active │
+│ 👤│ Jane Instructor│ jane@school.edu   │Instructor│ Active │
+│ 👤│ Bob Student   │ bob@email.com      │ Student  │ Active │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### StudentListWidget (Admin Portal → Students Section)
+
+Used by **Instructors** to manage students, or embedded in other admin views.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Student Management                          [+ Add Student] │
+│ View and manage all enrolled students                       │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐            │
+│ │ ✓ 5     │ │ ⏳ 3    │ │ ★ 2     │ │ ✗ 1     │            │
+│ │ Active  │ │ Pending │ │Completed│ │ Revoked │            │
+│ └─────────┘ └─────────┘ └─────────┘ └─────────┘            │
+│      ↑ Stats show enrollment status, not roles             │
+├─────────────────────────────────────────────────────────────┤
+│ Search [____________] Program [All ▼] Status [All ▼]       │
+├─────────────────────────────────────────────────────────────┤
+│   │ ID │ Name      │ Email         │ Program    │ Status   │
+│ 👤│ 1  │ Bob Smith │ bob@email.com │ Class A CDL│ Active   │
+│ 👤│ 2  │ Jane Doe  │ jane@email.com│ Class B CDL│ Pending  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key Differences
+
+| Feature | UserListWidget | StudentListWidget |
+|---------|----------------|-------------------|
+| **Used By** | Administrators | Instructors |
+| **Shows** | All user types | Students only |
+| **Stat Cards** | Role counts (Admin, Instructor, Student) | Status counts (Active, Pending, Completed, Revoked) |
+| **Filters** | Role, Status | Program, Status |
+| **Title** | "User Management" | "Student Management" |
+| **Placard Click** | Filters by user role | Filters by enrollment status |
+
+---
+
+### Creating Users by Role
+
+#### As an Administrator
+
+1. Navigate to **Users** in the sidebar
+2. Click **+ Add User**
+3. Fill in user details (email, name, password)
+4. Select roles:
+   - ☑ Admin - Full system access
+   - ☑ Instructor - Student management access
+   - ☑ Student - Student portal access
+5. Click **Save**
+
+> **Note**: A user can have multiple roles (e.g., an Instructor who is also a Student).
+
+#### As an Instructor
+
+1. Navigate to **Students** in the sidebar
+2. Click **+ Add Student**
+3. Fill in student details (email, name, password, program)
+4. The Student role is automatically assigned
+5. Click **Create Student**
+
+> **Note**: Instructors can only create Student accounts. The Admin and Instructor role options are not visible.
+
+---
+
+### Automatic Role-Specific Records
 
 When a user is assigned a role, the system automatically creates corresponding records:
 
