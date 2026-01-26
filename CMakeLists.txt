@@ -143,6 +143,7 @@ set(ADMIN_SOURCES
     src/admin/settings/InstitutionSettingsWidget.cpp
     src/admin/users/UserListWidget.cpp
     src/admin/users/UserEditorWidget.cpp
+    src/admin/activity/ActivityListWidget.cpp
 )
 
 set(CLASSROOM_SOURCES
