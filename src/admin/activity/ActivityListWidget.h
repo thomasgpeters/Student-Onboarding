@@ -19,6 +19,7 @@ namespace Admin {
 // (needed because we're inside StudentIntake::Admin, not StudentIntake)
 using ActivityLogModel = ::StudentIntake::Models::ActivityLog;
 using ActivitySeverity = ::StudentIntake::Models::ActivitySeverity;
+using ActivityCategory = ::StudentIntake::Models::ActivityCategory;
 using ActorType = ::StudentIntake::Models::ActorType;
 using ActivityLogServiceType = ::StudentIntake::Api::ActivityLogService;
 using ActivityFilter = ::StudentIntake::Api::ActivityFilter;

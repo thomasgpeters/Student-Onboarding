@@ -416,13 +416,14 @@ void ActivityListWidget::updateStats() {
             todayCount_++;
         }
 
-        // Count by category
-        std::string category = activity.getActionCategory();
-        if (category == "authentication") {
+        // Count by category (using type alias from header)
+        auto category = activity.getActionCategory();
+        using Cat = ::StudentIntake::Models::ActivityCategory;
+        if (category == Cat::Authentication) {
             authCount_++;
-        } else if (category == "forms") {
+        } else if (category == Cat::Forms) {
             formsCount_++;
-        } else if (category == "admin") {
+        } else if (category == Cat::Admin) {
             adminCount_++;
         }
     }
