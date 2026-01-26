@@ -690,7 +690,7 @@ std::string ActivityLogService::getCurrentTimestamp() {
     std::tm tm = *std::gmtime(&time);
 
     std::ostringstream oss;
-    oss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+    oss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
     return oss.str();
 }
 
