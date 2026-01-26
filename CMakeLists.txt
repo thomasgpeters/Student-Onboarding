@@ -73,6 +73,7 @@ set(MODEL_SOURCES
     src/models/StudentProgress.cpp
     src/models/Assessment.cpp
     src/models/TrainingSession.cpp
+    src/models/ActivityLog.cpp
 )
 
 set(SESSION_SOURCES
@@ -86,6 +87,7 @@ set(API_SOURCES
     src/api/PdfGenerator.cpp
     src/api/ClassroomService.cpp
     src/api/InstructorService.cpp
+    src/api/ActivityLogService.cpp
 )
 
 set(AUTH_SOURCES
