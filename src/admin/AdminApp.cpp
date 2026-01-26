@@ -97,6 +97,16 @@ void AdminApp::initialize() {
                     adminUser.setEmail(user.getEmail());
                     adminUser.setFirstName(user.getFirstName());
                     adminUser.setLastName(user.getLastName());
+
+                    // Set role based on user's roles (Admin takes precedence over Instructor)
+                    bool isAdmin = user.hasRole(StudentIntake::Models::UserRole::Admin);
+                    bool isInstructor = user.hasRole(StudentIntake::Models::UserRole::Instructor);
+                    if (isAdmin) {
+                        adminUser.setRole(Admin::Models::AdminRole::SuperAdmin);
+                    } else if (isInstructor) {
+                        adminUser.setRole(Admin::Models::AdminRole::Instructor);
+                    }
+
                     session_->setAdminUser(adminUser);
                     session_->setAuthenticated(true);
                     session_->setToken(*tokenParam);
@@ -540,7 +550,7 @@ void AdminApp::showActivityLog() {
     // hideAllViews() already called by setState()
 
     sidebarWidget_->show();
-    sidebarWidget_->setActiveSection(AdminSection::Dashboard);  // Keep Dashboard highlighted
+    sidebarWidget_->setActiveSection(AdminSection::ActivityLog);  // Highlight Activity Log
     navigationWidget_->refresh();
     contentWrapper_->removeStyleClass("login-state");
     contentWrapper_->addStyleClass("with-sidebar");
