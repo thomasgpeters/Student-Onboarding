@@ -1,5 +1,7 @@
 #include "ActivityListWidget.h"
 #include <Wt/WBreak.h>
+#include <chrono>
+#include <ctime>
 #include "utils/Logger.h"
 
 namespace StudentIntake {
@@ -9,19 +11,35 @@ ActivityListWidget::ActivityListWidget(DisplayMode mode)
     : WContainerWidget()
     , activityService_(nullptr)
     , displayMode_(mode)
-    , limit_(mode == DisplayMode::Compact ? 5 : 20)
+    , limit_(mode == DisplayMode::Compact ? 5 : 50)
+    , totalCount_(0)
+    , todayCount_(0)
+    , authCount_(0)
+    , formsCount_(0)
+    , adminCount_(0)
+    , headerTitle_(nullptr)
+    , headerSubtitle_(nullptr)
+    , statsContainer_(nullptr)
+    , totalCountText_(nullptr)
+    , todayCountText_(nullptr)
+    , authCountText_(nullptr)
+    , formsCountText_(nullptr)
+    , adminCountText_(nullptr)
     , headerContainer_(nullptr)
     , filterContainer_(nullptr)
     , listContainer_(nullptr)
     , footerContainer_(nullptr)
     , titleText_(nullptr)
     , countText_(nullptr)
+    , searchInput_(nullptr)
     , categoryFilter_(nullptr)
     , actorTypeFilter_(nullptr)
     , refreshButton_(nullptr)
+    , clearButton_(nullptr)
     , viewAllButton_(nullptr)
     , emptyMessage_(nullptr)
-    , loadingIndicator_(nullptr) {
+    , loadingIndicator_(nullptr)
+    , resultCount_(nullptr) {
     setupUI();
 }
 
@@ -33,37 +51,70 @@ void ActivityListWidget::setActivityService(std::shared_ptr<ActivityLogServiceTy
 }
 
 void ActivityListWidget::setupUI() {
-    addStyleClass("activity-list-widget");
-
     if (displayMode_ == DisplayMode::Compact) {
-        addStyleClass("activity-list-compact");
+        addStyleClass("activity-list-widget activity-list-compact");
         setupCompactUI();
     } else {
-        addStyleClass("activity-list-full");
+        addStyleClass("admin-activity-log");
         setupFullUI();
     }
 }
 
 void ActivityListWidget::setupCompactUI() {
-    // Compact mode for dashboard embedding
-    // Minimal UI - just header and list
-
+    // Compact mode for dashboard embedding - minimal UI
     setupHeader();
     setupActivityList();
-    setupFooter();
 }
 
 void ActivityListWidget::setupFullUI() {
-    // Full mode for dedicated activity page
-    // Includes filters and more controls
+    // Full mode - matches Curriculum/Forms management style
 
-    setupHeader();
+    // Header section with title and subtitle
+    auto headerSection = addWidget(std::make_unique<Wt::WContainerWidget>());
+    headerSection->addStyleClass("admin-section-header");
+
+    auto headerRow = headerSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    headerRow->addStyleClass("admin-header-row");
+
+    auto headerLeft = headerRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    headerLeft->addStyleClass("admin-header-left");
+
+    headerTitle_ = headerLeft->addWidget(std::make_unique<Wt::WText>("Activity Log"));
+    headerTitle_->addStyleClass("admin-section-title");
+
+    headerSubtitle_ = headerLeft->addWidget(std::make_unique<Wt::WText>(
+        "Monitor user activity and system events across the platform"));
+    headerSubtitle_->addStyleClass("admin-section-subtitle");
+
+    // Refresh button in header right
+    auto headerRight = headerRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    headerRight->addStyleClass("admin-header-right");
+
+    refreshButton_ = headerRight->addWidget(std::make_unique<Wt::WPushButton>("↻ Refresh"));
+    refreshButton_->addStyleClass("btn btn-outline-primary");
+    refreshButton_->clicked().connect([this]() {
+        reload();
+    });
+
+    // Statistics placards
+    setupStats();
+
+    // Filters section
     setupFilters();
+
+    // Result count
+    resultCount_ = addWidget(std::make_unique<Wt::WText>(""));
+    resultCount_->addStyleClass("admin-result-count");
+
+    // Activity list container
     setupActivityList();
+
+    // Footer for pagination (future)
     setupFooter();
 }
 
 void ActivityListWidget::setupHeader() {
+    // Compact mode header only
     headerContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     headerContainer_->addStyleClass("activity-list-header");
 
@@ -71,8 +122,7 @@ void ActivityListWidget::setupHeader() {
     titleRow->addStyleClass("activity-list-title-row");
     titleRow->setAttributeValue("style", "display:flex;justify-content:space-between;align-items:center;");
 
-    titleText_ = titleRow->addWidget(std::make_unique<Wt::WText>(
-        displayMode_ == DisplayMode::Compact ? "Recent Activity" : "Activity Log"));
+    titleText_ = titleRow->addWidget(std::make_unique<Wt::WText>("Recent Activity"));
     titleText_->addStyleClass("activity-list-title");
     titleText_->setAttributeValue("style", "font-weight:700;font-size:1rem;color:#1f2937;");
 
@@ -86,25 +136,92 @@ void ActivityListWidget::setupHeader() {
     refreshButton_->clicked().connect([this]() {
         reload();
     });
+}
 
-    // Count text (full mode only)
-    if (displayMode_ == DisplayMode::Full) {
-        countText_ = headerContainer_->addWidget(std::make_unique<Wt::WText>());
-        countText_->addStyleClass("activity-list-count");
-    }
+void ActivityListWidget::setupStats() {
+    // Statistics placards - similar to Curriculum/Forms management
+    statsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    statsContainer_->addStyleClass("admin-submission-stats");
+
+    // Total Activities card
+    auto totalCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    totalCard->addStyleClass("admin-stat-mini-card active");
+    auto totalIcon = totalCard->addWidget(std::make_unique<Wt::WText>("📊"));
+    totalIcon->addStyleClass("admin-stat-mini-icon");
+    totalCountText_ = totalCard->addWidget(std::make_unique<Wt::WText>("0"));
+    totalCountText_->addStyleClass("admin-stat-mini-number");
+    auto totalLabel = totalCard->addWidget(std::make_unique<Wt::WText>("Total"));
+    totalLabel->addStyleClass("admin-stat-mini-label");
+
+    // Today's Activities card
+    auto todayCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    todayCard->addStyleClass("admin-stat-mini-card pending");
+    auto todayIcon = todayCard->addWidget(std::make_unique<Wt::WText>("📅"));
+    todayIcon->addStyleClass("admin-stat-mini-icon");
+    todayCountText_ = todayCard->addWidget(std::make_unique<Wt::WText>("0"));
+    todayCountText_->addStyleClass("admin-stat-mini-number");
+    auto todayLabel = todayCard->addWidget(std::make_unique<Wt::WText>("Today"));
+    todayLabel->addStyleClass("admin-stat-mini-label");
+
+    // Authentication card
+    auto authCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    authCard->addStyleClass("admin-stat-mini-card approved");
+    auto authIcon = authCard->addWidget(std::make_unique<Wt::WText>("🔐"));
+    authIcon->addStyleClass("admin-stat-mini-icon");
+    authCountText_ = authCard->addWidget(std::make_unique<Wt::WText>("0"));
+    authCountText_->addStyleClass("admin-stat-mini-number");
+    auto authLabel = authCard->addWidget(std::make_unique<Wt::WText>("Auth"));
+    authLabel->addStyleClass("admin-stat-mini-label");
+
+    // Forms card
+    auto formsCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    formsCard->addStyleClass("admin-stat-mini-card online");
+    auto formsIcon = formsCard->addWidget(std::make_unique<Wt::WText>("📝"));
+    formsIcon->addStyleClass("admin-stat-mini-icon");
+    formsCountText_ = formsCard->addWidget(std::make_unique<Wt::WText>("0"));
+    formsCountText_->addStyleClass("admin-stat-mini-number");
+    auto formsLabel = formsCard->addWidget(std::make_unique<Wt::WText>("Forms"));
+    formsLabel->addStyleClass("admin-stat-mini-label");
+
+    // Admin Actions card
+    auto adminCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    adminCard->addStyleClass("admin-stat-mini-card rejected");
+    auto adminIcon = adminCard->addWidget(std::make_unique<Wt::WText>("⚙️"));
+    adminIcon->addStyleClass("admin-stat-mini-icon");
+    adminCountText_ = adminCard->addWidget(std::make_unique<Wt::WText>("0"));
+    adminCountText_->addStyleClass("admin-stat-mini-number");
+    auto adminLabel = adminCard->addWidget(std::make_unique<Wt::WText>("Admin"));
+    adminLabel->addStyleClass("admin-stat-mini-label");
 }
 
 void ActivityListWidget::setupFilters() {
     // Only shown in full mode
     filterContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    filterContainer_->addStyleClass("activity-list-filters");
+    filterContainer_->addStyleClass("admin-filter-container");
+
+    // Search input
+    auto searchGroup = filterContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    searchGroup->addStyleClass("admin-filter-group admin-filter-search");
+
+    auto searchLabel = searchGroup->addWidget(std::make_unique<Wt::WText>("Search"));
+    searchLabel->addStyleClass("admin-filter-label");
+
+    searchInput_ = searchGroup->addWidget(std::make_unique<Wt::WLineEdit>());
+    searchInput_->setPlaceholderText("Search activities...");
+    searchInput_->addStyleClass("admin-filter-input");
+    searchInput_->textInput().connect([this]() {
+        applyFilter();
+    });
 
     // Category filter
-    auto categoryLabel = filterContainer_->addWidget(std::make_unique<Wt::WText>("Category:"));
-    categoryLabel->addStyleClass("activity-filter-label");
+    auto categoryGroup = filterContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    categoryGroup->addStyleClass("admin-filter-group");
 
-    categoryFilter_ = filterContainer_->addWidget(std::make_unique<Wt::WComboBox>());
-    categoryFilter_->addStyleClass("activity-filter-select");
+    auto categoryLabel = categoryGroup->addWidget(std::make_unique<Wt::WText>("Category"));
+    categoryLabel->addStyleClass("admin-filter-label");
+
+    categoryFilter_ = categoryGroup->addWidget(std::make_unique<Wt::WComboBox>());
+    categoryFilter_->addStyleClass("admin-filter-select");
     categoryFilter_->addItem("All Categories");
     categoryFilter_->addItem("Authentication");
     categoryFilter_->addItem("Forms");
@@ -116,11 +233,14 @@ void ActivityListWidget::setupFilters() {
     });
 
     // Actor type filter
-    auto actorLabel = filterContainer_->addWidget(std::make_unique<Wt::WText>("Actor:"));
-    actorLabel->addStyleClass("activity-filter-label");
+    auto actorGroup = filterContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    actorGroup->addStyleClass("admin-filter-group");
 
-    actorTypeFilter_ = filterContainer_->addWidget(std::make_unique<Wt::WComboBox>());
-    actorTypeFilter_->addStyleClass("activity-filter-select");
+    auto actorLabel = actorGroup->addWidget(std::make_unique<Wt::WText>("Actor"));
+    actorLabel->addStyleClass("admin-filter-label");
+
+    actorTypeFilter_ = actorGroup->addWidget(std::make_unique<Wt::WComboBox>());
+    actorTypeFilter_->addStyleClass("admin-filter-select");
     actorTypeFilter_->addItem("All Actors");
     actorTypeFilter_->addItem("Student");
     actorTypeFilter_->addItem("Instructor");
@@ -129,11 +249,25 @@ void ActivityListWidget::setupFilters() {
     actorTypeFilter_->changed().connect([this]() {
         applyFilter();
     });
+
+    // Clear button
+    auto buttonGroup = filterContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    buttonGroup->addStyleClass("admin-filter-buttons admin-filter-buttons-right");
+
+    clearButton_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Clear"));
+    clearButton_->addStyleClass("btn btn-secondary");
+    clearButton_->clicked().connect([this]() {
+        resetFilters();
+    });
 }
 
 void ActivityListWidget::setupActivityList() {
     listContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     listContainer_->addStyleClass("activity-list-container");
+
+    if (displayMode_ == DisplayMode::Full) {
+        listContainer_->addStyleClass("admin-table-container");
+    }
 
     // Loading indicator
     loadingIndicator_ = listContainer_->addWidget(std::make_unique<Wt::WText>("Loading activities..."));
@@ -141,19 +275,20 @@ void ActivityListWidget::setupActivityList() {
     loadingIndicator_->hide();
 
     // Empty message
-    emptyMessage_ = listContainer_->addWidget(std::make_unique<Wt::WText>("No recent activity to display."));
-    emptyMessage_->addStyleClass("activity-empty-message");
+    emptyMessage_ = listContainer_->addWidget(std::make_unique<Wt::WText>("No activities found matching your criteria."));
+    emptyMessage_->addStyleClass("admin-no-data-message");
     emptyMessage_->hide();
 }
 
 void ActivityListWidget::setupFooter() {
     // Footer only needed in full mode for pagination (future)
-    // Compact mode no longer needs "View All" button since Activity Log is in sidebar
     if (displayMode_ == DisplayMode::Full) {
         footerContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
         footerContainer_->addStyleClass("activity-list-footer");
-        footerContainer_->setAttributeValue("style", "padding:10px 12px;border-top:1px solid #e5e7eb;text-align:left;");
-        // Future: Add pagination controls here
+        footerContainer_->setAttributeValue("style", "padding:10px 12px;border-top:1px solid #e5e7eb;text-align:center;color:#6b7280;font-size:13px;");
+
+        auto footerText = footerContainer_->addWidget(std::make_unique<Wt::WText>(
+            "Showing most recent activities. Use filters to narrow results."));
     }
 }
 
@@ -194,19 +329,15 @@ void ActivityListWidget::loadActivities() {
         ActivityFilter filter;
         filter.limit = limit_;
 
-        if (displayMode_ == DisplayMode::Full && categoryFilter_) {
-            int catIdx = categoryFilter_->currentIndex();
-            if (catIdx > 0) {
+        if (displayMode_ == DisplayMode::Full) {
+            if (categoryFilter_ && categoryFilter_->currentIndex() > 0) {
                 std::string categories[] = {"", "authentication", "forms", "profile", "admin", "system"};
-                filter.actionCategory = categories[catIdx];
+                filter.actionCategory = categories[categoryFilter_->currentIndex()];
             }
-        }
 
-        if (displayMode_ == DisplayMode::Full && actorTypeFilter_) {
-            int actorIdx = actorTypeFilter_->currentIndex();
-            if (actorIdx > 0) {
+            if (actorTypeFilter_ && actorTypeFilter_->currentIndex() > 0) {
                 std::string actors[] = {"", "student", "instructor", "admin", "system"};
-                filter.actorType = actors[actorIdx];
+                filter.actorType = actors[actorTypeFilter_->currentIndex()];
             }
         }
 
@@ -239,10 +370,13 @@ void ActivityListWidget::loadActivities() {
             }
         }
 
-        // Update count text in full mode
-        if (displayMode_ == DisplayMode::Full && countText_) {
-            countText_->setText("Showing " + std::to_string(activities_.size()) + " activities");
+        // Update result count in full mode
+        if (displayMode_ == DisplayMode::Full && resultCount_) {
+            resultCount_->setText("Showing " + std::to_string(activities_.size()) + " activities");
         }
+
+        // Update statistics
+        updateStats();
 
         LOG_DEBUG("ActivityListWidget", "Loaded " << activities_.size() << " activities");
 
@@ -252,6 +386,53 @@ void ActivityListWidget::loadActivities() {
         emptyMessage_->setText("Error loading activities. Please try again.");
         emptyMessage_->show();
     }
+}
+
+void ActivityListWidget::updateStats() {
+    if (displayMode_ != DisplayMode::Full) return;
+
+    // Reset counts
+    totalCount_ = 0;
+    todayCount_ = 0;
+    authCount_ = 0;
+    formsCount_ = 0;
+    adminCount_ = 0;
+
+    // Get today's date for comparison
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    std::tm tm = *std::localtime(&time);
+    char todayStr[11];
+    std::strftime(todayStr, sizeof(todayStr), "%Y-%m-%d", &tm);
+    std::string today(todayStr);
+
+    // Count from loaded activities
+    totalCount_ = static_cast<int>(activities_.size());
+
+    for (const auto& activity : activities_) {
+        // Check if today
+        std::string createdAt = activity.getFormattedTime();
+        if (createdAt.length() >= 10 && createdAt.substr(0, 10) == today) {
+            todayCount_++;
+        }
+
+        // Count by category
+        std::string category = activity.getActionCategory();
+        if (category == "authentication") {
+            authCount_++;
+        } else if (category == "forms") {
+            formsCount_++;
+        } else if (category == "admin") {
+            adminCount_++;
+        }
+    }
+
+    // Update UI
+    if (totalCountText_) totalCountText_->setText(std::to_string(totalCount_));
+    if (todayCountText_) todayCountText_->setText(std::to_string(todayCount_));
+    if (authCountText_) authCountText_->setText(std::to_string(authCount_));
+    if (formsCountText_) formsCountText_->setText(std::to_string(formsCount_));
+    if (adminCountText_) adminCountText_->setText(std::to_string(adminCount_));
 }
 
 Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLogModel& activity, int index) {
@@ -309,6 +490,13 @@ Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLogMo
 }
 
 void ActivityListWidget::applyFilter() {
+    loadActivities();
+}
+
+void ActivityListWidget::resetFilters() {
+    if (searchInput_) searchInput_->setText("");
+    if (categoryFilter_) categoryFilter_->setCurrentIndex(0);
+    if (actorTypeFilter_) actorTypeFilter_->setCurrentIndex(0);
     loadActivities();
 }
 

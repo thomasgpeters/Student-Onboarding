@@ -3,6 +3,7 @@
 
 #include <Wt/WContainerWidget.h>
 #include <Wt/WText.h>
+#include <Wt/WLineEdit.h>
 #include <Wt/WComboBox.h>
 #include <Wt/WPushButton.h>
 #include <Wt/WSignal.h>
@@ -35,6 +36,7 @@ using ActivityFilter = ::StudentIntake::Api::ActivityFilter;
  * - Refresh functionality
  * - Click-through to activity details
  * - Severity-based styling (info, success, warning, error)
+ * - Stat placards for analytics (full mode)
  */
 class ActivityListWidget : public Wt::WContainerWidget {
 public:
@@ -102,6 +104,7 @@ private:
     void setupCompactUI();
     void setupFullUI();
     void setupHeader();
+    void setupStats();
     void setupFilters();
     void setupActivityList();
     void setupFooter();
@@ -110,6 +113,11 @@ private:
      * @brief Load activities from the service
      */
     void loadActivities();
+
+    /**
+     * @brief Update statistics placards with current data
+     */
+    void updateStats();
 
     /**
      * @brief Render a single activity item
@@ -122,6 +130,11 @@ private:
      * @brief Apply current filter and refresh display
      */
     void applyFilter();
+
+    /**
+     * @brief Reset filters to default values
+     */
+    void resetFilters();
 
     /**
      * @brief Get the CSS class for severity styling
@@ -148,19 +161,41 @@ private:
     // Data (immutable once loaded)
     std::vector<ActivityLogModel> activities_;
 
-    // UI Elements
+    // Statistics
+    int totalCount_;
+    int todayCount_;
+    int authCount_;
+    int formsCount_;
+    int adminCount_;
+
+    // UI Elements - Header (Full mode)
+    Wt::WText* headerTitle_;
+    Wt::WText* headerSubtitle_;
+
+    // UI Elements - Stats (Full mode)
+    Wt::WContainerWidget* statsContainer_;
+    Wt::WText* totalCountText_;
+    Wt::WText* todayCountText_;
+    Wt::WText* authCountText_;
+    Wt::WText* formsCountText_;
+    Wt::WText* adminCountText_;
+
+    // UI Elements - Common
     Wt::WContainerWidget* headerContainer_;
     Wt::WContainerWidget* filterContainer_;
     Wt::WContainerWidget* listContainer_;
     Wt::WContainerWidget* footerContainer_;
     Wt::WText* titleText_;
     Wt::WText* countText_;
+    Wt::WLineEdit* searchInput_;
     Wt::WComboBox* categoryFilter_;
     Wt::WComboBox* actorTypeFilter_;
     Wt::WPushButton* refreshButton_;
+    Wt::WPushButton* clearButton_;
     Wt::WPushButton* viewAllButton_;
     Wt::WText* emptyMessage_;
     Wt::WText* loadingIndicator_;
+    Wt::WText* resultCount_;
 
     // Signals
     Wt::Signal<int> activityClicked_;
