@@ -12,11 +12,18 @@ UserListWidget::UserListWidget()
     : apiClient_(nullptr)
     , authService_(nullptr)
     , isCurrentUserAdmin_(false)
+    , titleText_(nullptr)
+    , subtitleText_(nullptr)
     , statsContainer_(nullptr)
+    , totalCard_(nullptr)
+    , adminCard_(nullptr)
+    , instructorCard_(nullptr)
+    , studentCard_(nullptr)
     , totalUsersText_(nullptr)
     , adminCountText_(nullptr)
     , instructorCountText_(nullptr)
     , studentCountText_(nullptr)
+    , activeRoleFilter_("")
     , addUserBtn_(nullptr)
     , searchInput_(nullptr)
     , roleFilter_(nullptr)
@@ -52,12 +59,24 @@ void UserListWidget::setCurrentUserRoles(const std::vector<StudentIntake::Models
     // Update UI based on permissions
     // Instructors can only manage students, so hide admin/instructor options
     if (!isCurrentUserAdmin_) {
-        // Hide admin and instructor stats
-        if (adminCountText_ && adminCountText_->parent()) {
-            static_cast<Wt::WWidget*>(adminCountText_->parent())->hide();
+        // Update title for instructor view
+        if (titleText_) {
+            titleText_->setText("Student Management");
         }
-        if (instructorCountText_ && instructorCountText_->parent()) {
-            static_cast<Wt::WWidget*>(instructorCountText_->parent())->hide();
+        if (subtitleText_) {
+            subtitleText_->setText("View and manage your students");
+        }
+
+        // Hide admin and instructor stat cards
+        if (adminCard_) {
+            adminCard_->hide();
+        }
+        if (instructorCard_) {
+            instructorCard_->hide();
+        }
+        // Hide total card for instructors - they only see students
+        if (totalCard_) {
+            totalCard_->hide();
         }
 
         // Update role filter to only show Student option
@@ -65,6 +84,14 @@ void UserListWidget::setCurrentUserRoles(const std::vector<StudentIntake::Models
             roleFilter_->clear();
             roleFilter_->addItem("All Roles");
             roleFilter_->addItem("Student");
+        }
+    } else {
+        // Admin view - ensure title is set correctly
+        if (titleText_) {
+            titleText_->setText("User Management");
+        }
+        if (subtitleText_) {
+            subtitleText_->setText("View and manage all users");
         }
     }
 }
@@ -74,113 +101,167 @@ void UserListWidget::refresh() {
 }
 
 void UserListWidget::setupUI() {
-    addStyleClass("user-list-widget");
+    addStyleClass("admin-student-list");
 
-    // Header with title and add button
-    auto headerContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
-    headerContainer->addStyleClass("widget-header");
+    // Header with title and Add User button (matching StudentListWidget style)
+    auto header = addWidget(std::make_unique<Wt::WContainerWidget>());
+    header->addStyleClass("admin-section-header admin-section-header-with-action");
 
-    auto titleText = headerContainer->addWidget(std::make_unique<Wt::WText>("User Management"));
-    titleText->addStyleClass("widget-title");
+    auto titleContainer = header->addWidget(std::make_unique<Wt::WContainerWidget>());
+    titleContainer->addStyleClass("admin-header-title-container");
 
-    addUserBtn_ = headerContainer->addWidget(std::make_unique<Wt::WPushButton>("Add User"));
+    titleText_ = titleContainer->addWidget(std::make_unique<Wt::WText>("User Management"));
+    titleText_->addStyleClass("admin-section-title");
+
+    subtitleText_ = titleContainer->addWidget(std::make_unique<Wt::WText>(
+        "View and manage all users"));
+    subtitleText_->addStyleClass("admin-section-subtitle");
+
+    // Add User button
+    addUserBtn_ = header->addWidget(std::make_unique<Wt::WPushButton>("+ Add User"));
     addUserBtn_->addStyleClass("btn btn-primary");
     addUserBtn_->clicked().connect([this] { addUserClicked_.emit(); });
 
-    // Stats section
+    // Statistics cards
     setupStats();
 
     // Filters section
     setupFilters();
 
-    // Table section
+    // Results count
+    resultCount_ = addWidget(std::make_unique<Wt::WText>(""));
+    resultCount_->addStyleClass("admin-result-count");
+
+    // Table container
+    tableContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    tableContainer_->addStyleClass("admin-table-container");
+
     setupTable();
 }
 
 void UserListWidget::setupStats() {
     statsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    statsContainer_->addStyleClass("stats-container");
+    statsContainer_->addStyleClass("admin-submission-stats");
 
-    // Total users
-    auto totalCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    totalCard->addStyleClass("stat-card stat-total");
-    totalUsersText_ = totalCard->addWidget(std::make_unique<Wt::WText>("0"));
-    totalUsersText_->addStyleClass("stat-value");
-    totalCard->addWidget(std::make_unique<Wt::WText>("Total Users"))->addStyleClass("stat-label");
+    // Total users card (clickable to show all)
+    totalCard_ = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    totalCard_->addStyleClass("admin-stat-mini-card active");
+    auto totalIcon = totalCard_->addWidget(std::make_unique<Wt::WText>("👥"));
+    totalIcon->addStyleClass("admin-stat-mini-icon");
+    totalUsersText_ = totalCard_->addWidget(std::make_unique<Wt::WText>("0"));
+    totalUsersText_->addStyleClass("admin-stat-mini-number");
+    auto totalLabel = totalCard_->addWidget(std::make_unique<Wt::WText>("Total"));
+    totalLabel->addStyleClass("admin-stat-mini-label");
+    totalCard_->clicked().connect([this] { filterByRole(""); });
 
-    // Admin count
-    auto adminCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    adminCard->addStyleClass("stat-card stat-admin");
-    adminCountText_ = adminCard->addWidget(std::make_unique<Wt::WText>("0"));
-    adminCountText_->addStyleClass("stat-value");
-    adminCard->addWidget(std::make_unique<Wt::WText>("Administrators"))->addStyleClass("stat-label");
+    // Admin count card (clickable to filter admins)
+    adminCard_ = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    adminCard_->addStyleClass("admin-stat-mini-card rejected");
+    auto adminIcon = adminCard_->addWidget(std::make_unique<Wt::WText>("🛡️"));
+    adminIcon->addStyleClass("admin-stat-mini-icon");
+    adminCountText_ = adminCard_->addWidget(std::make_unique<Wt::WText>("0"));
+    adminCountText_->addStyleClass("admin-stat-mini-number");
+    auto adminLabel = adminCard_->addWidget(std::make_unique<Wt::WText>("Admins"));
+    adminLabel->addStyleClass("admin-stat-mini-label");
+    adminCard_->clicked().connect([this] { filterByRole("Admin"); });
 
-    // Instructor count
-    auto instructorCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    instructorCard->addStyleClass("stat-card stat-instructor");
-    instructorCountText_ = instructorCard->addWidget(std::make_unique<Wt::WText>("0"));
-    instructorCountText_->addStyleClass("stat-value");
-    instructorCard->addWidget(std::make_unique<Wt::WText>("Instructors"))->addStyleClass("stat-label");
+    // Instructor count card (clickable to filter instructors)
+    instructorCard_ = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    instructorCard_->addStyleClass("admin-stat-mini-card pending");
+    auto instructorIcon = instructorCard_->addWidget(std::make_unique<Wt::WText>("📚"));
+    instructorIcon->addStyleClass("admin-stat-mini-icon");
+    instructorCountText_ = instructorCard_->addWidget(std::make_unique<Wt::WText>("0"));
+    instructorCountText_->addStyleClass("admin-stat-mini-number");
+    auto instructorLabel = instructorCard_->addWidget(std::make_unique<Wt::WText>("Instructors"));
+    instructorLabel->addStyleClass("admin-stat-mini-label");
+    instructorCard_->clicked().connect([this] { filterByRole("Instructor"); });
 
-    // Student count
-    auto studentCard = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    studentCard->addStyleClass("stat-card stat-student");
-    studentCountText_ = studentCard->addWidget(std::make_unique<Wt::WText>("0"));
-    studentCountText_->addStyleClass("stat-value");
-    studentCard->addWidget(std::make_unique<Wt::WText>("Students"))->addStyleClass("stat-label");
+    // Student count card (clickable to filter students)
+    studentCard_ = statsContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    studentCard_->addStyleClass("admin-stat-mini-card approved");
+    auto studentIcon = studentCard_->addWidget(std::make_unique<Wt::WText>("🎓"));
+    studentIcon->addStyleClass("admin-stat-mini-icon");
+    studentCountText_ = studentCard_->addWidget(std::make_unique<Wt::WText>("0"));
+    studentCountText_->addStyleClass("admin-stat-mini-number");
+    auto studentLabel = studentCard_->addWidget(std::make_unique<Wt::WText>("Students"));
+    studentLabel->addStyleClass("admin-stat-mini-label");
+    studentCard_->clicked().connect([this] { filterByRole("Student"); });
 }
 
 void UserListWidget::setupFilters() {
     auto filterContainer = addWidget(std::make_unique<Wt::WContainerWidget>());
-    filterContainer->addStyleClass("filter-container");
+    filterContainer->addStyleClass("admin-filter-container");
 
-    // Search input
-    searchInput_ = filterContainer->addWidget(std::make_unique<Wt::WLineEdit>());
+    // Search input group
+    auto searchGroup = filterContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    searchGroup->addStyleClass("admin-filter-group admin-filter-search");
+
+    auto searchLabel = searchGroup->addWidget(std::make_unique<Wt::WText>("Search"));
+    searchLabel->addStyleClass("admin-filter-label");
+
+    searchInput_ = searchGroup->addWidget(std::make_unique<Wt::WLineEdit>());
     searchInput_->setPlaceholderText("Search by name or email...");
-    searchInput_->addStyleClass("form-control search-input");
-    searchInput_->keyWentUp().connect([this] { applyFilters(); });
+    searchInput_->addStyleClass("admin-filter-input");
+    searchInput_->textInput().connect([this] { applyFilters(); });
 
-    // Role filter
-    roleFilter_ = filterContainer->addWidget(std::make_unique<Wt::WComboBox>());
-    roleFilter_->addStyleClass("form-select role-filter");
+    // Role filter group
+    auto roleGroup = filterContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    roleGroup->addStyleClass("admin-filter-group");
+
+    auto roleLabel = roleGroup->addWidget(std::make_unique<Wt::WText>("Role"));
+    roleLabel->addStyleClass("admin-filter-label");
+
+    roleFilter_ = roleGroup->addWidget(std::make_unique<Wt::WComboBox>());
+    roleFilter_->addStyleClass("admin-filter-select");
     roleFilter_->addItem("All Roles");
     roleFilter_->addItem("Admin");
     roleFilter_->addItem("Instructor");
     roleFilter_->addItem("Student");
-    roleFilter_->changed().connect([this] { applyFilters(); });
+    roleFilter_->changed().connect([this] {
+        activeRoleFilter_ = "";  // Clear placard filter when dropdown changes
+        applyFilters();
+    });
 
-    // Status filter
-    statusFilter_ = filterContainer->addWidget(std::make_unique<Wt::WComboBox>());
-    statusFilter_->addStyleClass("form-select status-filter");
+    // Status filter group
+    auto statusGroup = filterContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    statusGroup->addStyleClass("admin-filter-group");
+
+    auto statusLabel = statusGroup->addWidget(std::make_unique<Wt::WText>("Status"));
+    statusLabel->addStyleClass("admin-filter-label");
+
+    statusFilter_ = statusGroup->addWidget(std::make_unique<Wt::WComboBox>());
+    statusFilter_->addStyleClass("admin-filter-select");
     statusFilter_->addItem("All Status");
     statusFilter_->addItem("Active");
     statusFilter_->addItem("Inactive");
     statusFilter_->changed().connect([this] { applyFilters(); });
 
     // Clear button
-    clearButton_ = filterContainer->addWidget(std::make_unique<Wt::WPushButton>("Clear"));
+    auto buttonGroup = filterContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    buttonGroup->addStyleClass("admin-filter-buttons admin-filter-buttons-right");
+
+    clearButton_ = buttonGroup->addWidget(std::make_unique<Wt::WPushButton>("Clear"));
     clearButton_->addStyleClass("btn btn-secondary");
     clearButton_->clicked().connect([this] { clearFilters(); });
-
-    // Result count
-    resultCount_ = filterContainer->addWidget(std::make_unique<Wt::WText>(""));
-    resultCount_->addStyleClass("result-count");
 }
 
 void UserListWidget::setupTable() {
-    tableContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    tableContainer_->addStyleClass("table-container");
-
     userTable_ = tableContainer_->addWidget(std::make_unique<Wt::WTable>());
-    userTable_->addStyleClass("table table-striped table-hover");
+    userTable_->addStyleClass("admin-data-table");
     userTable_->setHeaderCount(1);
 
-    // Header row
-    userTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Name"));
-    userTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Email"));
-    userTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Roles"));
-    userTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Status"));
-    userTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
+    // Table headers - icon column first (matching StudentListWidget)
+    auto iconHeader = userTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>(""));
+    iconHeader->addStyleClass("admin-table-icon-header");
+    userTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Name"));
+    userTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Email"));
+    userTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Roles"));
+    userTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Status"));
+    userTable_->elementAt(0, 5)->addWidget(std::make_unique<Wt::WText>("Actions"));
+
+    for (int i = 0; i < 6; i++) {
+        userTable_->elementAt(0, i)->addStyleClass("admin-table-header");
+    }
 }
 
 void UserListWidget::loadUsers() {
@@ -265,20 +346,33 @@ void UserListWidget::applyFilters() {
             }
         }
 
-        // Role filter
-        if (roleIndex > 0) {
+        // Role filter (from dropdown or placard click)
+        if (roleIndex > 0 || !activeRoleFilter_.empty()) {
             bool hasRole = false;
-            if (isCurrentUserAdmin_) {
-                // Admin sees all roles
-                switch (roleIndex) {
-                    case 1: hasRole = user.hasRole(StudentIntake::Models::UserRole::Admin); break;
-                    case 2: hasRole = user.hasRole(StudentIntake::Models::UserRole::Instructor); break;
-                    case 3: hasRole = user.hasRole(StudentIntake::Models::UserRole::Student); break;
-                }
-            } else {
-                // Instructor only sees students
-                if (roleIndex == 1) {
+
+            // If placard was clicked, use that role filter
+            if (!activeRoleFilter_.empty()) {
+                if (activeRoleFilter_ == "Admin") {
+                    hasRole = user.hasRole(StudentIntake::Models::UserRole::Admin);
+                } else if (activeRoleFilter_ == "Instructor") {
+                    hasRole = user.hasRole(StudentIntake::Models::UserRole::Instructor);
+                } else if (activeRoleFilter_ == "Student") {
                     hasRole = user.hasRole(StudentIntake::Models::UserRole::Student);
+                }
+            } else if (roleIndex > 0) {
+                // Use dropdown selection
+                if (isCurrentUserAdmin_) {
+                    // Admin sees all roles
+                    switch (roleIndex) {
+                        case 1: hasRole = user.hasRole(StudentIntake::Models::UserRole::Admin); break;
+                        case 2: hasRole = user.hasRole(StudentIntake::Models::UserRole::Instructor); break;
+                        case 3: hasRole = user.hasRole(StudentIntake::Models::UserRole::Student); break;
+                    }
+                } else {
+                    // Instructor only sees students
+                    if (roleIndex == 1) {
+                        hasRole = user.hasRole(StudentIntake::Models::UserRole::Student);
+                    }
                 }
             }
             if (!hasRole) continue;
@@ -295,14 +389,39 @@ void UserListWidget::applyFilters() {
     }
 
     updateTable(filtered);
-    resultCount_->setText("Showing " + std::to_string(filtered.size()) + " of " +
-                          std::to_string(allUsers_.size()) + " users");
+    resultCount_->setText("Showing " + std::to_string(filtered.size()) + " user(s)");
 }
 
 void UserListWidget::clearFilters() {
     searchInput_->setText("");
     roleFilter_->setCurrentIndex(0);
     statusFilter_->setCurrentIndex(0);
+    activeRoleFilter_ = "";
+    applyFilters();
+}
+
+void UserListWidget::filterByRole(const std::string& role) {
+    activeRoleFilter_ = role;
+
+    // Update role dropdown to match
+    if (role.empty()) {
+        roleFilter_->setCurrentIndex(0);  // All Roles
+    } else if (role == "Admin") {
+        if (isCurrentUserAdmin_) {
+            roleFilter_->setCurrentIndex(1);
+        }
+    } else if (role == "Instructor") {
+        if (isCurrentUserAdmin_) {
+            roleFilter_->setCurrentIndex(2);
+        }
+    } else if (role == "Student") {
+        if (isCurrentUserAdmin_) {
+            roleFilter_->setCurrentIndex(3);
+        } else {
+            roleFilter_->setCurrentIndex(1);  // For instructors, Student is at index 1
+        }
+    }
+
     applyFilters();
 }
 
@@ -313,37 +432,49 @@ void UserListWidget::updateTable(const std::vector<StudentIntake::Models::User>&
     }
 
     // Add user rows
+    int row = 1;
     for (const auto& user : users) {
-        int row = userTable_->rowCount();
-        auto tableRow = userTable_->insertRow(row);
-        tableRow->addStyleClass("user-row");
+        // User icon (matching StudentListWidget style)
+        auto iconCell = userTable_->elementAt(row, 0)->addWidget(
+            std::make_unique<Wt::WText>("👤"));
+        iconCell->addStyleClass("admin-row-icon user-icon");
 
         // Name
         std::string displayName = user.getFullName();
         if (displayName.empty()) displayName = user.getEmail();
-        tableRow->elementAt(0)->addWidget(std::make_unique<Wt::WText>(displayName));
+        userTable_->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(displayName));
 
         // Email
-        tableRow->elementAt(1)->addWidget(std::make_unique<Wt::WText>(user.getEmail()));
+        userTable_->elementAt(row, 2)->addWidget(std::make_unique<Wt::WText>(user.getEmail()));
 
         // Roles
-        auto rolesCell = tableRow->elementAt(2);
-        rolesCell->addWidget(std::make_unique<Wt::WText>(getRoleBadges(user)));
+        auto rolesText = userTable_->elementAt(row, 3)->addWidget(
+            std::make_unique<Wt::WText>(getRoleBadges(user)));
+        rolesText->setTextFormat(Wt::TextFormat::XHTML);
 
         // Status
-        auto statusCell = tableRow->elementAt(3);
-        auto statusBadge = statusCell->addWidget(std::make_unique<Wt::WText>(
+        auto statusBadge = userTable_->elementAt(row, 4)->addWidget(std::make_unique<Wt::WText>(
             user.isActive() ? "Active" : "Inactive"));
         statusBadge->addStyleClass(getStatusBadgeClass(user.isActive()));
 
         // Actions
-        auto actionsCell = tableRow->elementAt(4);
-        auto editBtn = actionsCell->addWidget(std::make_unique<Wt::WPushButton>("Edit"));
-        editBtn->addStyleClass("btn btn-sm btn-outline-primary");
+        auto actionsContainer = userTable_->elementAt(row, 5)->addWidget(
+            std::make_unique<Wt::WContainerWidget>());
+        actionsContainer->addStyleClass("admin-table-actions");
+
+        auto editBtn = actionsContainer->addWidget(std::make_unique<Wt::WPushButton>("View"));
+        editBtn->addStyleClass("btn btn-sm btn-primary");
         int userId = user.getId();
         editBtn->clicked().connect([this, userId] {
             userSelected_.emit(userId);
         });
+
+        // Style all cells in this row
+        for (int col = 0; col < 6; col++) {
+            userTable_->elementAt(row, col)->addStyleClass("admin-table-cell");
+        }
+
+        row++;
     }
 }
 
@@ -351,24 +482,24 @@ std::string UserListWidget::getRoleBadges(const StudentIntake::Models::User& use
     std::string badges;
 
     if (user.hasRole(StudentIntake::Models::UserRole::Admin)) {
-        badges += "<span class='badge bg-danger me-1'>Admin</span>";
+        badges += "<span class='badge badge-danger' style='margin-right: 4px;'>Admin</span>";
     }
     if (user.hasRole(StudentIntake::Models::UserRole::Instructor)) {
-        badges += "<span class='badge bg-primary me-1'>Instructor</span>";
+        badges += "<span class='badge badge-info' style='margin-right: 4px;'>Instructor</span>";
     }
     if (user.hasRole(StudentIntake::Models::UserRole::Student)) {
-        badges += "<span class='badge bg-success me-1'>Student</span>";
+        badges += "<span class='badge badge-success' style='margin-right: 4px;'>Student</span>";
     }
 
     if (badges.empty()) {
-        badges = "<span class='badge bg-secondary'>No Role</span>";
+        badges = "<span class='badge badge-secondary'>No Role</span>";
     }
 
     return badges;
 }
 
 std::string UserListWidget::getStatusBadgeClass(bool isActive) const {
-    return isActive ? "badge bg-success" : "badge bg-secondary";
+    return isActive ? "badge badge-success" : "badge badge-secondary";
 }
 
 void UserListWidget::onUserRowClicked(int userId) {

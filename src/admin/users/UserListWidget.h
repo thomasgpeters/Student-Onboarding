@@ -42,6 +42,7 @@ private:
     void applyFilters();
     void updateStats();
     void clearFilters();
+    void filterByRole(const std::string& role);
     void updateTable(const std::vector<StudentIntake::Models::User>& users);
     void onUserRowClicked(int userId);
     std::string getRoleBadges(const StudentIntake::Models::User& user) const;
@@ -53,12 +54,23 @@ private:
     std::vector<StudentIntake::Models::UserRole> currentUserRoles_;
     bool isCurrentUserAdmin_;
 
-    // UI Elements - Stats
+    // UI Elements - Header
+    Wt::WText* titleText_;
+    Wt::WText* subtitleText_;
+
+    // UI Elements - Stats (clickable cards)
     Wt::WContainerWidget* statsContainer_;
+    Wt::WContainerWidget* totalCard_;
+    Wt::WContainerWidget* adminCard_;
+    Wt::WContainerWidget* instructorCard_;
+    Wt::WContainerWidget* studentCard_;
     Wt::WText* totalUsersText_;
     Wt::WText* adminCountText_;
     Wt::WText* instructorCountText_;
     Wt::WText* studentCountText_;
+
+    // Current role filter (for placard click filtering)
+    std::string activeRoleFilter_;
 
     // UI Elements - Actions
     Wt::WPushButton* addUserBtn_;
