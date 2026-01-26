@@ -69,17 +69,20 @@ void ActivityListWidget::setupHeader() {
 
     auto titleRow = headerContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     titleRow->addStyleClass("activity-list-title-row");
+    titleRow->setAttributeValue("style", "display:flex;justify-content:space-between;align-items:center;");
 
     titleText_ = titleRow->addWidget(std::make_unique<Wt::WText>(
         displayMode_ == DisplayMode::Compact ? "Recent Activity" : "Activity Log"));
     titleText_->addStyleClass("activity-list-title");
+    titleText_->setAttributeValue("style", "font-weight:700;font-size:1rem;color:#1f2937;");
 
-    // Refresh button
+    // Refresh button - floats right
     refreshButton_ = titleRow->addWidget(std::make_unique<Wt::WPushButton>());
     refreshButton_->addStyleClass("activity-refresh-btn");
     refreshButton_->setTextFormat(Wt::TextFormat::XHTML);
     refreshButton_->setText("&#x21bb;");  // Refresh icon
     refreshButton_->setToolTip("Refresh activity list");
+    refreshButton_->setAttributeValue("style", "margin-left:auto;padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;background:transparent;cursor:pointer;");
     refreshButton_->clicked().connect([this]() {
         reload();
     });
@@ -146,11 +149,13 @@ void ActivityListWidget::setupActivityList() {
 void ActivityListWidget::setupFooter() {
     footerContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
     footerContainer_->addStyleClass("activity-list-footer");
+    footerContainer_->setAttributeValue("style", "padding:10px 12px;border-top:1px solid #e5e7eb;text-align:left;");
 
     // View All button (compact mode only)
     if (displayMode_ == DisplayMode::Compact) {
         viewAllButton_ = footerContainer_->addWidget(std::make_unique<Wt::WPushButton>("View All Activity"));
         viewAllButton_->addStyleClass("activity-view-all-btn");
+        viewAllButton_->setAttributeValue("style", "display:inline-block;padding:6px 12px;font-size:13px;color:#2563eb;background:transparent;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;");
         viewAllButton_->clicked().connect([this]() {
             viewAllClicked_.emit();
         });
@@ -256,6 +261,7 @@ Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLogMo
     auto item = new Wt::WContainerWidget();
     item->addStyleClass("activity-item");
     item->addStyleClass(getSeverityClass(activity.getSeverity()));
+    item->setAttributeValue("style", "display:flex;flex-direction:row;align-items:flex-start;gap:10px;padding:10px 12px;border-bottom:1px solid #e5e7eb;cursor:pointer;");
 
     // Make item clickable
     const int activityId = activity.getId();
@@ -267,6 +273,7 @@ Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLogMo
     auto iconContainer = item->addWidget(std::make_unique<Wt::WContainerWidget>());
     iconContainer->addStyleClass("activity-item-icon");
     iconContainer->addStyleClass(activity.getIconClass());
+    iconContainer->setAttributeValue("style", "flex:0 0 28px;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;font-size:14px;");
 
     auto iconText = iconContainer->addWidget(std::make_unique<Wt::WText>(activity.getIcon()));
     iconText->setTextFormat(Wt::TextFormat::XHTML);
@@ -274,24 +281,29 @@ Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLogMo
     // Content container
     auto contentContainer = item->addWidget(std::make_unique<Wt::WContainerWidget>());
     contentContainer->addStyleClass("activity-item-content");
+    contentContainer->setAttributeValue("style", "flex:1;min-width:0;overflow:hidden;");
 
     // Description
     auto descText = contentContainer->addWidget(std::make_unique<Wt::WText>(activity.getDescription()));
     descText->addStyleClass("activity-item-description");
+    descText->setAttributeValue("style", "display:block;font-size:13px;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;");
 
     // Meta row (actor badge + timestamp)
     auto metaRow = contentContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
     metaRow->addStyleClass("activity-item-meta");
+    metaRow->setAttributeValue("style", "display:flex;flex-direction:row;align-items:center;gap:8px;");
 
     // Actor type badge
     auto actorBadge = metaRow->addWidget(std::make_unique<Wt::WText>(activity.getActorTypeString()));
     actorBadge->addStyleClass("activity-actor-badge");
     actorBadge->addStyleClass(getActorTypeClass(activity.getActorType()));
+    actorBadge->setAttributeValue("style", "display:inline-block;font-size:10px;font-weight:600;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:#dbeafe;color:#1d4ed8;");
 
     // Timestamp
     auto timestamp = metaRow->addWidget(std::make_unique<Wt::WText>(activity.getRelativeTime()));
     timestamp->addStyleClass("activity-item-time");
     timestamp->setToolTip(activity.getFormattedTime());
+    timestamp->setAttributeValue("style", "font-size:11px;color:#6b7280;");
 
     return item;
 }
