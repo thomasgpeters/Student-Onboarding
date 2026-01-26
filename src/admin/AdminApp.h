@@ -8,6 +8,7 @@
 #include "app/AppConfig.h"
 #include "api/ApiClient.h"
 #include "api/FormSubmissionService.h"
+#include "api/ActivityLogService.h"
 #include "auth/AuthService.h"
 #include "auth/UnifiedLoginWidget.h"
 #include "models/User.h"
@@ -122,6 +123,7 @@ private:
     // Services
     std::shared_ptr<Api::ApiClient> apiClient_;
     std::shared_ptr<Api::FormSubmissionService> apiService_;
+    std::shared_ptr<Api::ActivityLogService> activityLogService_;
     std::shared_ptr<Auth::AuthService> authService_;
     std::shared_ptr<AdminAuthManager> authManager_;  // Legacy - kept for backward compatibility
     std::shared_ptr<Models::AdminSession> session_;
