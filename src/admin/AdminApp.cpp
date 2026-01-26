@@ -191,6 +191,7 @@ void AdminApp::setupUI() {
     dashboardWidget_->viewCurriculumClicked().connect([this]() { setState(AppState::Curriculum); });
     dashboardWidget_->viewSettingsClicked().connect([this]() { setState(AppState::Settings); });
     dashboardWidget_->viewTodaysStudentsClicked().connect([this]() { setState(AppState::Students); });
+    dashboardWidget_->viewActivityLogClicked().connect([this]() { setState(AppState::ActivityLog); });
     dashboardWidget_->hide();
 
     // Student List widget (hidden initially)
@@ -300,6 +301,12 @@ void AdminApp::setupUI() {
     userEditorWidget_->cancelled().connect(this, &AdminApp::handleUserCancelled);
     userEditorWidget_->hide();
 
+    // Activity Log widget (full page view, hidden initially)
+    activityLogWidget_ = contentContainer_->addWidget(
+        std::make_unique<ActivityListWidget>(ActivityListWidget::DisplayMode::Full));
+    activityLogWidget_->setActivityService(activityLogService_);
+    activityLogWidget_->hide();
+
     // Footer
     auto footer = mainContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
     footer->addStyleClass("admin-footer");
@@ -356,6 +363,9 @@ void AdminApp::setState(AppState state) {
         case AppState::Settings:
             showSettings();
             break;
+        case AppState::ActivityLog:
+            showActivityLog();
+            break;
     }
 }
 
@@ -377,6 +387,7 @@ void AdminApp::hideAllViews() {
     settingsWidget_->hide();
     userListWidget_->hide();
     userEditorWidget_->hide();
+    activityLogWidget_->hide();
 }
 
 void AdminApp::showLogin() {
@@ -525,6 +536,19 @@ void AdminApp::showSettings() {
     settingsWidget_->show();
 }
 
+void AdminApp::showActivityLog() {
+    // hideAllViews() already called by setState()
+
+    sidebarWidget_->show();
+    sidebarWidget_->setActiveSection(AdminSection::Dashboard);  // Keep Dashboard highlighted
+    navigationWidget_->refresh();
+    contentWrapper_->removeStyleClass("login-state");
+    contentWrapper_->addStyleClass("with-sidebar");
+
+    activityLogWidget_->refresh();
+    activityLogWidget_->show();
+}
+
 void AdminApp::showUsers() {
     // hideAllViews() already called by setState()
 
@@ -648,6 +672,9 @@ void AdminApp::handleSectionChange(AdminSection section) {
             break;
         case AdminSection::Settings:
             setState(AppState::Settings);
+            break;
+        case AdminSection::ActivityLog:
+            setState(AppState::ActivityLog);
             break;
     }
 }
