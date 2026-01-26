@@ -11,8 +11,25 @@
 #include "../../models/ActivityLog.h"
 #include "../../api/ActivityLogService.h"
 
+// Forward namespace aliases for cleaner code
+namespace StudentIntake {
+namespace Models {
+    class ActivityLog;
+}
+namespace Api {
+    class ActivityLogService;
+}
+}
+
 namespace StudentIntake {
 namespace Admin {
+
+// Type aliases to reference models from parent namespace
+using ActivityLog = ::StudentIntake::Models::ActivityLog;
+using ActivitySeverity = ::StudentIntake::Models::ActivitySeverity;
+using ActorType = ::StudentIntake::Models::ActorType;
+using ActivityLogService = ::StudentIntake::Api::ActivityLogService;
+using ActivityFilter = ::StudentIntake::Api::ActivityFilter;
 
 /**
  * @brief Readonly widget displaying recent activity/audit trail entries
@@ -48,7 +65,7 @@ public:
     /**
      * @brief Set the API service for fetching activities
      */
-    void setActivityService(std::shared_ptr<Api::ActivityLogService> service);
+    void setActivityService(std::shared_ptr<ActivityLogService> service);
 
     /**
      * @brief Set the maximum number of activities to display
@@ -106,7 +123,7 @@ private:
     /**
      * @brief Render a single activity item
      */
-    Wt::WContainerWidget* createActivityItem(const Models::ActivityLog& activity);
+    Wt::WContainerWidget* createActivityItem(const ActivityLog& activity);
 
     /**
      * @brief Apply current filter and refresh display
@@ -116,12 +133,12 @@ private:
     /**
      * @brief Get the CSS class for severity styling
      */
-    std::string getSeverityClass(Models::ActivitySeverity severity) const;
+    std::string getSeverityClass(ActivitySeverity severity) const;
 
     /**
      * @brief Get the CSS class for actor type badge
      */
-    std::string getActorTypeClass(Models::ActorType actorType) const;
+    std::string getActorTypeClass(ActorType actorType) const;
 
     /**
      * @brief Handle activity item click
@@ -129,14 +146,14 @@ private:
     void onActivityClicked(int activityId);
 
     // Service
-    std::shared_ptr<Api::ActivityLogService> activityService_;
+    std::shared_ptr<ActivityLogService> activityService_;
 
     // Configuration
     DisplayMode displayMode_;
     int limit_;
 
     // Data (immutable once loaded)
-    std::vector<Models::ActivityLog> activities_;
+    std::vector<ActivityLog> activities_;
 
     // UI Elements
     Wt::WContainerWidget* headerContainer_;
