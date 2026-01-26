@@ -28,7 +28,7 @@ ActivityListWidget::ActivityListWidget(DisplayMode mode)
 ActivityListWidget::~ActivityListWidget() {
 }
 
-void ActivityListWidget::setActivityService(std::shared_ptr<Api::ActivityLogService> service) {
+void ActivityListWidget::setActivityService(std::shared_ptr<ActivityLogServiceType> service) {
     activityService_ = service;
 }
 
@@ -191,7 +191,7 @@ void ActivityListWidget::loadActivities() {
 
     try {
         // Build filter based on current selections
-        Api::ActivityFilter filter;
+        ActivityFilter filter;
         filter.limit = limit_;
 
         if (displayMode_ == DisplayMode::Full && categoryFilter_) {
@@ -252,7 +252,7 @@ void ActivityListWidget::loadActivities() {
     }
 }
 
-Wt::WContainerWidget* ActivityListWidget::createActivityItem(const Models::ActivityLog& activity) {
+Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLogModel& activity) {
     auto item = new Wt::WContainerWidget();
     item->addStyleClass("activity-item");
     item->addStyleClass(getSeverityClass(activity.getSeverity()));
@@ -300,29 +300,29 @@ void ActivityListWidget::applyFilter() {
     loadActivities();
 }
 
-std::string ActivityListWidget::getSeverityClass(Models::ActivitySeverity severity) const {
+std::string ActivityListWidget::getSeverityClass(ActivitySeverity severity) const {
     switch (severity) {
-        case Models::ActivitySeverity::Success:
+        case ActivitySeverity::Success:
             return "activity-severity-success";
-        case Models::ActivitySeverity::Warning:
+        case ActivitySeverity::Warning:
             return "activity-severity-warning";
-        case Models::ActivitySeverity::Error:
+        case ActivitySeverity::Error:
             return "activity-severity-error";
-        case Models::ActivitySeverity::Info:
+        case ActivitySeverity::Info:
         default:
             return "activity-severity-info";
     }
 }
 
-std::string ActivityListWidget::getActorTypeClass(Models::ActorType actorType) const {
+std::string ActivityListWidget::getActorTypeClass(ActorType actorType) const {
     switch (actorType) {
-        case Models::ActorType::Student:
+        case ActorType::Student:
             return "actor-type-student";
-        case Models::ActorType::Instructor:
+        case ActorType::Instructor:
             return "actor-type-instructor";
-        case Models::ActorType::Admin:
+        case ActorType::Admin:
             return "actor-type-admin";
-        case Models::ActorType::System:
+        case ActorType::System:
         default:
             return "actor-type-system";
     }
