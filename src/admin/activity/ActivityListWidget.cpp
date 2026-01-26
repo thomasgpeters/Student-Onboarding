@@ -147,18 +147,13 @@ void ActivityListWidget::setupActivityList() {
 }
 
 void ActivityListWidget::setupFooter() {
-    footerContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
-    footerContainer_->addStyleClass("activity-list-footer");
-    footerContainer_->setAttributeValue("style", "padding:10px 12px;border-top:1px solid #e5e7eb;text-align:left;");
-
-    // View All button (compact mode only)
-    if (displayMode_ == DisplayMode::Compact) {
-        viewAllButton_ = footerContainer_->addWidget(std::make_unique<Wt::WPushButton>("View All Activity"));
-        viewAllButton_->addStyleClass("activity-view-all-btn");
-        viewAllButton_->setAttributeValue("style", "display:inline-block;padding:6px 12px;font-size:13px;color:#2563eb;background:transparent;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;");
-        viewAllButton_->clicked().connect([this]() {
-            viewAllClicked_.emit();
-        });
+    // Footer only needed in full mode for pagination (future)
+    // Compact mode no longer needs "View All" button since Activity Log is in sidebar
+    if (displayMode_ == DisplayMode::Full) {
+        footerContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+        footerContainer_->addStyleClass("activity-list-footer");
+        footerContainer_->setAttributeValue("style", "padding:10px 12px;border-top:1px solid #e5e7eb;text-align:left;");
+        // Future: Add pagination controls here
     }
 }
 
