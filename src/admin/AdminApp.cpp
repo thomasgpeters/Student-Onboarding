@@ -124,6 +124,9 @@ void AdminApp::setupServices() {
     // Create form submission service
     apiService_ = std::make_shared<Api::FormSubmissionService>(apiClient_);
 
+    // Create activity log service
+    activityLogService_ = std::make_shared<Api::ActivityLogService>(apiClient_);
+
     // Create unified auth service (single source of truth)
     authService_ = std::make_shared<Auth::AuthService>(apiClient_);
 
@@ -182,6 +185,7 @@ void AdminApp::setupUI() {
     dashboardWidget_ = contentContainer_->addWidget(std::make_unique<AdminDashboard>());
     dashboardWidget_->setSession(session_);
     dashboardWidget_->setApiService(apiService_);
+    dashboardWidget_->setActivityService(activityLogService_);
     dashboardWidget_->viewStudentsClicked().connect([this]() { setState(AppState::Students); });
     dashboardWidget_->viewFormsClicked().connect([this]() { setState(AppState::Forms); });
     dashboardWidget_->viewCurriculumClicked().connect([this]() { setState(AppState::Curriculum); });
