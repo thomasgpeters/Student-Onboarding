@@ -131,9 +131,22 @@ void AdminDashboard::setupUI() {
     // Quick Actions section
     auto actionsSection = mainContent->addWidget(std::make_unique<Wt::WContainerWidget>());
     actionsSection->addStyleClass("admin-actions-section card");
+    actionsSection->setAttributeValue("style", "position:relative;");
 
-    auto actionsHeader = actionsSection->addWidget(std::make_unique<Wt::WText>("<h4>Quick Actions</h4>"));
+    // Header row with title and settings gear icon
+    auto headerRow = actionsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
+    headerRow->setAttributeValue("style", "display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;");
+
+    auto actionsHeader = headerRow->addWidget(std::make_unique<Wt::WText>("<h4 style='margin:0;'>Quick Actions</h4>"));
     actionsHeader->setTextFormat(Wt::TextFormat::XHTML);
+
+    // Settings gear icon - floating top right
+    auto settingsGearBtn = headerRow->addWidget(std::make_unique<Wt::WPushButton>());
+    settingsGearBtn->setTextFormat(Wt::TextFormat::XHTML);
+    settingsGearBtn->setText("&#x2699;");  // Gear icon ⚙
+    settingsGearBtn->setToolTip("Institution Settings");
+    settingsGearBtn->setAttributeValue("style", "font-size:20px;padding:4px 8px;border:none;background:transparent;color:#6b7280;cursor:pointer;transition:color 0.2s;");
+    settingsGearBtn->clicked().connect([this]() { viewSettingsClicked_.emit(); });
 
     quickActionsContainer_ = actionsSection->addWidget(std::make_unique<Wt::WContainerWidget>());
     quickActionsContainer_->addStyleClass("admin-quick-actions");
@@ -148,15 +161,15 @@ void AdminDashboard::setupUI() {
     todaysBtn->addStyleClass("btn btn-outline-primary");
     todaysBtn->clicked().connect([this]() { viewTodaysStudentsClicked_.emit(); });
 
+    // Activity Log button
+    auto activityBtn = quickActionsContainer_->addWidget(std::make_unique<Wt::WPushButton>("Activity Log"));
+    activityBtn->addStyleClass("btn btn-outline-primary");
+    activityBtn->clicked().connect([this]() { viewActivityLogClicked_.emit(); });
+
     // Manage Programs button
     auto programsBtn = quickActionsContainer_->addWidget(std::make_unique<Wt::WPushButton>("Manage Programs"));
     programsBtn->addStyleClass("btn btn-outline-primary");
     programsBtn->clicked().connect([this]() { viewCurriculumClicked_.emit(); });
-
-    // Institution Settings button
-    auto settingsBtn = quickActionsContainer_->addWidget(std::make_unique<Wt::WPushButton>("Institution Settings"));
-    settingsBtn->addStyleClass("btn btn-outline-secondary");
-    settingsBtn->clicked().connect([this]() { viewSettingsClicked_.emit(); });
 }
 
 void AdminDashboard::refresh() {
