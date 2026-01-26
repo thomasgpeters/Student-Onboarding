@@ -662,17 +662,19 @@ The portal implements a tiered permission system with three user roles:
 
 The sidebar dynamically shows/hides sections based on the logged-in user's role:
 
-| Section | Admin | Instructor |
-|---------|-------|------------|
-| Dashboard | ✓ | ✓ |
-| Users | ✓ | - |
-| Students | - | ✓ |
-| Forms | ✓ | - |
-| Curriculum | ✓ | ✓ |
-| Settings | ✓ | - |
+| Section | Super Admin | Admin | Instructor |
+|---------|-------------|-------|------------|
+| Dashboard | ✓ | ✓ | ✓ |
+| Users | ✓ | ✓ | - |
+| Students | - | - | ✓ |
+| Forms | ✓ | ✓ | - |
+| Curriculum | ✓ | ✓ | ✓ |
+| Activity Log | ✓ | ✓ | - |
+| Settings | ✓ | - | - |
 
-- **Admins** see "Users" to manage all user types (Admin, Instructor, Student)
-- **Instructors** see "Students" to manage only student users they can create
+- **Super Admins** have full access including Settings
+- **Admins** see Users, Forms, Activity Log, and Curriculum but not Settings
+- **Instructors** see Dashboard, Students, and Curriculum only
 
 ### User Management
 
@@ -740,11 +742,15 @@ The Activity Log feature provides a comprehensive audit trail that captures **"w
 
 #### Activity Log Features
 
-- **Dashboard Widget**: Recent activity feed on admin dashboard (replaces static data)
+- **Dashboard Widget**: Compact recent activity feed on admin dashboard (replaces static data)
+- **Full Activity Log Page**: Dedicated page accessible from sidebar with advanced filtering
+- **Sidebar Navigation**: Activity Log appears in sidebar for Admin and Super Admin users
+- **View All Button**: "View All Activity" in dashboard widget navigates to full page
 - **Clickable Entries**: Click any activity to drill-down into details
-- **Filtering**: Filter by actor type, category, date range, or specific user
+- **Filtering**: Filter by actor type, category, date range, or specific user (full mode)
 - **Pagination**: Efficient loading of large activity histories
 - **Relative Timestamps**: "5 minutes ago", "2 hours ago" for recent activities
+- **Alternating Row Colors**: Subtle background alternation (#ffffff / #fafafa) for readability
 - **Severity Levels**: Info, success, warning, error with visual indicators
 - **Entity Links**: Navigate directly to related students, forms, or settings
 
@@ -964,6 +970,7 @@ A readonly widget for displaying activity log entries in the admin dashboard. Th
 - **Refresh button**: Manual refresh with rotation animation
 - **Click-through**: Click any activity to emit `activityClicked(int)` signal
 - **View All**: Navigate to full activity log via `viewAllClicked()` signal
+- **Alternating rows**: Subtle background color alternation for improved readability
 
 **CSS Classes** (added to `resources/styles.css`):
 - `.activity-list-widget` - Main container
@@ -978,6 +985,29 @@ A readonly widget for displaying activity log entries in the admin dashboard. Th
 - Added `setActivityService()` method for dependency injection
 - New signals: `viewActivityLogClicked()`, `activityDetailClicked(int)`
 - Auto-refreshes when dashboard `refresh()` is called
+
+#### Sidebar Navigation Integration
+
+**Admin Sidebar Changes** (`src/admin/AdminSidebar.h/.cpp`):
+- Added `ActivityLog` to `AdminSection` enum
+- Added Activity Log sidebar item with 📜 icon
+- Visibility controlled by `isAdminOrHigher` permission check
+
+**AdminApp Integration** (`src/admin/AdminApp.h/.cpp`):
+- Added `ActivityLog` to `AppState` enum
+- Added `showActivityLog()` method for full page display
+- Added `activityLogWidget_` member for full page view
+- Wired `viewActivityLogClicked` signal from dashboard
+- Wired `handleSectionChange` for sidebar navigation
+
+**Permission Model**:
+- `isSuperAdmin` - Only SuperAdmin (for Settings visibility)
+- `isAdminOrHigher` - Administrator OR SuperAdmin (for Users, Forms, Activity Log visibility)
+- `isInstructor` - Instructor role only (for Students visibility)
+
+**Auto-Login Role Fix**:
+- Fixed auto-login flow in `AdminApp::initialize()` to properly set admin role
+- Previously defaulted to Instructor, now checks user roles and sets SuperAdmin for admins
 
 ### Version 2.5.0 - User Management & Shared Admin Portal
 
