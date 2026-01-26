@@ -77,7 +77,9 @@ void AdminSidebar::refresh() {
     }
 
     auto& user = session_->getAdminUser();
-    bool isAdmin = user.canManageAdmins();  // Admin or SuperAdmin
+    bool isSuperAdmin = user.canManageAdmins();  // SuperAdmin only
+    bool isAdminOrHigher = (user.getRole() == Models::AdminRole::Administrator ||
+                            user.getRole() == Models::AdminRole::SuperAdmin);
     bool isInstructor = (user.getRole() == Models::AdminRole::Instructor);
 
     for (auto& item : items_) {
@@ -90,18 +92,18 @@ void AdminSidebar::refresh() {
                 break;
 
             case AdminSection::Users:
-                // Only admins can manage all users
-                visible = isAdmin;
+                // Admins and super admins can manage all users
+                visible = isAdminOrHigher;
                 break;
 
             case AdminSection::Students:
                 // Only instructors see Students (admins use Users instead)
-                visible = isInstructor && !isAdmin;
+                visible = isInstructor && !isAdminOrHigher;
                 break;
 
             case AdminSection::Forms:
-                // Only admins can manage forms
-                visible = isAdmin;
+                // Admins and super admins can manage forms
+                visible = isAdminOrHigher;
                 break;
 
             case AdminSection::Curriculum:
@@ -111,12 +113,12 @@ void AdminSidebar::refresh() {
 
             case AdminSection::Settings:
                 // Only super admin
-                visible = user.canManageAdmins();
+                visible = isSuperAdmin;
                 break;
 
             case AdminSection::ActivityLog:
-                // Only admins can view activity log
-                visible = isAdmin;
+                // Admins and super admins can view activity log
+                visible = isAdminOrHigher;
                 break;
         }
 
