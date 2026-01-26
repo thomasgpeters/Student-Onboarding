@@ -2630,14 +2630,29 @@ input[type="checkbox"]:checked, input[type="radio"]:checked {
 .activity-item-content {
     flex: 1;
     min-width: 0;
+    overflow: hidden;
 }
 
 .activity-item-description {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-primary);
     line-height: 1.4;
     display: block;
     margin-bottom: 0.375rem;
+}
+
+/* Compact mode: truncate description to single line */
+.activity-list-compact .activity-item-description {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.8rem;
+}
+
+/* Full mode: allow wrapping */
+.activity-list-full .activity-item-description {
+    white-space: normal;
+    font-size: 0.9rem;
 }
 
 /* Activity Item Meta Row */
