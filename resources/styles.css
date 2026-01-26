@@ -2123,6 +2123,9 @@ input[type="checkbox"]:checked, input[type="radio"]:checked {
 @keyframes errorIconPulse {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+/* =====================================================
    UNIFIED LOGIN WIDGET
    ===================================================== */
 
