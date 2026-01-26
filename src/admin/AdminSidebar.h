@@ -21,7 +21,8 @@ enum class AdminSection {
     Students,
     Forms,
     Curriculum,
-    Settings
+    Settings,
+    ActivityLog
 };
 
 /**

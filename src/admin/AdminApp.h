@@ -31,6 +31,7 @@
 #include "admin/settings/InstitutionSettingsWidget.h"
 #include "admin/users/UserListWidget.h"
 #include "admin/users/UserEditorWidget.h"
+#include "admin/activity/ActivityListWidget.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -57,7 +58,8 @@ public:
         FormPdfPreview,
         Curriculum,
         CurriculumEdit,
-        Settings
+        Settings,
+        ActivityLog
     };
 
     // State management
@@ -86,6 +88,7 @@ private:
     void showCurriculum();
     void showCurriculumEdit(const std::string& curriculumId);
     void showSettings();
+    void showActivityLog();
 
     // Event handlers
     void handleLoginSuccess();
@@ -153,6 +156,7 @@ private:
     InstitutionSettingsWidget* settingsWidget_;
     UserListWidget* userListWidget_;
     UserEditorWidget* userEditorWidget_;
+    ActivityListWidget* activityLogWidget_;  // Full activity log page
 };
 
 } // namespace Admin

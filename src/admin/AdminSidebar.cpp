@@ -31,6 +31,7 @@ void AdminSidebar::setupUI() {
         {AdminSection::Students, "Students", "👥", false},
         {AdminSection::Forms, "Forms", "📋", false},
         {AdminSection::Curriculum, "Curriculum", "📚", true},
+        {AdminSection::ActivityLog, "Activity Log", "📜", true},  // Admin only
         {AdminSection::Settings, "Settings", "⚙️", true}  // Super admin only
     };
 
@@ -111,6 +112,11 @@ void AdminSidebar::refresh() {
             case AdminSection::Settings:
                 // Only super admin
                 visible = user.canManageAdmins();
+                break;
+
+            case AdminSection::ActivityLog:
+                // Only admins can view activity log
+                visible = isAdmin;
                 break;
         }
 
