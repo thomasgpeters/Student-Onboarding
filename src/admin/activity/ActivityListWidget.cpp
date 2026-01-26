@@ -1,0 +1,337 @@
+#include "ActivityListWidget.h"
+#include <Wt/WBreak.h>
+#include "utils/Logger.h"
+
+namespace StudentIntake {
+namespace Admin {
+
+ActivityListWidget::ActivityListWidget(DisplayMode mode)
+    : WContainerWidget()
+    , activityService_(nullptr)
+    , displayMode_(mode)
+    , limit_(mode == DisplayMode::Compact ? 5 : 20)
+    , headerContainer_(nullptr)
+    , filterContainer_(nullptr)
+    , listContainer_(nullptr)
+    , footerContainer_(nullptr)
+    , titleText_(nullptr)
+    , countText_(nullptr)
+    , categoryFilter_(nullptr)
+    , actorTypeFilter_(nullptr)
+    , refreshButton_(nullptr)
+    , viewAllButton_(nullptr)
+    , emptyMessage_(nullptr)
+    , loadingIndicator_(nullptr) {
+    setupUI();
+}
+
+ActivityListWidget::~ActivityListWidget() {
+}
+
+void ActivityListWidget::setActivityService(std::shared_ptr<Api::ActivityLogService> service) {
+    activityService_ = service;
+}
+
+void ActivityListWidget::setupUI() {
+    addStyleClass("activity-list-widget");
+
+    if (displayMode_ == DisplayMode::Compact) {
+        addStyleClass("activity-list-compact");
+        setupCompactUI();
+    } else {
+        addStyleClass("activity-list-full");
+        setupFullUI();
+    }
+}
+
+void ActivityListWidget::setupCompactUI() {
+    // Compact mode for dashboard embedding
+    // Minimal UI - just header and list
+
+    setupHeader();
+    setupActivityList();
+    setupFooter();
+}
+
+void ActivityListWidget::setupFullUI() {
+    // Full mode for dedicated activity page
+    // Includes filters and more controls
+
+    setupHeader();
+    setupFilters();
+    setupActivityList();
+    setupFooter();
+}
+
+void ActivityListWidget::setupHeader() {
+    headerContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    headerContainer_->addStyleClass("activity-list-header");
+
+    auto titleRow = headerContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    titleRow->addStyleClass("activity-list-title-row");
+
+    titleText_ = titleRow->addWidget(std::make_unique<Wt::WText>(
+        displayMode_ == DisplayMode::Compact ? "Recent Activity" : "Activity Log"));
+    titleText_->addStyleClass("activity-list-title");
+
+    // Refresh button
+    refreshButton_ = titleRow->addWidget(std::make_unique<Wt::WPushButton>());
+    refreshButton_->addStyleClass("activity-refresh-btn");
+    refreshButton_->setTextFormat(Wt::TextFormat::XHTML);
+    refreshButton_->setText("&#x21bb;");  // Refresh icon
+    refreshButton_->setToolTip("Refresh activity list");
+    refreshButton_->clicked().connect([this]() {
+        reload();
+    });
+
+    // Count text (full mode only)
+    if (displayMode_ == DisplayMode::Full) {
+        countText_ = headerContainer_->addWidget(std::make_unique<Wt::WText>());
+        countText_->addStyleClass("activity-list-count");
+    }
+}
+
+void ActivityListWidget::setupFilters() {
+    // Only shown in full mode
+    filterContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    filterContainer_->addStyleClass("activity-list-filters");
+
+    // Category filter
+    auto categoryLabel = filterContainer_->addWidget(std::make_unique<Wt::WText>("Category:"));
+    categoryLabel->addStyleClass("activity-filter-label");
+
+    categoryFilter_ = filterContainer_->addWidget(std::make_unique<Wt::WComboBox>());
+    categoryFilter_->addStyleClass("activity-filter-select");
+    categoryFilter_->addItem("All Categories");
+    categoryFilter_->addItem("Authentication");
+    categoryFilter_->addItem("Forms");
+    categoryFilter_->addItem("Profile");
+    categoryFilter_->addItem("Admin");
+    categoryFilter_->addItem("System");
+    categoryFilter_->changed().connect([this]() {
+        applyFilter();
+    });
+
+    // Actor type filter
+    auto actorLabel = filterContainer_->addWidget(std::make_unique<Wt::WText>("Actor:"));
+    actorLabel->addStyleClass("activity-filter-label");
+
+    actorTypeFilter_ = filterContainer_->addWidget(std::make_unique<Wt::WComboBox>());
+    actorTypeFilter_->addStyleClass("activity-filter-select");
+    actorTypeFilter_->addItem("All Actors");
+    actorTypeFilter_->addItem("Student");
+    actorTypeFilter_->addItem("Instructor");
+    actorTypeFilter_->addItem("Admin");
+    actorTypeFilter_->addItem("System");
+    actorTypeFilter_->changed().connect([this]() {
+        applyFilter();
+    });
+}
+
+void ActivityListWidget::setupActivityList() {
+    listContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    listContainer_->addStyleClass("activity-list-container");
+
+    // Loading indicator
+    loadingIndicator_ = listContainer_->addWidget(std::make_unique<Wt::WText>("Loading activities..."));
+    loadingIndicator_->addStyleClass("activity-loading");
+    loadingIndicator_->hide();
+
+    // Empty message
+    emptyMessage_ = listContainer_->addWidget(std::make_unique<Wt::WText>("No recent activity to display."));
+    emptyMessage_->addStyleClass("activity-empty-message");
+    emptyMessage_->hide();
+}
+
+void ActivityListWidget::setupFooter() {
+    footerContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    footerContainer_->addStyleClass("activity-list-footer");
+
+    // View All button (compact mode only)
+    if (displayMode_ == DisplayMode::Compact) {
+        viewAllButton_ = footerContainer_->addWidget(std::make_unique<Wt::WPushButton>("View All Activity"));
+        viewAllButton_->addStyleClass("activity-view-all-btn");
+        viewAllButton_->clicked().connect([this]() {
+            viewAllClicked_.emit();
+        });
+    }
+}
+
+void ActivityListWidget::refresh() {
+    loadActivities();
+}
+
+void ActivityListWidget::reload() {
+    // Clear existing items
+    activities_.clear();
+
+    // Remove all activity items (keep loading indicator and empty message)
+    auto children = listContainer_->children();
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        Wt::WWidget* child = *it;
+        if (child != loadingIndicator_ && child != emptyMessage_) {
+            listContainer_->removeWidget(child);
+        }
+    }
+
+    loadActivities();
+}
+
+void ActivityListWidget::loadActivities() {
+    if (!activityService_) {
+        LOG_ERROR("ActivityListWidget", "Activity service not configured");
+        emptyMessage_->setText("Activity service not available.");
+        emptyMessage_->show();
+        return;
+    }
+
+    // Show loading indicator
+    loadingIndicator_->show();
+    emptyMessage_->hide();
+
+    try {
+        // Build filter based on current selections
+        Api::ActivityFilter filter;
+        filter.limit = limit_;
+
+        if (displayMode_ == DisplayMode::Full && categoryFilter_) {
+            int catIdx = categoryFilter_->currentIndex();
+            if (catIdx > 0) {
+                std::string categories[] = {"", "authentication", "forms", "profile", "admin", "system"};
+                filter.actionCategory = categories[catIdx];
+            }
+        }
+
+        if (displayMode_ == DisplayMode::Full && actorTypeFilter_) {
+            int actorIdx = actorTypeFilter_->currentIndex();
+            if (actorIdx > 0) {
+                std::string actors[] = {"", "student", "instructor", "admin", "system"};
+                filter.actorType = actors[actorIdx];
+            }
+        }
+
+        // Fetch activities (synchronous for now)
+        activities_ = activityService_->getActivities(filter);
+
+        // Hide loading indicator
+        loadingIndicator_->hide();
+
+        // Remove previous activity items (keep loading and empty message)
+        auto children = listContainer_->children();
+        for (auto it = children.rbegin(); it != children.rend(); ++it) {
+            Wt::WWidget* child = *it;
+            if (child != loadingIndicator_ && child != emptyMessage_) {
+                listContainer_->removeWidget(child);
+            }
+        }
+
+        if (activities_.empty()) {
+            emptyMessage_->show();
+        } else {
+            emptyMessage_->hide();
+
+            // Render each activity item
+            for (const auto& activity : activities_) {
+                auto item = createActivityItem(activity);
+                listContainer_->addWidget(std::unique_ptr<Wt::WContainerWidget>(item));
+            }
+        }
+
+        // Update count text in full mode
+        if (displayMode_ == DisplayMode::Full && countText_) {
+            countText_->setText("Showing " + std::to_string(activities_.size()) + " activities");
+        }
+
+        LOG_DEBUG("ActivityListWidget", "Loaded " << activities_.size() << " activities");
+
+    } catch (const std::exception& e) {
+        LOG_ERROR("ActivityListWidget", "Error loading activities: " << e.what());
+        loadingIndicator_->hide();
+        emptyMessage_->setText("Error loading activities. Please try again.");
+        emptyMessage_->show();
+    }
+}
+
+Wt::WContainerWidget* ActivityListWidget::createActivityItem(const Models::ActivityLog& activity) {
+    auto item = new Wt::WContainerWidget();
+    item->addStyleClass("activity-item");
+    item->addStyleClass(getSeverityClass(activity.getSeverity()));
+
+    // Make item clickable
+    const int activityId = activity.getId();
+    item->clicked().connect([this, activityId]() {
+        onActivityClicked(activityId);
+    });
+
+    // Icon container
+    auto iconContainer = item->addWidget(std::make_unique<Wt::WContainerWidget>());
+    iconContainer->addStyleClass("activity-item-icon");
+    iconContainer->addStyleClass(activity.getIconClass());
+
+    auto iconText = iconContainer->addWidget(std::make_unique<Wt::WText>(activity.getIcon()));
+    iconText->setTextFormat(Wt::TextFormat::XHTML);
+
+    // Content container
+    auto contentContainer = item->addWidget(std::make_unique<Wt::WContainerWidget>());
+    contentContainer->addStyleClass("activity-item-content");
+
+    // Description
+    auto descText = contentContainer->addWidget(std::make_unique<Wt::WText>(activity.getDescription()));
+    descText->addStyleClass("activity-item-description");
+
+    // Meta row (actor badge + timestamp)
+    auto metaRow = contentContainer->addWidget(std::make_unique<Wt::WContainerWidget>());
+    metaRow->addStyleClass("activity-item-meta");
+
+    // Actor type badge
+    auto actorBadge = metaRow->addWidget(std::make_unique<Wt::WText>(activity.getActorTypeString()));
+    actorBadge->addStyleClass("activity-actor-badge");
+    actorBadge->addStyleClass(getActorTypeClass(activity.getActorType()));
+
+    // Timestamp
+    auto timestamp = metaRow->addWidget(std::make_unique<Wt::WText>(activity.getRelativeTime()));
+    timestamp->addStyleClass("activity-item-time");
+    timestamp->setToolTip(activity.getFormattedTime());
+
+    return item;
+}
+
+void ActivityListWidget::applyFilter() {
+    loadActivities();
+}
+
+std::string ActivityListWidget::getSeverityClass(Models::ActivitySeverity severity) const {
+    switch (severity) {
+        case Models::ActivitySeverity::Success:
+            return "activity-severity-success";
+        case Models::ActivitySeverity::Warning:
+            return "activity-severity-warning";
+        case Models::ActivitySeverity::Error:
+            return "activity-severity-error";
+        case Models::ActivitySeverity::Info:
+        default:
+            return "activity-severity-info";
+    }
+}
+
+std::string ActivityListWidget::getActorTypeClass(Models::ActorType actorType) const {
+    switch (actorType) {
+        case Models::ActorType::Student:
+            return "actor-type-student";
+        case Models::ActorType::Instructor:
+            return "actor-type-instructor";
+        case Models::ActorType::Admin:
+            return "actor-type-admin";
+        case Models::ActorType::System:
+        default:
+            return "actor-type-system";
+    }
+}
+
+void ActivityListWidget::onActivityClicked(int activityId) {
+    LOG_DEBUG("ActivityListWidget", "Activity clicked: " << activityId);
+    activityClicked_.emit(activityId);
+}
+
+} // namespace Admin
+} // namespace StudentIntake

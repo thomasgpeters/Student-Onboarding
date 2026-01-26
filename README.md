@@ -245,6 +245,8 @@ Student-Onboarding/
 │       ├── curriculum/
 │       │   ├── CurriculumListWidget.cpp/h   # Curriculum list
 │       │   └── CurriculumEditorWidget.cpp/h # Curriculum editor
+│       ├── activity/
+│       │   └── ActivityListWidget.cpp/h     # Activity log display widget
 │       └── settings/
 │           └── InstitutionSettingsWidget.cpp/h  # Institution settings
 ├── config/
@@ -894,6 +896,7 @@ Added comprehensive activity logging to track "who did what, when" across all us
 |------|-------------|
 | `src/models/ActivityLog.h/.cpp` | Activity log data model with enums and builders |
 | `src/api/ActivityLogService.h/.cpp` | Service for logging and querying activities |
+| `src/admin/activity/ActivityListWidget.h/.cpp` | Readonly UI widget for displaying activities |
 | `database/migrations/016_activity_log.sql` | DDL, indexes, functions, and seed data |
 
 #### ActivityLog Model Features
@@ -937,6 +940,44 @@ Includes 16 sample activity entries demonstrating:
 - Student registrations
 - Access revocations
 - Settings updates
+
+#### ActivityListWidget (UI Component)
+
+**Location**: `src/admin/activity/ActivityListWidget.h/.cpp`
+
+A readonly widget for displaying activity log entries in the admin dashboard. The widget is designed with immutable data presentation - activities are fetched and displayed but never modified through the UI.
+
+**Display Modes**:
+
+| Mode | Items | Use Case |
+|------|-------|----------|
+| `Compact` | 5 | Dashboard embedding with minimal UI |
+| `Full` | 20 | Dedicated activity page with filters |
+
+**Features**:
+- **Readonly display**: No editing capability - data is immutable once loaded
+- **Category filtering**: Filter by Authentication, Forms, Profile, Admin, System (full mode)
+- **Actor filtering**: Filter by Student, Instructor, Admin, System (full mode)
+- **Severity styling**: Visual indicators for info, success, warning, error
+- **Actor badges**: Color-coded badges showing actor type
+- **Relative timestamps**: "5 minutes ago", "2 hours ago" with full timestamp on hover
+- **Refresh button**: Manual refresh with rotation animation
+- **Click-through**: Click any activity to emit `activityClicked(int)` signal
+- **View All**: Navigate to full activity log via `viewAllClicked()` signal
+
+**CSS Classes** (added to `resources/styles.css`):
+- `.activity-list-widget` - Main container
+- `.activity-list-compact` / `.activity-list-full` - Mode-specific styling
+- `.activity-item` - Individual activity entry
+- `.activity-severity-{info|success|warning|error}` - Severity-based borders
+- `.actor-type-{student|instructor|admin|system}` - Actor badge colors
+- `.activity-icon-{authentication|forms|profile|admin|system}` - Category icons
+
+**Integration with AdminDashboard**:
+- Replaces static placeholder activity list with dynamic content
+- Added `setActivityService()` method for dependency injection
+- New signals: `viewActivityLogClicked()`, `activityDetailClicked(int)`
+- Auto-refreshes when dashboard `refresh()` is called
 
 ### Version 2.5.0 - User Management & Shared Admin Portal
 

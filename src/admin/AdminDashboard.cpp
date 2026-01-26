@@ -4,6 +4,7 @@
 #include <chrono>
 #include <ctime>
 #include "utils/Logger.h"
+#include "admin/activity/ActivityListWidget.h"
 
 namespace StudentIntake {
 namespace Admin {
@@ -12,6 +13,7 @@ AdminDashboard::AdminDashboard()
     : WContainerWidget()
     , session_(nullptr)
     , apiService_(nullptr)
+    , activityService_(nullptr)
     , welcomeText_(nullptr)
     , studentCountText_(nullptr)
     , todaysStudentsText_(nullptr)
@@ -19,6 +21,7 @@ AdminDashboard::AdminDashboard()
     , programCountText_(nullptr)
     , activityContainer_(nullptr)
     , quickActionsContainer_(nullptr)
+    , activityListWidget_(nullptr)
     , totalStudents_(0)
     , todaysStudents_(0)
     , completedOnboarding_(0)
@@ -108,35 +111,22 @@ void AdminDashboard::setupUI() {
     auto mainContent = addWidget(std::make_unique<Wt::WContainerWidget>());
     mainContent->addStyleClass("admin-main-content");
 
-    // Recent Activity section
+    // Recent Activity section - using ActivityListWidget
     auto activitySection = mainContent->addWidget(std::make_unique<Wt::WContainerWidget>());
     activitySection->addStyleClass("admin-activity-section card");
 
-    auto activityHeader = activitySection->addWidget(std::make_unique<Wt::WText>("<h4>Recent Activity</h4>"));
-    activityHeader->setTextFormat(Wt::TextFormat::XHTML);
+    // Create the ActivityListWidget in compact mode for dashboard embedding
+    activityListWidget_ = activitySection->addWidget(
+        std::make_unique<ActivityListWidget>(ActivityListWidget::DisplayMode::Compact));
 
-    activityContainer_ = activitySection->addWidget(std::make_unique<Wt::WContainerWidget>());
-    activityContainer_->addStyleClass("admin-activity-list");
+    // Connect signals
+    activityListWidget_->activityClicked().connect([this](int activityId) {
+        activityDetailClicked_.emit(activityId);
+    });
 
-    // Add placeholder activity items
-    std::vector<std::string> activities = {
-        "John Doe submitted Personal Information form",
-        "Jane Smith completed onboarding",
-        "CS-BS program syllabus was updated",
-        "New student: Mike Johnson registered",
-        "Emergency Contact form approved for Sarah Wilson"
-    };
-
-    for (const auto& activity : activities) {
-        auto item = activityContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
-        item->addStyleClass("admin-activity-item");
-
-        auto bullet = item->addWidget(std::make_unique<Wt::WText>("•"));
-        bullet->addStyleClass("admin-activity-bullet");
-
-        auto text = item->addWidget(std::make_unique<Wt::WText>(activity));
-        text->addStyleClass("admin-activity-text");
-    }
+    activityListWidget_->viewAllClicked().connect([this]() {
+        viewActivityLogClicked_.emit();
+    });
 
     // Quick Actions section
     auto actionsSection = mainContent->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -172,6 +162,12 @@ void AdminDashboard::setupUI() {
 void AdminDashboard::refresh() {
     loadStatistics();
     updateDisplay();
+
+    // Refresh activity list
+    if (activityListWidget_ && activityService_) {
+        activityListWidget_->setActivityService(activityService_);
+        activityListWidget_->refresh();
+    }
 }
 
 void AdminDashboard::loadStatistics() {
