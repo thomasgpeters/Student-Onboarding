@@ -28,7 +28,7 @@ ActivityListWidget::ActivityListWidget(DisplayMode mode)
 ActivityListWidget::~ActivityListWidget() {
 }
 
-void ActivityListWidget::setActivityService(std::shared_ptr<ActivityLogService> service) {
+void ActivityListWidget::setActivityService(std::shared_ptr<ActivityLogServiceType> service) {
     activityService_ = service;
 }
 
@@ -252,7 +252,7 @@ void ActivityListWidget::loadActivities() {
     }
 }
 
-Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLog& activity) {
+Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLogModel& activity) {
     auto item = new Wt::WContainerWidget();
     item->addStyleClass("activity-item");
     item->addStyleClass(getSeverityClass(activity.getSeverity()));

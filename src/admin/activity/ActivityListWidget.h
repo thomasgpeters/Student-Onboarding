@@ -11,24 +11,15 @@
 #include "../../models/ActivityLog.h"
 #include "../../api/ActivityLogService.h"
 
-// Forward namespace aliases for cleaner code
-namespace StudentIntake {
-namespace Models {
-    class ActivityLog;
-}
-namespace Api {
-    class ActivityLogService;
-}
-}
-
 namespace StudentIntake {
 namespace Admin {
 
-// Type aliases to reference models from parent namespace
-using ActivityLog = ::StudentIntake::Models::ActivityLog;
+// Type aliases to reference types from parent namespace
+// (needed because we're inside StudentIntake::Admin, not StudentIntake)
+using ActivityLogModel = ::StudentIntake::Models::ActivityLog;
 using ActivitySeverity = ::StudentIntake::Models::ActivitySeverity;
 using ActorType = ::StudentIntake::Models::ActorType;
-using ActivityLogService = ::StudentIntake::Api::ActivityLogService;
+using ActivityLogServiceType = ::StudentIntake::Api::ActivityLogService;
 using ActivityFilter = ::StudentIntake::Api::ActivityFilter;
 
 /**
@@ -65,7 +56,7 @@ public:
     /**
      * @brief Set the API service for fetching activities
      */
-    void setActivityService(std::shared_ptr<ActivityLogService> service);
+    void setActivityService(std::shared_ptr<ActivityLogServiceType> service);
 
     /**
      * @brief Set the maximum number of activities to display
@@ -123,7 +114,7 @@ private:
     /**
      * @brief Render a single activity item
      */
-    Wt::WContainerWidget* createActivityItem(const ActivityLog& activity);
+    Wt::WContainerWidget* createActivityItem(const ActivityLogModel& activity);
 
     /**
      * @brief Apply current filter and refresh display
@@ -146,14 +137,14 @@ private:
     void onActivityClicked(int activityId);
 
     // Service
-    std::shared_ptr<ActivityLogService> activityService_;
+    std::shared_ptr<ActivityLogServiceType> activityService_;
 
     // Configuration
     DisplayMode displayMode_;
     int limit_;
 
     // Data (immutable once loaded)
-    std::vector<ActivityLog> activities_;
+    std::vector<ActivityLogModel> activities_;
 
     // UI Elements
     Wt::WContainerWidget* headerContainer_;
