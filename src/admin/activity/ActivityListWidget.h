@@ -113,8 +113,10 @@ private:
 
     /**
      * @brief Render a single activity item
+     * @param activity The activity to render
+     * @param index Row index for alternating background colors
      */
-    Wt::WContainerWidget* createActivityItem(const ActivityLogModel& activity);
+    Wt::WContainerWidget* createActivityItem(const ActivityLogModel& activity, int index = 0);
 
     /**
      * @brief Apply current filter and refresh display

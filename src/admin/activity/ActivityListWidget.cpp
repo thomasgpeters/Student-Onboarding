@@ -235,10 +235,12 @@ void ActivityListWidget::loadActivities() {
         } else {
             emptyMessage_->hide();
 
-            // Render each activity item
+            // Render each activity item with alternating backgrounds
+            int index = 0;
             for (const auto& activity : activities_) {
-                auto item = createActivityItem(activity);
+                auto item = createActivityItem(activity, index);
                 listContainer_->addWidget(std::unique_ptr<Wt::WContainerWidget>(item));
+                index++;
             }
         }
 
@@ -257,11 +259,14 @@ void ActivityListWidget::loadActivities() {
     }
 }
 
-Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLogModel& activity) {
+Wt::WContainerWidget* ActivityListWidget::createActivityItem(const ActivityLogModel& activity, int index) {
     auto item = new Wt::WContainerWidget();
     item->addStyleClass("activity-item");
     item->addStyleClass(getSeverityClass(activity.getSeverity()));
-    item->setAttributeValue("style", "display:flex;flex-direction:row;align-items:flex-start;gap:10px;padding:10px 12px;border-bottom:1px solid #e5e7eb;cursor:pointer;");
+
+    // Alternating row backgrounds - very subtle
+    std::string bgColor = (index % 2 == 0) ? "background:#ffffff;" : "background:#fafafa;";
+    item->setAttributeValue("style", "display:flex;flex-direction:row;align-items:flex-start;gap:10px;padding:10px 12px;border-bottom:1px solid #e5e7eb;cursor:pointer;" + bgColor);
 
     // Make item clickable
     const int activityId = activity.getId();
