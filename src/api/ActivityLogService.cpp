@@ -283,7 +283,7 @@ ActivityLogResult ActivityLogService::logActivity(const Models::ActivityLog& act
                 }
             }
         } catch (const std::exception& e) {
-            LOG_WARNING("ActivityLogService", "Could not parse activity ID from response");
+            LOG_DEBUG("ActivityLogService", "Could not parse activity ID from response");
         }
 
         LOG_DEBUG("ActivityLogService", "Activity logged with ID: " << result.activityId);
