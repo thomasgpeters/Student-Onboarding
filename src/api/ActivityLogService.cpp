@@ -100,7 +100,7 @@ std::vector<Models::ActivityLog> ActivityLogService::getActivities(const Activit
         return activities;
     }
 
-    std::string endpoint = "/ActivityLog" + filter.toQueryString();
+    std::string endpoint = "/activity_log" + filter.toQueryString();
     LOG_DEBUG("ActivityLogService", "GET " << endpoint);
 
     ApiResponse response = apiClient_->get(endpoint);
@@ -128,7 +128,7 @@ Models::ActivityLog ActivityLogService::getActivity(int activityId) {
         return activity;
     }
 
-    std::string endpoint = "/ActivityLog/" + std::to_string(activityId);
+    std::string endpoint = "/activity_log/" + std::to_string(activityId);
     LOG_DEBUG("ActivityLogService", "GET " << endpoint);
 
     ApiResponse response = apiClient_->get(endpoint);
@@ -173,7 +173,7 @@ int ActivityLogService::getActivityCount(const ActivityFilter& filter) {
     countFilter.limit = 1;
     countFilter.offset = 0;
 
-    std::string endpoint = "/ActivityLog" + countFilter.toQueryString();
+    std::string endpoint = "/activity_log" + countFilter.toQueryString();
     ApiResponse response = apiClient_->get(endpoint);
 
     if (response.isSuccess()) {
@@ -204,7 +204,7 @@ void ActivityLogService::getRecentActivitiesAsync(int limit, ActivitiesCallback 
 
     ActivityFilter filter;
     filter.limit = limit;
-    std::string endpoint = "/ActivityLog" + filter.toQueryString();
+    std::string endpoint = "/activity_log" + filter.toQueryString();
 
     apiClient_->getAsync(endpoint, [this, callback](const ApiResponse& response) {
         if (response.isSuccess()) {
@@ -230,7 +230,7 @@ void ActivityLogService::getActivitiesAsync(const ActivityFilter& filter, Activi
         return;
     }
 
-    std::string endpoint = "/ActivityLog" + filter.toQueryString();
+    std::string endpoint = "/activity_log" + filter.toQueryString();
 
     apiClient_->getAsync(endpoint, [this, callback](const ApiResponse& response) {
         if (response.isSuccess()) {
@@ -264,9 +264,9 @@ ActivityLogResult ActivityLogService::logActivity(const Models::ActivityLog& act
     }
 
     nlohmann::json payload = preparePayload(activity);
-    LOG_DEBUG("ActivityLogService", "POST /ActivityLog");
+    LOG_DEBUG("ActivityLogService", "POST /activity_log");
 
-    ApiResponse response = apiClient_->post("/ActivityLog", payload);
+    ApiResponse response = apiClient_->post("/activity_log", payload);
 
     if (response.isSuccess()) {
         result.success = true;
@@ -309,7 +309,7 @@ void ActivityLogService::logActivityAsync(const Models::ActivityLog& activity,
 
     nlohmann::json payload = preparePayload(activity);
 
-    apiClient_->postAsync("/ActivityLog", payload, [callback](const ApiResponse& response) {
+    apiClient_->postAsync("/activity_log", payload, [callback](const ApiResponse& response) {
         ActivityLogResult result;
         result.success = response.isSuccess();
 
