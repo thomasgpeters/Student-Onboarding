@@ -200,41 +200,45 @@ BEGIN
     -- Only insert seed data if the table is empty
     IF NOT EXISTS (SELECT 1 FROM activity_log LIMIT 1) THEN
 
+        -- NOTE: actor_id is set to NULL in seed data to avoid foreign key violations
+        -- when app_user records don't exist. The denormalized actor_name and actor_email
+        -- fields still provide display information for the activity feed.
+
         -- System startup (oldest)
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, severity, created_at)
         VALUES ('system', NULL, 'System', NULL, 'system_startup', 'system', 'Student Onboarding System initialized', 'info', v_now - INTERVAL '7 days');
 
         -- Admin login
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, severity, ip_address, created_at)
-        VALUES ('admin', 1, 'System Administrator', 'admin@system.local', 'login_success', 'authentication', 'System Administrator logged in', 'app_user', 'success', '192.168.1.100', v_now - INTERVAL '6 days 23 hours');
+        VALUES ('admin', NULL, 'System Administrator', 'admin@system.local', 'login_success', 'authentication', 'System Administrator logged in', 'app_user', 'success', '192.168.1.100', v_now - INTERVAL '6 days 23 hours');
 
         -- Admin creates curriculum
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, severity, created_at)
-        VALUES ('admin', 1, 'System Administrator', 'admin@system.local', 'curriculum_created', 'admin', 'System Administrator created program: CDL Class A Training', 'curriculum', '1', 'CDL Class A Training', 'success', v_now - INTERVAL '6 days 22 hours');
+        VALUES ('admin', NULL, 'System Administrator', 'admin@system.local', 'curriculum_created', 'admin', 'System Administrator created program: CDL Class A Training', 'curriculum', '1', 'CDL Class A Training', 'success', v_now - INTERVAL '6 days 22 hours');
 
         -- Student registration
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, severity, ip_address, created_at)
-        VALUES ('student', 2, 'John Doe', 'john.doe@email.com', 'student_registered', 'profile', 'New student registered: John Doe', 'student', '2', 'John Doe', 'success', '192.168.1.50', v_now - INTERVAL '5 days');
+        VALUES ('student', NULL, 'John Doe', 'john.doe@email.com', 'student_registered', 'profile', 'New student registered: John Doe', 'student', '2', 'John Doe', 'success', '192.168.1.50', v_now - INTERVAL '5 days');
 
         -- Student selects curriculum
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, severity, created_at)
-        VALUES ('student', 2, 'John Doe', 'john.doe@email.com', 'curriculum_selected', 'profile', 'John Doe selected CDL Class A Training', 'curriculum', '1', 'CDL Class A Training', 'info', v_now - INTERVAL '5 days' + INTERVAL '30 minutes');
+        VALUES ('student', NULL, 'John Doe', 'john.doe@email.com', 'curriculum_selected', 'profile', 'John Doe selected CDL Class A Training', 'curriculum', '1', 'CDL Class A Training', 'info', v_now - INTERVAL '5 days' + INTERVAL '30 minutes');
 
         -- Student submits personal info form
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, severity, created_at)
-        VALUES ('student', 2, 'John Doe', 'john.doe@email.com', 'form_submitted', 'forms', 'John Doe submitted Personal Information form', 'form_submission', '1', 'Personal Information', 'success', v_now - INTERVAL '4 days 20 hours');
+        VALUES ('student', NULL, 'John Doe', 'john.doe@email.com', 'form_submitted', 'forms', 'John Doe submitted Personal Information form', 'form_submission', '1', 'Personal Information', 'success', v_now - INTERVAL '4 days 20 hours');
 
         -- Student submits emergency contact form
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, severity, created_at)
-        VALUES ('student', 2, 'John Doe', 'john.doe@email.com', 'form_submitted', 'forms', 'John Doe submitted Emergency Contacts form', 'form_submission', '2', 'Emergency Contacts', 'success', v_now - INTERVAL '4 days 19 hours');
+        VALUES ('student', NULL, 'John Doe', 'john.doe@email.com', 'form_submitted', 'forms', 'John Doe submitted Emergency Contacts form', 'form_submission', '2', 'Emergency Contacts', 'success', v_now - INTERVAL '4 days 19 hours');
 
         -- Another student registration
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, severity, ip_address, created_at)
-        VALUES ('student', 3, 'Jane Smith', 'jane.smith@email.com', 'student_registered', 'profile', 'New student registered: Jane Smith', 'student', '3', 'Jane Smith', 'success', '192.168.1.51', v_now - INTERVAL '3 days');
+        VALUES ('student', NULL, 'Jane Smith', 'jane.smith@email.com', 'student_registered', 'profile', 'New student registered: Jane Smith', 'student', '3', 'Jane Smith', 'success', '192.168.1.51', v_now - INTERVAL '3 days');
 
         -- Admin reviews form
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, details, severity, created_at)
-        VALUES ('admin', 1, 'System Administrator', 'admin@system.local', 'form_approved', 'admin', 'System Administrator approved Personal Information for John Doe', 'form_submission', '1', 'Personal Information', '{"student_name": "John Doe", "student_id": 2}', 'success', v_now - INTERVAL '2 days');
+        VALUES ('admin', NULL, 'System Administrator', 'admin@system.local', 'form_approved', 'admin', 'System Administrator approved Personal Information for John Doe', 'form_submission', '1', 'Personal Information', '{"student_name": "John Doe", "student_id": 2}', 'success', v_now - INTERVAL '2 days');
 
         -- Failed login attempt
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, details, severity, ip_address, created_at)
@@ -242,26 +246,26 @@ BEGIN
 
         -- Instructor login
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, severity, ip_address, created_at)
-        VALUES ('instructor', 4, 'Bob Wilson', 'bob.wilson@school.edu', 'login_success', 'authentication', 'Bob Wilson logged in', 'success', '192.168.1.75', v_now - INTERVAL '1 day');
+        VALUES ('instructor', NULL, 'Bob Wilson', 'bob.wilson@school.edu', 'login_success', 'authentication', 'Bob Wilson logged in', 'success', '192.168.1.75', v_now - INTERVAL '1 day');
 
         -- Student completes all forms
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, severity, created_at)
-        VALUES ('student', 2, 'John Doe', 'john.doe@email.com', 'form_submitted', 'forms', 'John Doe submitted Terms and Consent form', 'form_submission', '7', 'Terms and Consent', 'success', v_now - INTERVAL '18 hours');
+        VALUES ('student', NULL, 'John Doe', 'john.doe@email.com', 'form_submitted', 'forms', 'John Doe submitted Terms and Consent form', 'form_submission', '7', 'Terms and Consent', 'success', v_now - INTERVAL '18 hours');
 
         -- Admin revokes student access (warning severity)
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, severity, created_at)
-        VALUES ('admin', 1, 'System Administrator', 'admin@system.local', 'access_revoked', 'admin', 'System Administrator revoked access for Test User', 'student', '99', 'Test User', 'warning', v_now - INTERVAL '12 hours');
+        VALUES ('admin', NULL, 'System Administrator', 'admin@system.local', 'access_revoked', 'admin', 'System Administrator revoked access for Test User', 'student', '99', 'Test User', 'warning', v_now - INTERVAL '12 hours');
 
         -- Recent student activity
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_id, entity_name, severity, ip_address, created_at)
-        VALUES ('student', 3, 'Jane Smith', 'jane.smith@email.com', 'form_submitted', 'forms', 'Jane Smith submitted Personal Information form', 'form_submission', '8', 'Personal Information', 'success', '192.168.1.51', v_now - INTERVAL '2 hours');
+        VALUES ('student', NULL, 'Jane Smith', 'jane.smith@email.com', 'form_submitted', 'forms', 'Jane Smith submitted Personal Information form', 'form_submission', '8', 'Personal Information', 'success', '192.168.1.51', v_now - INTERVAL '2 hours');
 
         -- Very recent activity
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, severity, ip_address, created_at)
-        VALUES ('admin', 1, 'System Administrator', 'admin@system.local', 'login_success', 'authentication', 'System Administrator logged in', 'success', '192.168.1.100', v_now - INTERVAL '30 minutes');
+        VALUES ('admin', NULL, 'System Administrator', 'admin@system.local', 'login_success', 'authentication', 'System Administrator logged in', 'success', '192.168.1.100', v_now - INTERVAL '30 minutes');
 
         INSERT INTO activity_log (actor_type, actor_id, actor_name, actor_email, action_type, action_category, description, entity_type, entity_name, severity, created_at)
-        VALUES ('admin', 1, 'System Administrator', 'admin@system.local', 'settings_updated', 'admin', 'System Administrator updated institution settings', 'institution_settings', 'Institution Settings', 'info', v_now - INTERVAL '15 minutes');
+        VALUES ('admin', NULL, 'System Administrator', 'admin@system.local', 'settings_updated', 'admin', 'System Administrator updated institution settings', 'institution_settings', 'Institution Settings', 'info', v_now - INTERVAL '15 minutes');
 
         RAISE NOTICE 'Inserted sample activity log entries for demonstration';
     ELSE
