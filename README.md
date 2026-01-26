@@ -213,11 +213,13 @@ Student-Onboarding/
 │   │   └── CurriculumSelector.cpp/h # Curriculum selection UI
 │   ├── api/
 │   │   ├── ApiClient.cpp/h     # HTTP client for API calls
-│   │   └── FormSubmissionService.cpp/h # Form submission logic
+│   │   ├── FormSubmissionService.cpp/h # Form submission logic
+│   │   └── ActivityLogService.cpp/h    # Activity/audit log service
 │   ├── models/
 │   │   ├── Student.cpp/h       # Student data model
 │   │   ├── FormData.cpp/h      # Form data model
-│   │   └── Curriculum.cpp/h    # Curriculum data model
+│   │   ├── Curriculum.cpp/h    # Curriculum data model
+│   │   └── ActivityLog.cpp/h   # Activity log model
 │   ├── session/
 │   │   ├── SessionManager.cpp/h # Session management
 │   │   └── StudentSession.cpp/h # Individual session state
@@ -258,6 +260,7 @@ Student-Onboarding/
 │   │   ├── switch_to_vocational.sql  # Switch to trade school/CDL mode
 │   │   └── README.md           # Scripts documentation
 │   └── migrations/
+│       ├── 016_activity_log.sql    # Activity log audit trail
 │       └── archive/            # Historical migration files (reference only)
 ├── scripts/
 │   └── seed_curriculum.sh      # Curriculum seeding script
@@ -412,6 +415,8 @@ The application expects the following API endpoints (note: capitalized resource 
 | `/Consent` | GET/POST/DELETE | Get/create/delete consent records |
 | `/InstitutionSetting` | GET | List all institution settings |
 | `/InstitutionSetting/:setting_key` | GET/PUT | Get or update a setting by key |
+| `/ActivityLog` | GET/POST | List/create activity log entries |
+| `/ActivityLog/:id` | GET | Get single activity entry |
 
 #### Compound Primary Keys
 
@@ -458,6 +463,34 @@ DELETE /StudentEndorsement/:id                     # Withdraw from endorsement
 | `enrollment_status` | string | enrolled, in_progress, completed, withdrawn |
 | `enrolled_at` | timestamp | When student enrolled |
 | `completed_at` | timestamp | When endorsement was completed (nullable) |
+
+**ActivityLog** - Audit trail for all user activities
+```
+GET    /ActivityLog                                # List recent activities
+GET    /ActivityLog?filter[actor_type]=student     # Filter by actor type
+GET    /ActivityLog?filter[action_category]=forms  # Filter by category
+GET    /ActivityLog?sort=-created_at&page[limit]=10 # Pagination and sorting
+GET    /ActivityLog/:id                            # Get single activity
+POST   /ActivityLog                                # Log new activity
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Activity ID |
+| `actor_type` | string | student, instructor, admin, system |
+| `actor_id` | int | Foreign key to app_user (nullable for system) |
+| `actor_name` | string | Denormalized name at time of action |
+| `actor_email` | string | Denormalized email |
+| `action_type` | string | login_success, form_submitted, etc. |
+| `action_category` | string | authentication, forms, profile, admin, system |
+| `description` | string | Human-readable description |
+| `entity_type` | string | Type of affected entity (student, form_submission, etc.) |
+| `entity_id` | string | ID of affected entity |
+| `entity_name` | string | Denormalized entity name |
+| `details` | jsonb | Additional context as JSON |
+| `severity` | string | info, success, warning, error |
+| `ip_address` | string | Client IP address |
+| `created_at` | timestamp | When the activity occurred |
 
 ### JSON:API Format
 
@@ -689,10 +722,44 @@ When roles are removed, the corresponding records are deleted.
 - **Access Control**: Revoke/restore student login privileges
 - **Dashboard**: Overview with key metrics and quick actions
 
+### Activity Log / Audit Trail
+
+The Activity Log feature provides a comprehensive audit trail that captures **"who did what, when"** across all user types:
+
+#### Captured Events
+
+| Category | Events Tracked |
+|----------|----------------|
+| **Authentication** | Login (success/failure), logout, password changes |
+| **Forms** | Form submissions, approvals, rejections |
+| **Profile** | Student registration, profile updates, curriculum selection |
+| **Admin** | Access revoke/restore, user creation, settings changes |
+| **System** | System startup, automated actions |
+
+#### Activity Log Features
+
+- **Dashboard Widget**: Recent activity feed on admin dashboard (replaces static data)
+- **Clickable Entries**: Click any activity to drill-down into details
+- **Filtering**: Filter by actor type, category, date range, or specific user
+- **Pagination**: Efficient loading of large activity histories
+- **Relative Timestamps**: "5 minutes ago", "2 hours ago" for recent activities
+- **Severity Levels**: Info, success, warning, error with visual indicators
+- **Entity Links**: Navigate directly to related students, forms, or settings
+
+#### Database Schema
+
+The `activity_log` table stores:
+- **Actor info**: who performed the action (type, ID, name, email)
+- **Action info**: what was done (type, category, description)
+- **Entity info**: what was affected (type, ID, name)
+- **Context**: IP address, user agent, session ID, JSONB details
+- **Timestamp**: when it happened
+
+See `database/migrations/016_activity_log.sql` for full schema.
+
 ### Planned Features
 - **Email Notifications**: Send form status updates to students
 - **Bulk Operations**: Mass approve/reject forms
-- **Audit Logging**: Track all administrative actions
 
 See `docs/ADMIN_DASHBOARD_DESIGN.md` for full specification and `docs/Administration_User_Guide.md` for usage instructions.
 
@@ -806,6 +873,70 @@ The seed data creates instructors in both the unified authentication system and 
 - `docs/DATA_MODEL_CHANGES.md` - Database schema change documentation
 
 ## Recent Changes
+
+### Version 2.6.0 - Activity Log / Audit Trail
+
+Added comprehensive activity logging to track "who did what, when" across all user types.
+
+#### Database Changes
+
+**New Table: `activity_log`** (`database/migrations/016_activity_log.sql`)
+- Unified audit trail for all user activities
+- Captures actor info, action details, and affected entities
+- JSONB `details` field for flexible additional context
+- Indexed for efficient dashboard queries
+- Helper functions: `log_activity()`, `get_recent_activities()`
+- View: `recent_activities` with relative time formatting
+
+#### New Files
+
+| File | Description |
+|------|-------------|
+| `src/models/ActivityLog.h/.cpp` | Activity log data model with enums and builders |
+| `src/api/ActivityLogService.h/.cpp` | Service for logging and querying activities |
+| `database/migrations/016_activity_log.sql` | DDL, indexes, functions, and seed data |
+
+#### ActivityLog Model Features
+
+- **Enums**: `ActorType`, `ActivityCategory`, `ActivitySeverity`
+- **Display helpers**: `getRelativeTime()`, `getFormattedTime()`, `getIcon()`
+- **JSON serialization**: Full JSON:API format support
+- **Builder methods** for common activities:
+  - `createLoginActivity()`, `createLogoutActivity()`
+  - `createFormSubmittedActivity()`, `createFormReviewActivity()`
+  - `createStudentRegisteredActivity()`, `createAccessChangeActivity()`
+  - `createUserCreatedActivity()`, `createCurriculumSelectedActivity()`
+
+#### ActivityLogService Features
+
+- **Query methods**: `getRecentActivities()`, `getActivities()`, `getActivity()`
+- **Async support**: `getRecentActivitiesAsync()`, `logActivityAsync()`
+- **Convenience methods** for common events:
+  - `logLogin()`, `logLogout()`
+  - `logFormSubmission()`, `logFormReview()`
+  - `logStudentRegistration()`, `logProfileUpdate()`
+  - `logAccessChange()`, `logUserCreated()`
+  - `logCurriculumSelected()`, `logCurriculumChange()`
+  - `logSettingsUpdate()`, `logAdminAction()`
+
+#### Event Categories
+
+| Category | Events |
+|----------|--------|
+| `authentication` | login_success, login_failed, logout, password_changed |
+| `forms` | form_submitted, form_approved, form_rejected |
+| `profile` | student_registered, profile_updated, curriculum_selected |
+| `admin` | access_revoked, access_restored, user_created, settings_updated |
+| `system` | system_startup, automated actions |
+
+#### Seed Data
+
+Includes 16 sample activity entries demonstrating:
+- Admin and student logins
+- Form submissions and approvals
+- Student registrations
+- Access revocations
+- Settings updates
 
 ### Version 2.5.0 - User Management & Shared Admin Portal
 
