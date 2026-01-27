@@ -84,7 +84,12 @@ void AdminApp::initialize() {
                 }
             }
 
-            if (user.getId() > 0 && user.hasRole(StudentIntake::Models::UserRole::Admin)) {
+            // Allow both Admin and Instructor roles to access the administration portal
+            bool hasAdminAccess = user.getId() > 0 &&
+                (user.hasRole(StudentIntake::Models::UserRole::Admin) ||
+                 user.hasRole(StudentIntake::Models::UserRole::Instructor));
+
+            if (hasAdminAccess) {
                 LOG_INFO("AdminApp", "Auto-login successful for user: " << user.getEmail());
 
                 // Store the authenticated user
@@ -116,7 +121,7 @@ void AdminApp::initialize() {
                 setState(AppState::Dashboard);
                 return;
             } else {
-                LOG_WARN("AdminApp", "User not found or not an admin");
+                LOG_WARN("AdminApp", "User not found or does not have admin/instructor role");
             }
         } catch (const std::exception& e) {
             LOG_ERROR("AdminApp", "Error during auto-login: " << e.what());

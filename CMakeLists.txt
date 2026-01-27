@@ -238,3 +238,66 @@ add_custom_target(run
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Running Student Intake Forms Application"
 )
+
+# =============================================================================
+# Testing Configuration
+# =============================================================================
+
+# Option to enable/disable tests (enabled by default)
+option(BUILD_TESTS "Build the test suite" ON)
+
+if(BUILD_TESTS)
+    # Create a library target for testable code (excludes main.cpp)
+    set(LIB_SOURCES
+        ${MODEL_SOURCES}
+        ${SESSION_SOURCES}
+        ${API_SOURCES}
+        ${AUTH_SOURCES}
+        ${CURRICULUM_SOURCES}
+        ${FORMS_SOURCES}
+        ${WIDGETS_SOURCES}
+        ${ADMIN_SOURCES}
+        ${CLASSROOM_SOURCES}
+        ${INSTRUCTOR_SOURCES}
+        src/app/StudentIntakeApp.cpp
+    )
+
+    add_library(student_intake_lib STATIC ${LIB_SOURCES})
+
+    target_include_directories(student_intake_lib PUBLIC
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src/app
+        ${CMAKE_SOURCE_DIR}/src/auth
+        ${CMAKE_SOURCE_DIR}/src/forms
+        ${CMAKE_SOURCE_DIR}/src/curriculum
+        ${CMAKE_SOURCE_DIR}/src/api
+        ${CMAKE_SOURCE_DIR}/src/models
+        ${CMAKE_SOURCE_DIR}/src/session
+        ${CMAKE_SOURCE_DIR}/src/widgets
+        ${CMAKE_SOURCE_DIR}/src/utils
+        ${CMAKE_SOURCE_DIR}/src/admin
+        ${CMAKE_SOURCE_DIR}/src/admin/models
+        ${CMAKE_SOURCE_DIR}/src/admin/students
+        ${CMAKE_SOURCE_DIR}/src/admin/curriculum
+        ${CMAKE_SOURCE_DIR}/src/admin/forms
+        ${CMAKE_SOURCE_DIR}/src/admin/settings
+        ${CMAKE_SOURCE_DIR}/src/admin/users
+        ${CMAKE_SOURCE_DIR}/src/classroom
+        ${CMAKE_SOURCE_DIR}/src/instructor
+    )
+
+    target_link_libraries(student_intake_lib PUBLIC
+        Wt::Wt
+        Wt::HTTP
+        CURL::libcurl
+        nlohmann_json::nlohmann_json
+    )
+
+    if(HPDF_FOUND)
+        target_include_directories(student_intake_lib PUBLIC ${HPDF_INCLUDE_DIRS})
+        target_link_libraries(student_intake_lib PUBLIC ${HPDF_LIBRARIES})
+    endif()
+
+    # Add tests subdirectory
+    add_subdirectory(tests)
+endif()
