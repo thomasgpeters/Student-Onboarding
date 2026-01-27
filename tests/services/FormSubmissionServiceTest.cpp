@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include "api/ApiClient.h"
 #include "api/FormSubmissionService.h"
 #include "models/Student.h"
@@ -9,25 +8,6 @@
 using namespace StudentIntake;
 using namespace StudentIntake::Models;
 using namespace TestUtils;
-using ::testing::_;
-using ::testing::Return;
-using ::testing::Invoke;
-using ::testing::AtLeast;
-
-// =============================================================================
-// Mock API Client
-// =============================================================================
-
-class MockApiClient : public Api::ApiClient {
-public:
-    MockApiClient() : Api::ApiClient("http://test-api.example.com") {}
-
-    MOCK_METHOD(Api::ApiResponse, get, (const std::string& endpoint), (override));
-    MOCK_METHOD(Api::ApiResponse, post, (const std::string& endpoint, const nlohmann::json& data), (override));
-    MOCK_METHOD(Api::ApiResponse, put, (const std::string& endpoint, const nlohmann::json& data), (override));
-    MOCK_METHOD(Api::ApiResponse, patch, (const std::string& endpoint, const nlohmann::json& data), (override));
-    MOCK_METHOD(Api::ApiResponse, del, (const std::string& endpoint), (override));
-};
 
 // =============================================================================
 // Test Fixture
