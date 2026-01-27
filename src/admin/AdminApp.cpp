@@ -78,8 +78,8 @@ void AdminApp::initialize() {
                     auto json = response.getJson();
                     if (json.contains("data")) {
                         user = StudentIntake::Models::User::fromJson(json["data"]);
-                        // Get roles for this user
-                        user.setRoles(authService_->getUserRoles(userId));
+                        // Get roles for this user - pass email to enable AdminUser table lookup
+                        user.setRoles(authService_->getUserRoles(userId, user.getEmail()));
                     }
                 }
             }
