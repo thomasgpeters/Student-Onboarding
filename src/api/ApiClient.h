@@ -36,7 +36,7 @@ class ApiClient {
 public:
     ApiClient();
     explicit ApiClient(const std::string& baseUrl);
-    ~ApiClient();
+    virtual ~ApiClient();
 
     // Configuration
     void setBaseUrl(const std::string& baseUrl) { baseUrl_ = baseUrl; }
@@ -48,12 +48,12 @@ public:
     void setTimeout(int seconds) { timeoutSeconds_ = seconds; }
     int getTimeout() const { return timeoutSeconds_; }
 
-    // Synchronous HTTP methods
-    ApiResponse get(const std::string& endpoint);
-    ApiResponse post(const std::string& endpoint, const nlohmann::json& data);
-    ApiResponse put(const std::string& endpoint, const nlohmann::json& data);
-    ApiResponse patch(const std::string& endpoint, const nlohmann::json& data);
-    ApiResponse del(const std::string& endpoint);
+    // Synchronous HTTP methods (virtual for mocking in tests)
+    virtual ApiResponse get(const std::string& endpoint);
+    virtual ApiResponse post(const std::string& endpoint, const nlohmann::json& data);
+    virtual ApiResponse put(const std::string& endpoint, const nlohmann::json& data);
+    virtual ApiResponse patch(const std::string& endpoint, const nlohmann::json& data);
+    virtual ApiResponse del(const std::string& endpoint);
 
     // File upload
     ApiResponse uploadFile(const std::string& endpoint,
