@@ -298,11 +298,23 @@ SubmissionResult FormSubmissionService::getStudentProfile(const std::string& stu
 SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Student& student) {
     // Wrap in JSON:API format
     nlohmann::json attributes = student.toJson();
-    LOG_DEBUG("FormSubmissionService", "updateStudentProfile - student ID: " << student.getId());
+
+    // Log at INFO level so we can diagnose issues
+    LOG_INFO("FormSubmissionService", "updateStudentProfile - student ID: '" << student.getId() << "'");
+    LOG_INFO("FormSubmissionService", "updateStudentProfile - endpoint: /Student/" << student.getId());
     LOG_DEBUG("FormSubmissionService", "updateStudentProfile - curriculum_id in student: '"
               << student.getCurriculumId() << "'");
     LOG_DEBUG("FormSubmissionService", "updateStudentProfile - curriculum_id in payload: "
               << (attributes.contains("curriculum_id") ? attributes["curriculum_id"].dump() : "NOT PRESENT"));
+
+    // Check for empty student ID which would cause 404
+    if (student.getId().empty()) {
+        LOG_ERROR("FormSubmissionService", "updateStudentProfile - student ID is empty!");
+        SubmissionResult result;
+        result.success = false;
+        result.message = "Student ID is empty";
+        return result;
+    }
 
     nlohmann::json payload;
     payload["data"] = {
@@ -311,7 +323,7 @@ SubmissionResult FormSubmissionService::updateStudentProfile(const Models::Stude
         {"attributes", attributes}
     };
     ApiResponse response = apiClient_->patch("/Student/" + student.getId(), payload);
-    LOG_DEBUG("FormSubmissionService", "updateStudentProfile - response status: " << response.statusCode);
+    LOG_INFO("FormSubmissionService", "updateStudentProfile - response status: " << response.statusCode);
     if (!response.isSuccess()) {
         LOG_ERROR("FormSubmissionService", "updateStudentProfile - error: " << response.errorMessage);
     }
