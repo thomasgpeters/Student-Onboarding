@@ -340,6 +340,11 @@ void CurriculumSelector::updateCurriculumList() {
         cardFooter->setAttributeValue("style",
             "padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0;");
 
+        // Capture curriculum ID for use in button click handlers
+        // Using ID instead of full object avoids potential issues with
+        // Wt's signal/slot system when capturing complex objects by value
+        std::string curriculumId = curriculum.getId();
+
         // Info button
         auto infoBtn = cardFooter->addWidget(std::make_unique<Wt::WPushButton>());
         infoBtn->setText("i");
@@ -348,8 +353,13 @@ void CurriculumSelector::updateCurriculumList() {
             "width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; color: #64748b; "
             "border: 1px solid #e2e8f0; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;");
         infoBtn->setToolTip("View Syllabus");
-        infoBtn->clicked().connect([this, curriculum]() {
-            showSyllabusDialog(curriculum);
+        infoBtn->clicked().connect([this, curriculumId]() {
+            if (curriculumManager_) {
+                auto curr = curriculumManager_->getCurriculum(curriculumId);
+                if (!curr.getId().empty()) {
+                    showSyllabusDialog(curr);
+                }
+            }
         });
 
         // Select button
@@ -358,8 +368,13 @@ void CurriculumSelector::updateCurriculumList() {
         selectBtn->setAttributeValue("style",
             "padding: 0.5rem 1.25rem; background-color: #2563eb; color: white; border: none; "
             "border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer;");
-        selectBtn->clicked().connect([this, curriculum]() {
-            handleSelectProgram(curriculum);
+        selectBtn->clicked().connect([this, curriculumId]() {
+            if (curriculumManager_) {
+                auto curr = curriculumManager_->getCurriculum(curriculumId);
+                if (!curr.getId().empty()) {
+                    handleSelectProgram(curr);
+                }
+            }
         });
     }
 }
@@ -377,13 +392,25 @@ void CurriculumSelector::handleSearchChange() {
 }
 
 void CurriculumSelector::handleSelectProgram(const Models::Curriculum& curriculum) {
+    LOG_INFO("CurriculumSelector", "handleSelectProgram called for: " << curriculum.getName()
+             << " (ID: " << curriculum.getId() << ")");
+
     // Check if we're in vocational mode and this is a base program
-    if (isVocationalMode() && !curriculum.isEndorsement() && !curriculum.getCdlClass().empty()) {
+    bool vocational = isVocationalMode();
+    bool isEndorsement = curriculum.isEndorsement();
+    bool hasCdlClass = !curriculum.getCdlClass().empty();
+
+    LOG_DEBUG("CurriculumSelector", "vocationalMode=" << vocational
+              << ", isEndorsement=" << isEndorsement
+              << ", hasCdlClass=" << hasCdlClass);
+
+    if (vocational && !isEndorsement && hasCdlClass) {
         // Show endorsement selection for CDL programs
         LOG_INFO("CurriculumSelector", "Selected base program: " << curriculum.getName() << " (CDL Class " << curriculum.getCdlClass() << ")");
         showEndorsementSelection(curriculum);
     } else {
         // For accredited mode or non-CDL programs, proceed directly
+        LOG_INFO("CurriculumSelector", "Emitting curriculumSelected signal for: " << curriculum.getName());
         if (session_) {
             session_->setCurrentCurriculum(curriculum);
             session_->getStudent().setCurriculumId(curriculum.getId());
@@ -391,6 +418,7 @@ void CurriculumSelector::handleSelectProgram(const Models::Curriculum& curriculu
         }
         curriculumSelected_.emit(curriculum);
         selectionComplete_.emit(curriculum, std::vector<Models::Curriculum>());
+        LOG_INFO("CurriculumSelector", "Selection complete for: " << curriculum.getName());
     }
 }
 
