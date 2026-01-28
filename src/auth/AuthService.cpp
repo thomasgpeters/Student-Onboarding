@@ -208,9 +208,11 @@ UnifiedAuthResult AuthService::login(const std::string& email, const std::string
     }
 
     // Check account lockout
-    if (!result.user.getLockedUntil().empty()) {
-        // TODO: Parse timestamp and check if still locked
-        // For now, we'll skip this check
+    if (result.user.isLocked()) {
+        result.message = "Account is temporarily locked. Please try again later.";
+        result.errors.push_back(result.message);
+        recordLoginAttempt(email, false, result.message, ipAddress, userAgent);
+        return result;
     }
 
     // Note: Password verification would normally be done server-side
