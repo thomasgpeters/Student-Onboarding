@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include "session/StudentSession.h"
+#include "models/Student.h"
+#include "models/FormData.h"
+#include "models/Curriculum.h"
 #include "utils/TestUtils.h"
 
 using namespace StudentIntake;
@@ -26,9 +28,9 @@ protected:
 TEST_F(StudentSessionTest, DefaultConstructor_InitializesWithEmptyState) {
     Session::StudentSession session;
 
-    EXPECT_EQ(session.getStudentId(), "");
-    EXPECT_EQ(session.getCurrentFormIndex(), 0);
-    EXPECT_FALSE(session.isAuthenticated());
+    EXPECT_EQ(session.getStudent().getId(), "");
+    EXPECT_EQ(session.getCurrentFormId(), "");
+    EXPECT_FALSE(session.isLoggedIn());
 }
 
 // =============================================================================
@@ -40,7 +42,7 @@ TEST_F(StudentSessionTest, SetStudent_UpdatesStudentData) {
 
     session.setStudent(student_);
 
-    EXPECT_EQ(session.getStudentId(), student_.getId());
+    EXPECT_EQ(session.getStudent().getId(), student_.getId());
     EXPECT_EQ(session.getStudent().getEmail(), student_.getEmail());
 }
 
@@ -58,123 +60,97 @@ TEST_F(StudentSessionTest, GetStudent_ReturnsCurrentStudent) {
 // Authentication Tests
 // =============================================================================
 
-TEST_F(StudentSessionTest, SetAuthenticated_UpdatesAuthState) {
+TEST_F(StudentSessionTest, SetLoggedIn_UpdatesAuthState) {
     Session::StudentSession session;
 
-    EXPECT_FALSE(session.isAuthenticated());
+    EXPECT_FALSE(session.isLoggedIn());
 
-    session.setAuthenticated(true);
-    EXPECT_TRUE(session.isAuthenticated());
+    session.setLoggedIn(true);
+    EXPECT_TRUE(session.isLoggedIn());
 
-    session.setAuthenticated(false);
-    EXPECT_FALSE(session.isAuthenticated());
+    session.setLoggedIn(false);
+    EXPECT_FALSE(session.isLoggedIn());
+}
+
+TEST_F(StudentSessionTest, SetAuthToken_StoresToken) {
+    Session::StudentSession session;
+
+    session.setAuthToken("test-token-123");
+    EXPECT_EQ(session.getAuthToken(), "test-token-123");
 }
 
 // =============================================================================
 // Form Navigation Tests
 // =============================================================================
 
-TEST_F(StudentSessionTest, SetCurrentFormIndex_UpdatesIndex) {
+TEST_F(StudentSessionTest, SetCurrentFormId_UpdatesFormId) {
     Session::StudentSession session;
 
-    session.setCurrentFormIndex(0);
-    EXPECT_EQ(session.getCurrentFormIndex(), 0);
+    session.setCurrentFormId("personal_info");
+    EXPECT_EQ(session.getCurrentFormId(), "personal_info");
 
-    session.setCurrentFormIndex(3);
-    EXPECT_EQ(session.getCurrentFormIndex(), 3);
-
-    session.setCurrentFormIndex(6);
-    EXPECT_EQ(session.getCurrentFormIndex(), 6);
-}
-
-TEST_F(StudentSessionTest, NavigateToNextForm_IncrementsIndex) {
-    Session::StudentSession session;
-
-    session.setCurrentFormIndex(0);
-    session.navigateToNextForm();
-
-    EXPECT_EQ(session.getCurrentFormIndex(), 1);
-}
-
-TEST_F(StudentSessionTest, NavigateToPreviousForm_DecrementsIndex) {
-    Session::StudentSession session;
-
-    session.setCurrentFormIndex(3);
-    session.navigateToPreviousForm();
-
-    EXPECT_EQ(session.getCurrentFormIndex(), 2);
-}
-
-TEST_F(StudentSessionTest, NavigateToPreviousForm_DoesNotGoBelowZero) {
-    Session::StudentSession session;
-
-    session.setCurrentFormIndex(0);
-    session.navigateToPreviousForm();
-
-    EXPECT_EQ(session.getCurrentFormIndex(), 0);
+    session.setCurrentFormId("emergency_contact");
+    EXPECT_EQ(session.getCurrentFormId(), "emergency_contact");
 }
 
 // =============================================================================
 // Curriculum Tests
 // =============================================================================
 
-TEST_F(StudentSessionTest, SetCurriculumId_UpdatesCurriculum) {
+TEST_F(StudentSessionTest, SetCurrentCurriculum_UpdatesCurriculum) {
     Session::StudentSession session;
 
-    session.setCurriculumId("10");
-    EXPECT_EQ(session.getCurriculumId(), "10");
+    Models::Curriculum curriculum;
+    curriculum.setId("10");
+    curriculum.setName("Test Program");
+
+    session.setCurrentCurriculum(curriculum);
+
+    EXPECT_EQ(session.getCurrentCurriculum().getId(), "10");
+    EXPECT_EQ(session.getCurrentCurriculum().getName(), "Test Program");
 }
 
-TEST_F(StudentSessionTest, Curriculum_CanBeChanged) {
+TEST_F(StudentSessionTest, HasCurriculumSelected_ReturnsTrueWhenSet) {
     Session::StudentSession session;
 
-    session.setCurriculumId("10");
-    EXPECT_EQ(session.getCurriculumId(), "10");
+    EXPECT_FALSE(session.hasCurriculumSelected());
 
-    session.setCurriculumId("20");
-    EXPECT_EQ(session.getCurriculumId(), "20");
+    Models::Curriculum curriculum;
+    curriculum.setId("10");
+    session.setCurrentCurriculum(curriculum);
+
+    EXPECT_TRUE(session.hasCurriculumSelected());
 }
 
 // =============================================================================
 // Endorsement Tests
 // =============================================================================
 
-TEST_F(StudentSessionTest, AddEndorsement_AddsToList) {
+TEST_F(StudentSessionTest, AddSelectedEndorsement_AddsToList) {
     Session::StudentSession session;
 
-    session.addEndorsementId("100");
-    EXPECT_TRUE(session.hasEndorsement("100"));
+    Models::Curriculum endorsement;
+    endorsement.setId("100");
+    endorsement.setName("Endorsement 1");
+
+    session.addSelectedEndorsement(endorsement);
+
+    EXPECT_EQ(session.getSelectedEndorsements().size(), 1);
+    EXPECT_EQ(session.getSelectedEndorsements()[0].getId(), "100");
 }
 
-TEST_F(StudentSessionTest, AddEndorsement_DoesNotDuplicate) {
+TEST_F(StudentSessionTest, ClearSelectedEndorsements_RemovesAll) {
     Session::StudentSession session;
 
-    session.addEndorsementId("100");
-    session.addEndorsementId("100");
+    Models::Curriculum e1, e2;
+    e1.setId("100");
+    e2.setId("200");
 
-    EXPECT_EQ(session.getEndorsementIds().size(), 1);
-}
+    session.addSelectedEndorsement(e1);
+    session.addSelectedEndorsement(e2);
+    session.clearSelectedEndorsements();
 
-TEST_F(StudentSessionTest, RemoveEndorsement_RemovesFromList) {
-    Session::StudentSession session;
-
-    session.addEndorsementId("100");
-    session.addEndorsementId("200");
-    session.removeEndorsementId("100");
-
-    EXPECT_FALSE(session.hasEndorsement("100"));
-    EXPECT_TRUE(session.hasEndorsement("200"));
-}
-
-TEST_F(StudentSessionTest, ClearEndorsements_RemovesAll) {
-    Session::StudentSession session;
-
-    session.addEndorsementId("100");
-    session.addEndorsementId("200");
-    session.addEndorsementId("300");
-    session.clearEndorsements();
-
-    EXPECT_TRUE(session.getEndorsementIds().empty());
+    EXPECT_TRUE(session.getSelectedEndorsements().empty());
 }
 
 // =============================================================================
@@ -184,10 +160,9 @@ TEST_F(StudentSessionTest, ClearEndorsements_RemovesAll) {
 TEST_F(StudentSessionTest, SetFormData_StoresData) {
     Session::StudentSession session;
 
-    nlohmann::json formData = {
-        {"first_name", "John"},
-        {"last_name", "Doe"}
-    };
+    Models::FormData formData;
+    formData.setFormId("personal_info");
+    formData.setField("first_name", "John");
 
     session.setFormData("personal_info", formData);
 
@@ -197,16 +172,15 @@ TEST_F(StudentSessionTest, SetFormData_StoresData) {
 TEST_F(StudentSessionTest, GetFormData_RetrievesStoredData) {
     Session::StudentSession session;
 
-    nlohmann::json formData = {
-        {"first_name", "John"},
-        {"last_name", "Doe"}
-    };
+    Models::FormData formData;
+    formData.setFormId("personal_info");
+    formData.setField("first_name", "John");
+    formData.setField("last_name", "Doe");
 
     session.setFormData("personal_info", formData);
     auto retrieved = session.getFormData("personal_info");
 
-    EXPECT_EQ(retrieved["first_name"], "John");
-    EXPECT_EQ(retrieved["last_name"], "Doe");
+    EXPECT_EQ(retrieved.getFormId(), "personal_info");
 }
 
 TEST_F(StudentSessionTest, HasFormData_ReturnsFalseForMissingData) {
@@ -218,8 +192,12 @@ TEST_F(StudentSessionTest, HasFormData_ReturnsFalseForMissingData) {
 TEST_F(StudentSessionTest, ClearFormData_RemovesSpecificForm) {
     Session::StudentSession session;
 
-    session.setFormData("personal_info", {{"key", "value1"}});
-    session.setFormData("emergency_contact", {{"key", "value2"}});
+    Models::FormData fd1, fd2;
+    fd1.setFormId("personal_info");
+    fd2.setFormId("emergency_contact");
+
+    session.setFormData("personal_info", fd1);
+    session.setFormData("emergency_contact", fd2);
 
     session.clearFormData("personal_info");
 
@@ -230,15 +208,53 @@ TEST_F(StudentSessionTest, ClearFormData_RemovesSpecificForm) {
 TEST_F(StudentSessionTest, ClearAllFormData_RemovesAllForms) {
     Session::StudentSession session;
 
-    session.setFormData("personal_info", {{"key", "value1"}});
-    session.setFormData("emergency_contact", {{"key", "value2"}});
-    session.setFormData("academic_history", {{"key", "value3"}});
+    Models::FormData fd1, fd2, fd3;
+    fd1.setFormId("personal_info");
+    fd2.setFormId("emergency_contact");
+    fd3.setFormId("academic_history");
+
+    session.setFormData("personal_info", fd1);
+    session.setFormData("emergency_contact", fd2);
+    session.setFormData("academic_history", fd3);
 
     session.clearAllFormData();
 
     EXPECT_FALSE(session.hasFormData("personal_info"));
     EXPECT_FALSE(session.hasFormData("emergency_contact"));
     EXPECT_FALSE(session.hasFormData("academic_history"));
+}
+
+// =============================================================================
+// Required Forms Tests
+// =============================================================================
+
+TEST_F(StudentSessionTest, SetRequiredFormIds_StoresFormIds) {
+    Session::StudentSession session;
+
+    std::vector<std::string> formIds = {"personal_info", "emergency_contact", "consent"};
+    session.setRequiredFormIds(formIds);
+
+    EXPECT_EQ(session.getRequiredFormIds().size(), 3);
+}
+
+TEST_F(StudentSessionTest, AddRequiredFormId_AddsToList) {
+    Session::StudentSession session;
+
+    session.addRequiredFormId("personal_info");
+    session.addRequiredFormId("emergency_contact");
+
+    EXPECT_EQ(session.getRequiredFormIds().size(), 2);
+}
+
+TEST_F(StudentSessionTest, IsFormRequired_ReturnsCorrectValue) {
+    Session::StudentSession session;
+
+    session.addRequiredFormId("personal_info");
+    session.addRequiredFormId("consent");
+
+    EXPECT_TRUE(session.isFormRequired("personal_info"));
+    EXPECT_TRUE(session.isFormRequired("consent"));
+    EXPECT_FALSE(session.isFormRequired("optional_form"));
 }
 
 // =============================================================================
@@ -250,151 +266,87 @@ TEST_F(StudentSessionTest, Reset_ClearsAllState) {
 
     // Set up some state
     session.setStudent(student_);
-    session.setAuthenticated(true);
-    session.setCurrentFormIndex(5);
-    session.setCurriculumId("10");
-    session.addEndorsementId("100");
-    session.setFormData("personal_info", {{"key", "value"}});
+    session.setLoggedIn(true);
+    session.setCurrentFormId("personal_info");
+
+    Models::Curriculum curriculum;
+    curriculum.setId("10");
+    session.setCurrentCurriculum(curriculum);
+
+    Models::FormData formData;
+    formData.setFormId("personal_info");
+    session.setFormData("personal_info", formData);
 
     // Reset
     session.reset();
 
-    // Verify all state is cleared
-    EXPECT_EQ(session.getStudentId(), "");
-    EXPECT_FALSE(session.isAuthenticated());
-    EXPECT_EQ(session.getCurrentFormIndex(), 0);
-    EXPECT_EQ(session.getCurriculumId(), "");
-    EXPECT_TRUE(session.getEndorsementIds().empty());
+    // Verify state is cleared
+    EXPECT_EQ(session.getStudent().getId(), "");
+    EXPECT_FALSE(session.isLoggedIn());
+    EXPECT_EQ(session.getCurrentFormId(), "");
     EXPECT_FALSE(session.hasFormData("personal_info"));
 }
 
-// =============================================================================
-// Form Completion Tracking Tests
-// =============================================================================
-
-TEST_F(StudentSessionTest, MarkFormCompleted_TracksCompletion) {
+TEST_F(StudentSessionTest, Logout_ClearsAuthState) {
     Session::StudentSession session;
-    session.setStudent(student_);
 
-    session.markFormCompleted("personal_info");
+    session.setLoggedIn(true);
+    session.setAuthToken("test-token");
 
-    EXPECT_TRUE(session.isFormCompleted("personal_info"));
-}
+    session.logout();
 
-TEST_F(StudentSessionTest, IsFormCompleted_ReturnsFalseForIncomplete) {
-    Session::StudentSession session;
-    session.setStudent(student_);
-
-    EXPECT_FALSE(session.isFormCompleted("personal_info"));
-}
-
-TEST_F(StudentSessionTest, GetCompletedForms_ReturnsAllCompleted) {
-    Session::StudentSession session;
-    session.setStudent(student_);
-
-    session.markFormCompleted("personal_info");
-    session.markFormCompleted("emergency_contact");
-    session.markFormCompleted("consent");
-
-    auto completed = session.getCompletedForms();
-
-    EXPECT_EQ(completed.size(), 3);
+    EXPECT_FALSE(session.isLoggedIn());
 }
 
 // =============================================================================
-// Progress Calculation Tests
+// Progress Tracking Tests
 // =============================================================================
 
-TEST_F(StudentSessionTest, GetProgress_ReturnsZeroWhenNoFormsCompleted) {
+TEST_F(StudentSessionTest, GetProgressPercentage_CalculatesCorrectly) {
     Session::StudentSession session;
-    session.setStudent(student_);
-    session.setTotalForms(7);
 
-    EXPECT_EQ(session.getProgress(), 0);
-}
+    // Set required forms
+    std::vector<std::string> required = {"form1", "form2", "form3", "form4"};
+    session.setRequiredFormIds(required);
 
-TEST_F(StudentSessionTest, GetProgress_CalculatesCorrectPercentage) {
-    Session::StudentSession session;
-    session.setStudent(student_);
-    session.setTotalForms(4);
-
-    session.markFormCompleted("personal_info");
-    session.markFormCompleted("emergency_contact");
+    // Complete half of them by adding form data
+    Models::FormData fd1, fd2;
+    fd1.setFormId("form1");
+    fd2.setFormId("form2");
+    session.setFormData("form1", fd1);
+    session.setFormData("form2", fd2);
 
     // 2 out of 4 = 50%
-    EXPECT_EQ(session.getProgress(), 50);
+    EXPECT_EQ(session.getCompletedFormsCount(), 2);
+    EXPECT_EQ(session.getTotalRequiredFormsCount(), 4);
 }
 
-TEST_F(StudentSessionTest, GetProgress_Returns100WhenAllCompleted) {
-    Session::StudentSession session;
-    session.setStudent(student_);
-    session.setTotalForms(3);
-
-    session.markFormCompleted("form1");
-    session.markFormCompleted("form2");
-    session.markFormCompleted("form3");
-
-    EXPECT_EQ(session.getProgress(), 100);
-}
-
-// =============================================================================
-// Validation State Tests
-// =============================================================================
-
-TEST_F(StudentSessionTest, SetValidationErrors_StoresErrors) {
+TEST_F(StudentSessionTest, IsIntakeComplete_ReturnsTrueWhenAllFormsComplete) {
     Session::StudentSession session;
 
-    std::vector<std::string> errors = {
-        "First name is required",
-        "Email is invalid"
-    };
+    std::vector<std::string> required = {"form1", "form2"};
+    session.setRequiredFormIds(required);
 
-    session.setValidationErrors("personal_info", errors);
+    // Initially not complete
+    EXPECT_FALSE(session.isIntakeComplete());
 
-    EXPECT_TRUE(session.hasValidationErrors("personal_info"));
-}
+    // Complete all forms
+    Models::FormData fd1, fd2;
+    fd1.setFormId("form1");
+    fd2.setFormId("form2");
+    session.setFormData("form1", fd1);
+    session.setFormData("form2", fd2);
 
-TEST_F(StudentSessionTest, GetValidationErrors_RetrievesErrors) {
-    Session::StudentSession session;
-
-    std::vector<std::string> errors = {"Error 1", "Error 2"};
-    session.setValidationErrors("personal_info", errors);
-
-    auto retrieved = session.getValidationErrors("personal_info");
-
-    EXPECT_EQ(retrieved.size(), 2);
-    EXPECT_EQ(retrieved[0], "Error 1");
-}
-
-TEST_F(StudentSessionTest, ClearValidationErrors_RemovesErrors) {
-    Session::StudentSession session;
-
-    session.setValidationErrors("personal_info", {"Error"});
-    session.clearValidationErrors("personal_info");
-
-    EXPECT_FALSE(session.hasValidationErrors("personal_info"));
+    EXPECT_TRUE(session.isIntakeComplete());
 }
 
 // =============================================================================
-// Mode Tests
+// Session ID Tests
 // =============================================================================
 
-TEST_F(StudentSessionTest, SetMode_UpdatesMode) {
+TEST_F(StudentSessionTest, SetSessionId_StoresId) {
     Session::StudentSession session;
 
-    session.setMode("vocational");
-    EXPECT_EQ(session.getMode(), "vocational");
-
-    session.setMode("accredited");
-    EXPECT_EQ(session.getMode(), "accredited");
-}
-
-TEST_F(StudentSessionTest, IsVocationalMode_ReturnsCorrectValue) {
-    Session::StudentSession session;
-
-    session.setMode("vocational");
-    EXPECT_TRUE(session.isVocationalMode());
-
-    session.setMode("accredited");
-    EXPECT_FALSE(session.isVocationalMode());
+    session.setSessionId("session-abc-123");
+    EXPECT_EQ(session.getSessionId(), "session-abc-123");
 }

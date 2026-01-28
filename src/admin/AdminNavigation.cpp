@@ -84,6 +84,15 @@ void AdminNavigation::updateUserDisplay() {
             case Models::AdminRole::Administrator:
                 roleDisplay = "Administrator";
                 break;
+            case Models::AdminRole::Manager:
+                roleDisplay = "Manager";
+                break;
+            case Models::AdminRole::Staff:
+                roleDisplay = "Staff";
+                break;
+            case Models::AdminRole::Examiner:
+                roleDisplay = "Examiner";
+                break;
             case Models::AdminRole::Instructor:
                 roleDisplay = "Instructor";
                 break;
