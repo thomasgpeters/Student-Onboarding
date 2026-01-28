@@ -44,6 +44,83 @@ void StudentIntakeApp::initialize() {
     setupServices();
     loadFormConfiguration();
     setupUI();
+
+    // Check for session token in URL (from unified login redirect)
+    const std::string* tokenParam = environment().getParameter("token");
+    const std::string* userIdParam = environment().getParameter("user_id");
+
+    if (tokenParam && !tokenParam->empty() && userIdParam && !userIdParam->empty()) {
+        LOG_INFO("StudentIntakeApp", "Found session token in URL, attempting auto-login...");
+
+        try {
+            int userId = std::stoi(*userIdParam);
+
+            // Get user info using the session token
+            auto user = authService_->getUserFromSession(*tokenParam);
+
+            // If user ID is 0, the session lookup failed - try fetching user directly
+            if (user.getId() == 0) {
+                // Fetch user by ID from AppUser table
+                std::string endpoint = "/AppUser/" + *userIdParam;
+                auto response = apiClient_->get(endpoint);
+                if (response.success) {
+                    auto json = response.getJson();
+                    if (json.contains("data")) {
+                        user = Models::User::fromJson(json["data"]);
+                        // Get roles for this user - pass email to enable role lookup
+                        user.setRoles(authService_->getUserRoles(userId, user.getEmail()));
+                    }
+                }
+            }
+
+            if (user.getId() > 0) {
+                LOG_INFO("StudentIntakeApp", "Auto-login successful for user: " << user.getEmail());
+
+                // Store the authenticated user
+                currentUser_ = user;
+
+                // Update session with user data
+                if (session_) {
+                    Models::Student student;
+                    student.setId(std::to_string(user.getId()));
+                    student.setEmail(user.getEmail());
+                    student.setFirstName(user.getFirstName());
+                    student.setLastName(user.getLastName());
+                    session_->setStudent(student);
+                    session_->setLoggedIn(true);
+                }
+
+                // Update navigation
+                navigationWidget_->refresh();
+
+                // Show role navigation if user has multiple roles
+                if (user.hasMultipleRoles()) {
+                    roleNavigationWidget_->setUser(user);
+                    roleNavigationWidget_->show();
+                } else {
+                    roleNavigationWidget_->hide();
+                }
+
+                // Go to appropriate state based on session
+                if (session_->hasCurriculumSelected()) {
+                    if (session_->isIntakeComplete()) {
+                        setState(AppState::Completion);
+                    } else {
+                        setState(AppState::Dashboard);
+                    }
+                } else {
+                    setState(AppState::CurriculumSelection);
+                }
+                return;
+            } else {
+                LOG_WARN("StudentIntakeApp", "User not found from token");
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR("StudentIntakeApp", "Error during auto-login: " << e.what());
+        }
+    }
+
+    // No valid session token, show login
     setState(AppState::Login);
 }
 
