@@ -79,13 +79,56 @@ void StudentIntakeApp::initialize() {
                 // Store the authenticated user
                 currentUser_ = user;
 
-                // Update session with user data
+                // Look up or create Student record for this user
+                Models::Student student;
+                bool studentFound = false;
+
+                // First, try to find existing Student record by user_id
+                std::string studentLookupEndpoint = "/Student?filter[user_id]=" + std::to_string(userId);
+                LOG_INFO("StudentIntakeApp", "Looking up Student record: " << studentLookupEndpoint);
+                auto studentResponse = apiClient_->get(studentLookupEndpoint);
+                if (studentResponse.success) {
+                    auto json = studentResponse.getJson();
+                    if (json.contains("data") && json["data"].is_array() && !json["data"].empty()) {
+                        // Student record exists - use it
+                        student = Models::Student::fromJson(json["data"][0]);
+                        studentFound = true;
+                        LOG_INFO("StudentIntakeApp", "Found existing Student record with ID: " << student.getId());
+                    }
+                }
+
+                // If no Student record found, create one
+                if (!studentFound) {
+                    LOG_INFO("StudentIntakeApp", "No Student record found, creating one for user_id: " << userId);
+                    nlohmann::json payload;
+                    payload["data"]["type"] = "Student";
+                    payload["data"]["attributes"]["user_id"] = userId;
+                    payload["data"]["attributes"]["first_name"] = user.getFirstName();
+                    payload["data"]["attributes"]["last_name"] = user.getLastName();
+                    payload["data"]["attributes"]["email"] = user.getEmail();
+                    payload["data"]["attributes"]["is_active"] = true;
+                    payload["data"]["attributes"]["enrollment_status"] = "enrolled";
+
+                    auto createResponse = apiClient_->post("/Student", payload);
+                    if (createResponse.success) {
+                        auto json = createResponse.getJson();
+                        if (json.contains("data")) {
+                            student = Models::Student::fromJson(json["data"]);
+                            studentFound = true;
+                            LOG_INFO("StudentIntakeApp", "Created new Student record with ID: " << student.getId());
+                        }
+                    } else {
+                        LOG_ERROR("StudentIntakeApp", "Failed to create Student record: " << createResponse.errorMessage);
+                        // Fall back to using user_id as student_id (may cause issues)
+                        student.setId(std::to_string(userId));
+                        student.setEmail(user.getEmail());
+                        student.setFirstName(user.getFirstName());
+                        student.setLastName(user.getLastName());
+                    }
+                }
+
+                // Update session with student data
                 if (session_) {
-                    Models::Student student;
-                    student.setId(std::to_string(user.getId()));
-                    student.setEmail(user.getEmail());
-                    student.setFirstName(user.getFirstName());
-                    student.setLastName(user.getLastName());
                     session_->setStudent(student);
                     session_->setLoggedIn(true);
                 }
