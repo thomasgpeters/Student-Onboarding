@@ -80,7 +80,10 @@ void AdminSidebar::refresh() {
     bool isSuperAdmin = user.canManageAdmins();  // SuperAdmin only
     bool isAdminOrHigher = (user.getRole() == Models::AdminRole::Administrator ||
                             user.getRole() == Models::AdminRole::SuperAdmin);
-    bool isInstructor = (user.getRole() == Models::AdminRole::Instructor);
+    bool isManagerOrHigher = isAdminOrHigher || (user.getRole() == Models::AdminRole::Manager);
+    bool isStaffLevel = (user.getRole() == Models::AdminRole::Staff ||
+                         user.getRole() == Models::AdminRole::Examiner ||
+                         user.getRole() == Models::AdminRole::Instructor);
 
     for (auto& item : items_) {
         bool visible = true;
@@ -97,8 +100,8 @@ void AdminSidebar::refresh() {
                 break;
 
             case AdminSection::Students:
-                // Only instructors see Students (admins use Users instead)
-                visible = isInstructor && !isAdminOrHigher;
+                // Staff-level roles see Students (admins use Users instead)
+                visible = isStaffLevel && !isAdminOrHigher;
                 break;
 
             case AdminSection::Forms:
