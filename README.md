@@ -21,6 +21,28 @@
   ╚═══════════════════════════════════════════════════════════════╝
 ```
 
+# Student Onboarding Application
+
+A modular C++ web application built with the Wt (Witty) Web Toolkit for processing student onboarding forms during the enrollment process.
+
+**Developed by Imagery Business Systems LLC**
+
+## Features
+
+- **Multi-user Support**: Multiple students can simultaneously process their onboarding forms
+- **Modular Form Design**: Each form type is implemented as a separate, reusable module
+- **Configurable Required Forms**: Forms required for each student are determined based on:
+  - Student type (undergraduate, graduate, doctoral, certificate)
+  - Selected curriculum/program
+  - Special status (international, transfer, veteran, financial aid)
+- **API Integration**: Sends form data to backend via RESTful API (designed for ApiLogicServer)
+- **Session Management**: Tracks user progress across multiple forms
+- **Progress Tracking**: Visual progress indicator showing completion status
+- **Post-Onboarding Forms**: Support for additional forms after completing initial onboarding
+- **Completed Forms View**: Students can review and edit previously submitted forms
+- **Returning Student Support**: Form data pre-fills automatically when students log back in
+- **Completion Tracking**: System remembers which forms students have completed across sessions
+
 ## Documentation Index
 
 | Document | Description |
@@ -44,28 +66,6 @@
 | [docs/DATA_MODEL_CHANGES.md](docs/DATA_MODEL_CHANGES.md) | Schema change tracking |
 
 ---
-
-# Student Onboarding Application
-
-A modular C++ web application built with the Wt (Witty) Web Toolkit for processing student onboarding forms during the enrollment process.
-
-**Developed by Imagery Business Systems LLC**
-
-## Features
-
-- **Multi-user Support**: Multiple students can simultaneously process their onboarding forms
-- **Modular Form Design**: Each form type is implemented as a separate, reusable module
-- **Configurable Required Forms**: Forms required for each student are determined based on:
-  - Student type (undergraduate, graduate, doctoral, certificate)
-  - Selected curriculum/program
-  - Special status (international, transfer, veteran, financial aid)
-- **API Integration**: Sends form data to backend via RESTful API (designed for ApiLogicServer)
-- **Session Management**: Tracks user progress across multiple forms
-- **Progress Tracking**: Visual progress indicator showing completion status
-- **Post-Onboarding Forms**: Support for additional forms after completing initial onboarding
-- **Completed Forms View**: Students can review and edit previously submitted forms
-- **Returning Student Support**: Form data pre-fills automatically when students log back in
-- **Completion Tracking**: System remembers which forms students have completed across sessions
 
 ## Application Workflow
 
