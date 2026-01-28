@@ -344,6 +344,7 @@ void CurriculumSelector::updateCurriculumList() {
         // Using ID instead of full object avoids potential issues with
         // Wt's signal/slot system when capturing complex objects by value
         std::string curriculumId = curriculum.getId();
+        LOG_DEBUG("CurriculumSelector", "Creating buttons for curriculum ID: " << curriculumId);
 
         // Info button
         auto infoBtn = cardFooter->addWidget(std::make_unique<Wt::WPushButton>());
@@ -354,11 +355,16 @@ void CurriculumSelector::updateCurriculumList() {
             "border: 1px solid #e2e8f0; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;");
         infoBtn->setToolTip("View Syllabus");
         infoBtn->clicked().connect([this, curriculumId]() {
+            LOG_INFO("CurriculumSelector", "Info button clicked for curriculum ID: " << curriculumId);
             if (curriculumManager_) {
                 auto curr = curriculumManager_->getCurriculum(curriculumId);
                 if (!curr.getId().empty()) {
                     showSyllabusDialog(curr);
+                } else {
+                    LOG_WARN("CurriculumSelector", "Info button - curriculum lookup returned empty for ID: " << curriculumId);
                 }
+            } else {
+                LOG_ERROR("CurriculumSelector", "Info button - curriculumManager_ is null!");
             }
         });
 
@@ -369,11 +375,18 @@ void CurriculumSelector::updateCurriculumList() {
             "padding: 0.5rem 1.25rem; background-color: #2563eb; color: white; border: none; "
             "border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer;");
         selectBtn->clicked().connect([this, curriculumId]() {
+            LOG_INFO("CurriculumSelector", "Select button clicked for curriculum ID: " << curriculumId);
             if (curriculumManager_) {
                 auto curr = curriculumManager_->getCurriculum(curriculumId);
+                LOG_INFO("CurriculumSelector", "Curriculum lookup result - ID: '" << curr.getId()
+                         << "', Name: '" << curr.getName() << "'");
                 if (!curr.getId().empty()) {
                     handleSelectProgram(curr);
+                } else {
+                    LOG_WARN("CurriculumSelector", "Select button - curriculum lookup returned empty for ID: " << curriculumId);
                 }
+            } else {
+                LOG_ERROR("CurriculumSelector", "Select button - curriculumManager_ is null!");
             }
         });
     }
