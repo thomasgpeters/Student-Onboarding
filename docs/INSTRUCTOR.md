@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Instructor Portal                   ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Instructor Feature
 
 The Instructor feature provides a comprehensive portal for CDL training instructors and examiners to manage students, schedule sessions, record skill validations, and track student progress.

@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Architecture Analysis               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Student Onboarding - Architecture Analysis
 
 > Generated: 2026-01-12

@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Data Model Changes                  ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Data Model Changes
 
 This document tracks changes to the database schema and provides migration instructions for the Student Onboarding application.

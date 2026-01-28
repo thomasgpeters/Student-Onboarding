@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Workflow Documentation              ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Student Onboarding Workflow
 
 This document describes the student onboarding workflow for the Student Onboarding application.

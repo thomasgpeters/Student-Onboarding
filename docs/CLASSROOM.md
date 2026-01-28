@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Classroom Portal                    ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Classroom Feature
 
 The Classroom feature provides a complete online learning environment for students enrolled in courses that have an online component, such as the ELD (Entry Level Driver) prep-course for CDL training.

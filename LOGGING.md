@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Logging Framework                   ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Logging Framework
 
 The Student Onboarding application includes a centralized logging framework that provides configurable log levels for controlling output verbosity.

@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Curriculum Seeding Guide            ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Curriculum Data Seeding Guide
 
 This guide explains how to manage curriculum data in the Student Onboarding system, including how to seed, flush, and refresh curriculum data for different deployment scenarios.
