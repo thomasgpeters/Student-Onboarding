@@ -736,11 +736,22 @@ void StudentIntakeApp::handleRoleSwitch(Models::UserRole role) {
     // Route to appropriate portal based on new role
     switch (role) {
         case Models::UserRole::Admin:
-            LOG_INFO("StudentIntakeApp", "Redirecting to /administration");
+            LOG_INFO("StudentIntakeApp", "Redirecting admin to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
+            return;
+        case Models::UserRole::Manager:
+            LOG_INFO("StudentIntakeApp", "Redirecting manager to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
+            return;
+        case Models::UserRole::Staff:
+            LOG_INFO("StudentIntakeApp", "Redirecting staff to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
+            return;
+        case Models::UserRole::Examiner:
+            LOG_INFO("StudentIntakeApp", "Redirecting examiner to /administration");
             redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
             return;
         case Models::UserRole::Instructor:
-            // Instructors use the shared admin portal
             LOG_INFO("StudentIntakeApp", "Redirecting instructor to /administration");
             redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(userId));
             return;
@@ -771,8 +782,26 @@ void StudentIntakeApp::routeUserByRole(const Models::User& user) {
             redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
             return;
 
+        case Models::UserRole::Manager:
+            // Redirect managers to Admin Portal
+            LOG_INFO("StudentIntakeApp", "Redirecting manager to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
+            return;
+
+        case Models::UserRole::Staff:
+            // Redirect staff to Admin Portal
+            LOG_INFO("StudentIntakeApp", "Redirecting staff to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
+            return;
+
+        case Models::UserRole::Examiner:
+            // Redirect examiners to Admin Portal
+            LOG_INFO("StudentIntakeApp", "Redirecting examiner to /administration");
+            redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
+            return;
+
         case Models::UserRole::Instructor:
-            // Redirect instructors to Admin Portal (shared with admins)
+            // Redirect instructors to Admin Portal
             LOG_INFO("StudentIntakeApp", "Redirecting instructor to /administration");
             redirect("/administration?token=" + sessionToken + "&user_id=" + std::to_string(user.getId()));
             return;

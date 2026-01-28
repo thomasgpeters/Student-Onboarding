@@ -15,6 +15,9 @@ namespace Models {
 enum class UserRole {
     Student,        // Can access student intake portal
     Instructor,     // Can view students in assigned programs
+    Examiner,       // Can view and grade student assessments
+    Staff,          // General staff access
+    Manager,        // Can manage staff and view reports
     Admin,          // Can manage students and curriculum
     SuperAdmin      // Full system access, can manage other admins
 };

@@ -22,8 +22,11 @@ User::User()
 }
 
 UserRole User::getPrimaryRole() const {
-    // Priority: Admin > Instructor > Student
+    // Priority: Admin > Manager > Staff > Examiner > Instructor > Student
     if (hasRole(UserRole::Admin)) return UserRole::Admin;
+    if (hasRole(UserRole::Manager)) return UserRole::Manager;
+    if (hasRole(UserRole::Staff)) return UserRole::Staff;
+    if (hasRole(UserRole::Examiner)) return UserRole::Examiner;
     if (hasRole(UserRole::Instructor)) return UserRole::Instructor;
     if (hasRole(UserRole::Student)) return UserRole::Student;
 
@@ -86,7 +89,10 @@ std::string User::getHomeRoute() const {
     UserRole primary = getPrimaryRole();
     switch (primary) {
         case UserRole::Admin: return "/administration";
-        case UserRole::Instructor: return "/instructor";
+        case UserRole::Manager: return "/administration";
+        case UserRole::Staff: return "/administration";
+        case UserRole::Examiner: return "/administration";
+        case UserRole::Instructor: return "/administration";
         case UserRole::Student: return "/student";
     }
     return "/student";
@@ -94,6 +100,9 @@ std::string User::getHomeRoute() const {
 
 UserRole User::stringToRole(const std::string& role) {
     if (role == "admin") return UserRole::Admin;
+    if (role == "manager") return UserRole::Manager;
+    if (role == "staff") return UserRole::Staff;
+    if (role == "examiner") return UserRole::Examiner;
     if (role == "instructor") return UserRole::Instructor;
     return UserRole::Student;
 }
@@ -101,6 +110,9 @@ UserRole User::stringToRole(const std::string& role) {
 std::string User::roleToString(UserRole role) {
     switch (role) {
         case UserRole::Admin: return "admin";
+        case UserRole::Manager: return "manager";
+        case UserRole::Staff: return "staff";
+        case UserRole::Examiner: return "examiner";
         case UserRole::Instructor: return "instructor";
         case UserRole::Student: return "student";
     }
@@ -110,6 +122,9 @@ std::string User::roleToString(UserRole role) {
 std::string User::roleToDisplayString(UserRole role) {
     switch (role) {
         case UserRole::Admin: return "Administrator";
+        case UserRole::Manager: return "Manager";
+        case UserRole::Staff: return "Staff";
+        case UserRole::Examiner: return "Examiner";
         case UserRole::Instructor: return "Instructor";
         case UserRole::Student: return "Student";
     }

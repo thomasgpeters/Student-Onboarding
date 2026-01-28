@@ -31,6 +31,12 @@ std::string AdminUser::getRoleString() const {
             return "super_admin";
         case AdminRole::Administrator:
             return "admin";
+        case AdminRole::Manager:
+            return "manager";
+        case AdminRole::Staff:
+            return "staff";
+        case AdminRole::Examiner:
+            return "examiner";
         case AdminRole::Instructor:
         default:
             return "instructor";
@@ -42,7 +48,13 @@ void AdminUser::setRoleFromString(const std::string& roleStr) {
         role_ = AdminRole::SuperAdmin;
     } else if (roleStr == "admin" || roleStr == "administrator") {
         role_ = AdminRole::Administrator;
-    } else if (roleStr == "instructor" || roleStr == "staff") {
+    } else if (roleStr == "manager") {
+        role_ = AdminRole::Manager;
+    } else if (roleStr == "staff") {
+        role_ = AdminRole::Staff;
+    } else if (roleStr == "examiner") {
+        role_ = AdminRole::Examiner;
+    } else if (roleStr == "instructor") {
         role_ = AdminRole::Instructor;
     } else {
         role_ = AdminRole::Instructor;

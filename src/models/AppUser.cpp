@@ -18,6 +18,9 @@ std::string RoleAssignment::getRoleString() const {
 UserRole RoleAssignment::roleFromString(const std::string& roleStr) {
     if (roleStr == "student") return UserRole::Student;
     if (roleStr == "instructor") return UserRole::Instructor;
+    if (roleStr == "examiner") return UserRole::Examiner;
+    if (roleStr == "staff") return UserRole::Staff;
+    if (roleStr == "manager") return UserRole::Manager;
     if (roleStr == "admin") return UserRole::Admin;
     if (roleStr == "super_admin") return UserRole::SuperAdmin;
     // Default to Student for unknown roles
@@ -28,6 +31,9 @@ std::string RoleAssignment::roleToString(UserRole role) {
     switch (role) {
         case UserRole::Student: return "student";
         case UserRole::Instructor: return "instructor";
+        case UserRole::Examiner: return "examiner";
+        case UserRole::Staff: return "staff";
+        case UserRole::Manager: return "manager";
         case UserRole::Admin: return "admin";
         case UserRole::SuperAdmin: return "super_admin";
     }
@@ -179,6 +185,9 @@ UserRole AppUser::getHighestRole() const {
     // Check from highest to lowest privilege
     if (hasRole(UserRole::SuperAdmin)) return UserRole::SuperAdmin;
     if (hasRole(UserRole::Admin)) return UserRole::Admin;
+    if (hasRole(UserRole::Manager)) return UserRole::Manager;
+    if (hasRole(UserRole::Staff)) return UserRole::Staff;
+    if (hasRole(UserRole::Examiner)) return UserRole::Examiner;
     if (hasRole(UserRole::Instructor)) return UserRole::Instructor;
     return UserRole::Student;
 }
@@ -199,7 +208,8 @@ bool AppUser::canAccessStudentPortal() const {
 }
 
 bool AppUser::canAccessAdminPortal() const {
-    return hasAnyRole({UserRole::Instructor, UserRole::Admin, UserRole::SuperAdmin});
+    return hasAnyRole({UserRole::Instructor, UserRole::Examiner, UserRole::Staff,
+                       UserRole::Manager, UserRole::Admin, UserRole::SuperAdmin});
 }
 
 bool AppUser::canManageStudents() const {
