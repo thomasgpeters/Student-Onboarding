@@ -90,6 +90,18 @@ void RoleNavigationWidget::createRoleButton(Models::UserRole role) {
             buttonText = "Administration";
             styleClass += "btn-admin";
             break;
+        case Models::UserRole::Manager:
+            buttonText = "Manager Portal";
+            styleClass += "btn-manager";
+            break;
+        case Models::UserRole::Staff:
+            buttonText = "Staff Portal";
+            styleClass += "btn-staff";
+            break;
+        case Models::UserRole::Examiner:
+            buttonText = "Examiner Portal";
+            styleClass += "btn-examiner";
+            break;
         case Models::UserRole::Instructor:
             buttonText = "Instructor Portal";
             styleClass += "btn-instructor";

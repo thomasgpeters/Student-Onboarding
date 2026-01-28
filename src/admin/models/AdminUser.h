@@ -14,6 +14,9 @@ namespace Models {
  */
 enum class AdminRole {
     Instructor,      // Can view students in assigned programs
+    Examiner,        // Can view and grade student assessments
+    Staff,           // General staff access
+    Manager,         // Can manage staff and view reports
     Administrator,   // Can manage students and curriculum
     SuperAdmin       // Full system access
 };

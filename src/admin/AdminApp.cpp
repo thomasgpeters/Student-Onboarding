@@ -84,9 +84,12 @@ void AdminApp::initialize() {
                 }
             }
 
-            // Allow both Admin and Instructor roles to access the administration portal
+            // Allow Admin, Manager, Staff, Examiner, and Instructor roles to access the administration portal
             bool hasAdminAccess = user.getId() > 0 &&
                 (user.hasRole(StudentIntake::Models::UserRole::Admin) ||
+                 user.hasRole(StudentIntake::Models::UserRole::Manager) ||
+                 user.hasRole(StudentIntake::Models::UserRole::Staff) ||
+                 user.hasRole(StudentIntake::Models::UserRole::Examiner) ||
                  user.hasRole(StudentIntake::Models::UserRole::Instructor));
 
             if (hasAdminAccess) {
@@ -103,11 +106,20 @@ void AdminApp::initialize() {
                     adminUser.setFirstName(user.getFirstName());
                     adminUser.setLastName(user.getLastName());
 
-                    // Set role based on user's roles (Admin takes precedence over Instructor)
+                    // Set role based on user's roles (Admin takes precedence)
                     bool isAdmin = user.hasRole(StudentIntake::Models::UserRole::Admin);
+                    bool isManager = user.hasRole(StudentIntake::Models::UserRole::Manager);
+                    bool isStaff = user.hasRole(StudentIntake::Models::UserRole::Staff);
+                    bool isExaminer = user.hasRole(StudentIntake::Models::UserRole::Examiner);
                     bool isInstructor = user.hasRole(StudentIntake::Models::UserRole::Instructor);
                     if (isAdmin) {
                         adminUser.setRole(Admin::Models::AdminRole::SuperAdmin);
+                    } else if (isManager) {
+                        adminUser.setRole(Admin::Models::AdminRole::Manager);
+                    } else if (isStaff) {
+                        adminUser.setRole(Admin::Models::AdminRole::Staff);
+                    } else if (isExaminer) {
+                        adminUser.setRole(Admin::Models::AdminRole::Examiner);
                     } else if (isInstructor) {
                         adminUser.setRole(Admin::Models::AdminRole::Instructor);
                     }
@@ -121,7 +133,7 @@ void AdminApp::initialize() {
                 setState(AppState::Dashboard);
                 return;
             } else {
-                LOG_WARN("AdminApp", "User not found or does not have admin/instructor role");
+                LOG_WARN("AdminApp", "User not found or does not have administrative role");
             }
         } catch (const std::exception& e) {
             LOG_ERROR("AdminApp", "Error during auto-login: " << e.what());

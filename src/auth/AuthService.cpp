@@ -584,11 +584,14 @@ std::vector<Models::UserRole> AuthService::getUserRoles(int userId, const std::s
             // Map admin_user role to UserRole
             if (adminRole == "admin" || adminRole == "super_admin") {
                 roles.push_back(Models::UserRole::Admin);
+            } else if (adminRole == "manager") {
+                roles.push_back(Models::UserRole::Manager);
+            } else if (adminRole == "staff") {
+                roles.push_back(Models::UserRole::Staff);
+            } else if (adminRole == "examiner") {
+                roles.push_back(Models::UserRole::Examiner);
             } else if (adminRole == "instructor") {
                 roles.push_back(Models::UserRole::Instructor);
-            } else if (adminRole == "staff") {
-                // Staff role - treat as limited admin access
-                roles.push_back(Models::UserRole::Admin);
             }
         }
     }

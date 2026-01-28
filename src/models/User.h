@@ -14,6 +14,9 @@ namespace Models {
 enum class UserRole {
     Student,
     Instructor,
+    Examiner,
+    Staff,
+    Manager,
     Admin
 };
 
@@ -58,6 +61,9 @@ public:
     bool hasMultipleRoles() const { return roles_.size() > 1; }
     bool isStudent() const { return hasRole(UserRole::Student); }
     bool isInstructor() const { return hasRole(UserRole::Instructor); }
+    bool isExaminer() const { return hasRole(UserRole::Examiner); }
+    bool isStaff() const { return hasRole(UserRole::Staff); }
+    bool isManager() const { return hasRole(UserRole::Manager); }
     bool isAdmin() const { return hasRole(UserRole::Admin); }
 
     // Setters
