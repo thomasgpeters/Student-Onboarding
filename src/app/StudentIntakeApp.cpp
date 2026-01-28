@@ -109,7 +109,10 @@ void StudentIntakeApp::initialize() {
                     payload["data"]["attributes"]["is_active"] = true;
                     payload["data"]["attributes"]["enrollment_status"] = "enrolled";
 
+                    LOG_DEBUG("StudentIntakeApp", "Student create payload: " << payload.dump());
                     auto createResponse = apiClient_->post("/Student", payload);
+                    LOG_INFO("StudentIntakeApp", "Student create response - status: " << createResponse.statusCode
+                             << ", body: " << createResponse.body.substr(0, 500));
                     if (createResponse.success) {
                         auto json = createResponse.getJson();
                         if (json.contains("data")) {
@@ -892,7 +895,10 @@ void StudentIntakeApp::routeUserByRole(const Models::User& user) {
                     payload["data"]["attributes"]["is_active"] = true;
                     payload["data"]["attributes"]["enrollment_status"] = "enrolled";
 
+                    LOG_DEBUG("StudentIntakeApp", "Student create payload: " << payload.dump());
                     auto createResponse = apiClient_->post("/Student", payload);
+                    LOG_INFO("StudentIntakeApp", "Student create response - status: " << createResponse.statusCode
+                             << ", body: " << createResponse.body.substr(0, 500));
                     if (createResponse.success) {
                         auto json = createResponse.getJson();
                         if (json.contains("data")) {
