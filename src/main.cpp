@@ -4,6 +4,35 @@
 #include "admin/AdminApp.h"
 #include "utils/Logger.h"
 #include <cstdlib>
+#include <iostream>
+
+/**
+ * @brief Display startup banner
+ */
+void displayBanner() {
+    std::cout << "\n";
+    std::cout << "  ╔═══════════════════════════════════════════════════════════════╗\n";
+    std::cout << "  ║                                                               ║\n";
+    std::cout << "  ║   ███████╗████████╗██╗   ██╗██████╗ ███████╗███╗   ██╗████████╗║\n";
+    std::cout << "  ║   ██╔════╝╚══██╔══╝██║   ██║██╔══██╗██╔════╝████╗  ██║╚══██╔══╝║\n";
+    std::cout << "  ║   ███████╗   ██║   ██║   ██║██║  ██║█████╗  ██╔██╗ ██║   ██║   ║\n";
+    std::cout << "  ║   ╚════██║   ██║   ██║   ██║██║  ██║██╔══╝  ██║╚██╗██║   ██║   ║\n";
+    std::cout << "  ║   ███████║   ██║   ╚██████╔╝██████╔╝███████╗██║ ╚████║   ██║   ║\n";
+    std::cout << "  ║   ╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   ║\n";
+    std::cout << "  ║                                                               ║\n";
+    std::cout << "  ║    ██████╗ ███╗   ██╗██████╗  ██████╗  █████╗ ██████╗ ██████╗  ║\n";
+    std::cout << "  ║   ██╔═══██╗████╗  ██║██╔══██╗██╔═══██╗██╔══██╗██╔══██╗██╔══██╗ ║\n";
+    std::cout << "  ║   ██║   ██║██╔██╗ ██║██████╔╝██║   ██║███████║██████╔╝██║  ██║ ║\n";
+    std::cout << "  ║   ██║   ██║██║╚██╗██║██╔══██╗██║   ██║██╔══██║██╔══██╗██║  ██║ ║\n";
+    std::cout << "  ║   ╚██████╔╝██║ ╚████║██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝ ║\n";
+    std::cout << "  ║    ╚═════╝ ╚═╝  ╚═══╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ║\n";
+    std::cout << "  ║                                                               ║\n";
+    std::cout << "  ║               Student Intake Management System                ║\n";
+    std::cout << "  ║                        v1.0.0                                 ║\n";
+    std::cout << "  ║                                                               ║\n";
+    std::cout << "  ╚═══════════════════════════════════════════════════════════════╝\n";
+    std::cout << "\n";
+}
 
 /**
  * @brief Application factory function for Student Portal
@@ -30,6 +59,9 @@ std::unique_ptr<Wt::WApplication> createAdminApplication(const Wt::WEnvironment&
  */
 int main(int argc, char** argv) {
     try {
+        // Display startup banner
+        displayBanner();
+
         // Configure logging level from environment variable or default to INFO
         // Set LOG_LEVEL=DEBUG for verbose output, LOG_LEVEL=NONE to suppress
         const char* logLevel = std::getenv("LOG_LEVEL");
