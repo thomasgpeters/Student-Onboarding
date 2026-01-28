@@ -25,16 +25,27 @@ void ProgressWidget::setupUI() {
     auto titleText = headerContainer_->addWidget(std::make_unique<Wt::WText>("<h4>Your Progress</h4>"));
     titleText->setTextFormat(Wt::TextFormat::XHTML);
 
-    auto progressContainer = headerContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    // Progress percentage and bar in a row
+    auto progressRow = headerContainer_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    progressRow->addStyleClass("progress-row");
+    progressRow->setAttributeValue("style",
+        "display: flex; align-items: center; gap: 0.75rem; margin: 0.75rem 0;");
+
+    progressText_ = progressRow->addWidget(std::make_unique<Wt::WText>("0%"));
+    progressText_->addStyleClass("progress-percentage");
+    progressText_->setAttributeValue("style",
+        "font-size: 1.25rem; font-weight: 700; color: #2563eb; min-width: 50px;");
+
+    // Progress bar container
+    auto progressContainer = progressRow->addWidget(std::make_unique<Wt::WContainerWidget>());
     progressContainer->addStyleClass("progress-bar-container");
+    progressContainer->setAttributeValue("style", "flex: 1;");
 
     progressBar_ = progressContainer->addWidget(std::make_unique<Wt::WProgressBar>());
     progressBar_->setRange(0, 100);
     progressBar_->setValue(0);
     progressBar_->addStyleClass("main-progress-bar");
-
-    progressText_ = progressContainer->addWidget(std::make_unique<Wt::WText>("0% Complete"));
-    progressText_->addStyleClass("progress-percentage");
+    progressBar_->setFormat("");  // Hide the default percentage text inside bar
 
     // Steps list
     stepsContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -124,7 +135,7 @@ void ProgressWidget::refresh() {
     // Update progress bar
     double percentage = session_->getProgressPercentage();
     progressBar_->setValue(static_cast<int>(percentage));
-    progressText_->setText(std::to_string(static_cast<int>(percentage)) + "% Complete");
+    progressText_->setText(std::to_string(static_cast<int>(percentage)) + "%");
 
     // Update step states
     for (auto& step : steps_) {
