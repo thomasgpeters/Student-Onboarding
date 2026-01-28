@@ -1,3 +1,50 @@
+```
+  ╔═══════════════════════════════════════════════════════════════╗
+  ║                                                               ║
+  ║   ███████╗████████╗██╗   ██╗██████╗ ███████╗███╗   ██╗████████╗║
+  ║   ██╔════╝╚══██╔══╝██║   ██║██╔══██╗██╔════╝████╗  ██║╚══██╔══╝║
+  ║   ███████╗   ██║   ██║   ██║██║  ██║█████╗  ██╔██╗ ██║   ██║   ║
+  ║   ╚════██║   ██║   ██║   ██║██║  ██║██╔══╝  ██║╚██╗██║   ██║   ║
+  ║   ███████║   ██║   ╚██████╔╝██████╔╝███████╗██║ ╚████║   ██║   ║
+  ║   ╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   ║
+  ║                                                               ║
+  ║    ██████╗ ███╗   ██╗██████╗  ██████╗  █████╗ ██████╗ ██████╗  ║
+  ║   ██╔═══██╗████╗  ██║██╔══██╗██╔═══██╗██╔══██╗██╔══██╗██╔══██╗ ║
+  ║   ██║   ██║██╔██╗ ██║██████╔╝██║   ██║███████║██████╔╝██║  ██║ ║
+  ║   ██║   ██║██║╚██╗██║██╔══██╗██║   ██║██╔══██║██╔══██╗██║  ██║ ║
+  ║   ╚██████╔╝██║ ╚████║██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝ ║
+  ║    ╚═════╝ ╚═╝  ╚═══╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ║
+  ║                                                               ║
+  ║               Student Intake Management System                ║
+  ║                        v1.0.0                                 ║
+  ║                                                               ║
+  ╚═══════════════════════════════════════════════════════════════╝
+```
+
+## Documentation Index
+
+| Document | Description |
+|----------|-------------|
+| **Core Documentation** | |
+| [README.md](README.md) | Project overview and getting started |
+| [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) | System architecture and design patterns |
+| [DATABASE.md](DATABASE.md) | Database schema and data model |
+| [WORKFLOW.md](WORKFLOW.md) | Student onboarding workflow |
+| [LOGGING.md](LOGGING.md) | Logging framework configuration |
+| **Deployment** | |
+| [DOCKER.md](DOCKER.md) | Docker deployment guide |
+| [MIGRATION_SYSTEM.md](MIGRATION_SYSTEM.md) | Database migration system |
+| **Feature Documentation** | |
+| [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) | Unified authentication system |
+| [docs/INSTRUCTOR.md](docs/INSTRUCTOR.md) | Instructor portal features |
+| [docs/CLASSROOM.md](docs/CLASSROOM.md) | Classroom/LMS features |
+| [docs/ADMIN_DASHBOARD_DESIGN.md](docs/ADMIN_DASHBOARD_DESIGN.md) | Admin dashboard design |
+| [docs/Administration_User_Guide.md](docs/Administration_User_Guide.md) | Admin user guide |
+| [docs/CURRICULUM_SEEDING.md](docs/CURRICULUM_SEEDING.md) | Curriculum data seeding |
+| [docs/DATA_MODEL_CHANGES.md](docs/DATA_MODEL_CHANGES.md) | Schema change tracking |
+
+---
+
 # Student Onboarding Application
 
 A modular C++ web application built with the Wt (Witty) Web Toolkit for processing student onboarding forms during the enrollment process.

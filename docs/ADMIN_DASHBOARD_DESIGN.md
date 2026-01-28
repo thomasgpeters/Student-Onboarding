@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Admin Dashboard Design              ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Admin Dashboard Portal - Design Document
 
 ## Overview

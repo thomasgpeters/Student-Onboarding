@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Administration User Guide           ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Administration User Guide
 
 ## Student Onboarding System - Administrative Portal

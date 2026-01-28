@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Docker Deployment Guide             ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Docker Deployment Guide
 
 This guide explains how to build and deploy the Student Onboarding application using Docker.

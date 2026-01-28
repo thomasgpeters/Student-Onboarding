@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Migration System                    ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Student Onboarding Migration System
 
 This document provides comprehensive documentation for the program mode migration system, enabling institutions to switch between **Accredited** (university/college) and **Vocational** (trade school/CDL) configurations.

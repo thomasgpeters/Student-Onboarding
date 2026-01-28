@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Database Documentation              ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Database Documentation
 
 Comprehensive documentation for the Student Onboarding System database.

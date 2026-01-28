@@ -1,3 +1,9 @@
+```
+╔═══════════════════════════════════════════════════════════════╗
+║         STUDENT ONBOARD - Authentication                      ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
 # Unified Authentication Feature
 
 The Unified Authentication feature provides a single, consolidated login system for all user types (students, instructors, and administrators) with role-based access control and routing.
